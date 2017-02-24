@@ -30,7 +30,7 @@ public:
 class Server : public Tcpip
 {
 public:
-	Server(int port = 2001, unsigned int time_out = 60000, int queue = 10, std::string e = "end");
+	Server(int port = 2001, unsigned int time_out = 600, int queue = 10, std::string e = "end");
 	void start(std::function<std::string(std::string)> functor);
 	virtual ~Server();
 	

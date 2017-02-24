@@ -3,12 +3,13 @@
 #include"tcpip.h"
 using namespace std;
 
-int main()
+int main(int ac, char** av)
 {
 	Client cl;
 	string s;
-	while(cin >> s) {
-		cl.send(s);
-		cout << cl.recv();
+	while(1) {
+		cl.send("ok");
+		cout << (s = cl.recv()) << endl;
+		if(s == "end") break;
 	}
 }
