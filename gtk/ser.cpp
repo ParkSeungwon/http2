@@ -43,22 +43,20 @@ protected:
 class Functor
 {
 public:
-	//Functor(Win& win) { }
+	Functor(Win& win) : w(win) { }
 	string operator()(string s) {
 		//event poll, initiative goes to server now
-		Win* w = new Win;
-		w->la.set_text(s);
+		w.la.set_text(s);
 		unique_lock<mutex> lck{mtx};//conditional variable can be used here
 		while(w.event.empty()) cv.wait(lck);
-		s = w->event;
-		w->event.clear();
-		if(s == "") w->hide();
+		s = w.event;
+		w.event.clear();
+		if(s == "") w.hide();
 		return s;
 	}
-	Win* w;
+	Win& w;
 	virtual ~Functor() {
 		cout << "destroyed" << endl;
-		delete w;
 	}
 };
 
