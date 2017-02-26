@@ -24,6 +24,24 @@ protected:
 private:
 };
 
+class Connection : public Tcpip
+{
+public:
+	Connection(std::function<std::string(std::string)> f);
+	std::deque<std::string> q;
+	
+protected:
+	thread thi, tho;
+	std::mutex mtx;
+	std::condition_variable cv;
+	std::function<std::string(std::string)> functor;
+
+private:
+	bool finish = false;
+	void recvf();
+	void sendf();
+};
+
 class Client : public Tcpip
 {
 public:
