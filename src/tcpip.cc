@@ -34,7 +34,9 @@ void Tcpip::send(string s)
 }
 void Server::send(string s, int client_fd)
 {
-	write(client_fd, s.c_str(), s.size()+1);
+	try {
+		write (client_fd, s.c_str(), s.size()+1);
+	} catch(...) {}
 }
 
 string Tcpip::recv()
@@ -45,8 +47,10 @@ string Tcpip::recv()
 }
 string Server::recv(int client_fd)
 {
-	int i = read(client_fd, buffer, 1023);//error
-	buffer[i] = '\0';
+	try {
+		int i = read(client_fd, buffer, 1023);//error
+		buffer[i] = '\0';
+	} catch(...) {}
 	return string(buffer);
 }
 
@@ -92,19 +96,19 @@ void Server::timed_out(int sig)
 
 void Server::handle_connection(function<string(string)> functor, int fd)
 {///inside of one connection, every connection has its own q,mtx and so on.
-	deque<string> q;
+	deque<string> in, out;
 	mutex mtx;
 	condition_variable cv;
 	signal(SIGALRM, timed_out);
-	thread th(&Server::qrecv, this, fd, std::ref(q), ref(mtx), ref(cv));
+	thread th(&Server::qrecv, this, fd, std::ref(in), ref(mtx), ref(cv));
 
 	unique_lock<mutex> lck{mtx, defer_lock};
 	string s = "not end";
 	while(s != end_string) {
 		lck.lock();
-		while(q.empty()) cv.wait(lck);
-		s = q.front();
-		send(functor(s), fd);
+		while(in.empty()) cv.wait(lck);
+		s = in.front();
+		send(functor(s), fd);//return 값을 큐에 넣는 식으로 바꿔야 함.
 		assert(!q.empty());
 		q.pop_front();
 		lck.unlock();
