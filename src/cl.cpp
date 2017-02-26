@@ -1,23 +1,19 @@
 #include<iostream>
 #include<string>
 #include<atomic>
-#include"tcpip.h"
+#include"server.h"
 using namespace std;
 
-Client cl;
-atomic<bool> ended {false};
-void recv_th(Client& cl) {
-	while(!ended) cout << cl.recv() << endl;
+string f(string s) {
+	return s;
 }
 int main(int ac, char** av)
 {
-	string s;
-	thread th{recv_th, ref(cl)};
 
+	Client cl{f, "125.209.222.142", 80};
+	string s;
 	while(cin >> s) {
 		cl.send(s);
 		if(s == "end") break;
 	}
-	ended = true;
-	th.join();
 }

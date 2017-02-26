@@ -1,7 +1,9 @@
-#include "tcpip.h"
+#include<iostream>
+#include<functional>
+#include "conn.h"
 using namespace std;
 
-Connection::Connection(function<string(string)> f) : thi(in, f, this)
+Connection::Connection(function<string(string)> f, int port) : Tcpip(port) 
 {
 	functor = f;
 	thi = thread(&Connection::recvf, this);

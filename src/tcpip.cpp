@@ -1,6 +1,6 @@
 #include<iostream>
 #include<string>
-#include"tcpip.h"
+#include"server.h"
 using namespace std;
 
 class Functor
@@ -15,6 +15,5 @@ public:
 
 int main()
 {
-	Server sv;
-	sv.start(f);
+	//Server sv{f};
 }
