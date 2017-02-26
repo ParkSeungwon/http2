@@ -8,6 +8,8 @@
 #include <cstring>
 #include <iostream>
 #include <signal.h>
+#include <chrono>
+#include <cassert>
 #include "tcpip.h"
 using namespace std;
 
@@ -87,18 +89,43 @@ void Server::timed_out(int sig)
 	exit(0);
 }
 
+
 void Server::handle_connection(function<string(string)> functor, int fd)
-{
-	string s = " ";
+{///inside of one connection, every connection has its own q,mtx and so on.
+	deque<string> q;
+	mutex mtx;
+	condition_variable cv;
 	signal(SIGALRM, timed_out);
-	while(s != end_string && s != "") {
-		s = recv(fd);
+	thread th(&Server::qrecv, this, fd, std::ref(q), ref(mtx), ref(cv));
+
+	unique_lock<mutex> lck{mtx, defer_lock};
+	string s = "not end";
+	while(s != end_string) {
+		lck.lock();
+		while(q.empty()) cv.wait(lck);
+		s = q.front();
 		send(functor(s), fd);
-		alarm(time_out);
+		assert(!q.empty());
+		q.pop_front();
+		lck.unlock();
 	}
+	th.join();
 	cout << "ending child" << endl;
 }
 
+void Server::qrecv(int fd, deque<string>& q, mutex& mtx, condition_variable& cv)
+{
+	string s = "not end";
+	unique_lock<mutex> lck{mtx, defer_lock};
+	while(s != end_string) {
+		s = recv(fd);
+		alarm(time_out);
+		lck.lock();
+		q.push_back(s);
+		lck.unlock();
+		cv.notify_all();
+	}
+}
 Server::~Server()
 {
 	for(auto& a : connections) a.join();

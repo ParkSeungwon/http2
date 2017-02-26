@@ -1,11 +1,14 @@
 //tcpip.h class definition
 #include <string>
 #include <thread>
+#include <condition_variable>
 #include <vector>
 #include <arpa/inet.h>
+#include <deque>
+#include <mutex>
 
-class Tcpip 
-{
+class Tcpip ///  TCP IP Header 
+{ 
 public:
 	Tcpip(int port);
 	virtual ~Tcpip();
@@ -13,7 +16,7 @@ public:
 	std::string recv();
 
 protected:
-	int server_fd;
+	int server_fd;///<server_fd입니다.
 	int client_fd;
 	struct sockaddr_in server_addr, client_addr;
 	char buffer[1024];
@@ -24,7 +27,7 @@ private:
 class Client : public Tcpip
 {
 public:
-	Client(std::string ip = "127.0.0.1", int port = 2001); 
+	Client(std::string ip = "127.0.0.1", int port = 2001); ///<constructor
 };
 
 class Server : public Tcpip
@@ -43,5 +46,6 @@ protected:
 
 private:
 	void handle_connection(std::function<std::string(std::string)> f, int fd);
+	void qrecv(int fd, std::deque<std::string>& q, std::mutex& mtx, std::condition_variable& cv);
 	std::vector<std::thread> connections;
 };
