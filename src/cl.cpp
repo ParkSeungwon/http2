@@ -9,8 +9,7 @@ string f(string s) {
 }
 int main(int ac, char** av)
 {
-
-	Client cl{f, "125.209.222.142", 80};
+	Client cl;
 	string s;
 	while(cin >> s) {
 		cl.send(s);
