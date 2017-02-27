@@ -1,5 +1,8 @@
 #include<iostream>
+#include<thread>
+#include<chrono>
 #include<unistd.h>
+#include<sys/wait.h>
 #include"server.h"
 #include"asyncqueue.h"
 using namespace std;
@@ -30,12 +33,18 @@ void Server::start(function<string(string)> f)
 	while(true) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 		if(client_fd == -1) cout << "accept() error" << endl;
-		else {
+		else {//connection established
 			cout << "accepting" << endl;
-			if(!fork()) {
-				AsyncQueue<string> aq{bind(&Tcpip::recv, this), 
-					bind(&Tcpip::send, this, bind(f, placeholders::_1))};
-				while(1);
+			if(!fork()) {//child process begin here, current fd & addr is copied
+				int time_left;
+				auto ff = [&](string s) {//add timer to server function
+					time_left = time_out;
+					return f(s);
+				};
+				AsyncQueue<string> aq{bind(&Tcpip::recv, this), //multi thread
+					bind(&Tcpip::send, this, bind(ff, placeholders::_1))};
+				//timer. aq will destroy its thread automatically when out of range
+				while(time_left--) this_thread::sleep_for(chrono::seconds(1));
 			}
 		}
 	}
