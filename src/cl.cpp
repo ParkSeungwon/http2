@@ -11,7 +11,7 @@ void f(string s) {
 int main(int ac, char** av)
 {
 	Client cl;
-	AsyncQueue<string> aq{bind(&Client::recv, &cl), f};
+	AsyncQueue<string> aq{bind(&Client::recv, &cl), f};//how beautiful
 	string s;
 	while(cin >> s) {
 		cl.send(s);

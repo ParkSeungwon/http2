@@ -12,7 +12,6 @@ Tcpip::Tcpip(int port)
 	memset(&client_addr, 0, sizeof(client_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(port);
-	this->port = port;
 	server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);//get file descriptor
 	client_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
