@@ -6,7 +6,7 @@
 #include "tcpip.h"
 using namespace std;
 
-Tcpip::Tcpip(int port) 
+Tcpip::Tcpip(int port)
 {
 	memset(&server_addr, 0, sizeof(server_addr));//fill 0 into memset
 	memset(&client_addr, 0, sizeof(client_addr));
@@ -26,18 +26,8 @@ void Tcpip::send(string s)
 {
 	write(client_fd, s.c_str(), s.size()+1);
 }
-void Tcpip::sendfd(string s, int client_fd) 
-{
-	write(client_fd, s.c_str(), s.size()+1);
-}
 
 string Tcpip::recv()
-{
-	int i = read(client_fd, buffer, 1023);//error
-	buffer[i] = '\0';
-	return string(buffer);
-}
-string Tcpip::recvfd(int client_fd)
 {
 	int i = read(client_fd, buffer, 1023);//error
 	buffer[i] = '\0';

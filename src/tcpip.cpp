@@ -7,14 +7,14 @@ class Functor
 {
 public:
 	int i=0;
-	string operator()() {
+	string operator()(string s) {
 		i++;
-		return to_string(i) +'\n';
+		return s + to_string(i) +'\n';
 	}
 } f;
 
 int main()
 {
 	Server sv;
-	sv.start();
+	sv.start(f);
 }
