@@ -42,8 +42,8 @@ template <typename T> void AsyncQueue<T>::consume()
 	while(!finish) {
 		lck.lock();
 		while(q.empty()) cv.wait(lck);
-		consumer(q.front());
-		q.pop_front();
+		for(auto& a : q) consumer(a);
+		q.clear();
 		lck.unlock();
 	}
 }
