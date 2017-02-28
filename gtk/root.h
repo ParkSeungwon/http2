@@ -8,6 +8,7 @@ public:
 	RootWindow(Glib::RefPtr<Gtk::Application>& app);
 	~RootWindow();
 	std::map<std::string, Gtk::Window*> sub_windows;
+	std::string operator()(std::string);
 	
 protected:
 

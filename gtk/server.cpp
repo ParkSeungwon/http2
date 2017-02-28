@@ -26,32 +26,24 @@ protected:
 class Functor
 {
 public:
-	Functor(RootWindow& r) : root{r} {
-	}
-	RootWindow& root;
+	Gtk::Window* wp;
 	string operator()(string s) {
 		if(s == "event") {
-			cout << s << endl;
-		//	while(root.sub_windows[0].event_queue.empty());
-		//	s = root.sub_windows[0].event_queue.front();
-		//	root.sub_windows[0].event_queue.pop_front();
-			return s + "from server queue";
+			return s + "from event";
 		} else {
-			root.sub_windows[s] = new Win;
-			cout << s << endl;
-			dynamic_cast<Win*>(root.sub_windows[s])->bt.set_label(s);
-			root.sub_windows[s]->show();
-			return s + "from server";
+			auto app = Gtk::Application::create();
+			Win win;
+			app->run(win);
+			//wp = new Gtk::Window;
+			//wp->show();
+			return s;
 		}
 	}
-
-protected:
 };
 
 int main(int ac, char** av)
 {
-	auto app = Gtk::Application::create(ac, av);
-	RootWindow win{app};
 	Server sv;
-	sv.start(Functor(win));
+	Functor f;
+	sv.start(f);
 }
