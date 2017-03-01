@@ -26,9 +26,7 @@ protected:
 class Functor
 {
 public:
-	Functor(RootWindow& r) : root{r} {
-	}
-	RootWindow& root;
+	Functor(){}
 	string operator()(string s) {
 		if(s == "event") {
 			cout << s << endl;
@@ -37,21 +35,22 @@ public:
 		//	root.sub_windows[0].event_queue.pop_front();
 			return s + "from server queue";
 		} else {
-			root.sub_windows[s] = new Win;
-			cout << s << endl;
-			dynamic_cast<Win*>(root.sub_windows[s])->bt.set_label(s);
-			root.sub_windows[s]->show();
-			return s + "from server";
+			th = thread(&Functor::make_win, this);
+			return s;
 		}
 	}
 
 protected:
-};
+	thread th;
+	void make_win() {
+		auto app = Gtk::Application::create();
+		Win win;
+		app->run(win);
+	}
+} f;
 
 int main(int ac, char** av)
 {
-	auto app = Gtk::Application::create(ac, av);
-	RootWindow win{app};
 	Server sv;
-	sv.start(Functor(win));
+	sv.start(f);
 }
