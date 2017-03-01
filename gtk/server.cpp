@@ -1,6 +1,6 @@
 #include<gtkmm.h>
 #include<iostream>
-#include"server.h"
+#include"appstart.h"
 #include"asyncqueue.h"
 #include"root.h"
 using namespace std;
@@ -26,31 +26,32 @@ protected:
 class Functor
 {
 public:
-	Functor(){}
-	string operator()(string s) {
+	string operator()(string s, Gtk::Window* wp) {
 		if(s == "event") {
 			cout << s << endl;
+			wp->hide();
 		//	while(root.sub_windows[0].event_queue.empty());
 		//	s = root.sub_windows[0].event_queue.front();
 		//	root.sub_windows[0].event_queue.pop_front();
 			return s + "from server queue";
 		} else {
-			th = thread(&Functor::make_win, this);
+			auto* p = new Gtk::Grid();
+			wp->add(*p);
+			wp->set_title(s);
+			wp->resize(500,500);
+			auto* b = new Gtk::Button("ok");
+			p->attach(*b, 0, 0, 50, 50);
+			wp->show();
 			return s;
 		}
 	}
 
 protected:
-	thread th;
-	void make_win() {
-		auto app = Gtk::Application::create();
-		Win win;
-		app->run(win);
-	}
+	Gtk::Window* wp;
 } f;
 
 int main(int ac, char** av)
 {
-	Server sv;
-	sv.start(f);
+	AppServer sv;
+	sv.app_start(f);
 }
