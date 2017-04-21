@@ -8,6 +8,7 @@ class Functor
 public:
 	int i=0;
 	string operator()(string s) {
+		cout << s << endl;
 		i++;
 		return s + to_string(i) +'\n';
 	}

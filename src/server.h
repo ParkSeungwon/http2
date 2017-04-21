@@ -6,6 +6,8 @@ class Client : public Tcpip
 {
 public:
 	Client(std::string ip = "127.0.0.1", int port = 2001); ///<constructor
+private:
+	std::string get_addr(std::string host);
 };
 
 class Server : public Tcpip

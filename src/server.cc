@@ -2,6 +2,7 @@
 #include<thread>
 #include<chrono>
 #include<unistd.h>
+#include<netdb.h>//gethostbyname
 #include<sys/wait.h>
 #include"server.h"
 #include"asyncqueue.h"
@@ -9,10 +10,16 @@ using namespace std;
 
 Client::Client(string ip, int port) : Tcpip(port)
 {
-	server_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+	server_addr.sin_addr.s_addr = inet_addr(get_addr(ip).c_str());
 	if(-1 == connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)))
 		cout << "connect() error" << endl;
 	else cout << "connecting"  <<endl;
+}
+
+string Client::get_addr(string host)
+{///get ip from dns
+	auto* a = gethostbyname(host.data());
+	return inet_ntoa(*(struct in_addr*)a->h_addr);
 }
 
 Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port) 
