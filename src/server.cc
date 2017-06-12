@@ -34,8 +34,8 @@ Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port)
 	else cout << "listening" << endl;
 }
 
-void Server::start(function<string(string)> f)
-{
+template<typename T> void Server::start(T& f)
+{//changed from functional to template to enable inner state of server
 	int cl_size = sizeof(client_addr);
 	while(true) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
@@ -57,3 +57,8 @@ void Server::start(function<string(string)> f)
 	}
 }
 
+void Server::init_template()
+{
+	Functor f;
+	start(f);
+}
