@@ -27,7 +27,9 @@ W1--------------------------------------------------------^
 )";
 int main(int ac, char** av)
 {
-	Client cl{"127.0.0.1", atoi(av[1])};
+	string host = ac < 3 ? "127.0.0.1" : av[1];
+	int port = ac < 2 ? 2001 : atoi(av[2]);
+	Client cl{host, port};
 	AsyncQueue<string> aq{bind(&Client::recv, &cl), f};//how beautiful
 	string s;
 	while(cin >> s) {
