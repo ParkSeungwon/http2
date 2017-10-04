@@ -1,5 +1,8 @@
 #include<fstream>
+#include<thread>
+#include<sstream>
 #include"util.h"
+#include"server.h"
 #include"htmlserver.h"
 using namespace std;
 
@@ -24,7 +27,13 @@ static map<string, string>&& init()
 	return move(tmp);
 }
 
-map<string, string> HTMLServer::fileNhtml_ = init();
+HTMLServer::HTMLServer() : fileNhtml_{init()} {}
+
+std::string HTMLServer::event()
+{//event from server
+	this_thread::sleep_for(5s);
+	return "5 seconds passed";
+}
 
 std::string HTMLServer::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
@@ -46,7 +55,7 @@ std::string HTMLServer::operator()(string s)
 		}
 	}
 	if(requested_document_ == "/") requested_document_ = "index.html";
-	content_ = fileNhtml_[requested_document_];
+	content_ = fileNhtml_.at(requested_document_);
 	if(!nameNvalue_.empty()) 
 		process();//derived class should implement this-> set content_ & cookie
 	return header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
@@ -62,3 +71,9 @@ string HTMLServer::urldecode(string s)
 	return s;
 }
 
+//static void template_init()
+//{
+//	HTMLServer hs;
+//	Server sv;
+//	template void Server::start(HTMLServer);
+//}
