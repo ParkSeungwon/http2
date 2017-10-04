@@ -1,18 +1,3 @@
-#include<iostream>
-#include<sstream>
-#include<string>
-#include<cstring>
-#include"server.h"
-#include"util.h"
-using namespace std;
-
-class Functor
-{
-public:
-	int i=0;
-	string operator()(string s) {
-		cout << s << endl;
-		if(!strncmp(s.data(), "GET", 3)) content =  R"(
 <html>
  <head>
   <meta charset="utf-8" />
@@ -30,44 +15,11 @@ public:
   </title>
  </head>
  <body>
- 한룰.
  <script>
-	$(document).ready(function(){
 	var json = {"fa" : "fdsfsfd", "fddsf":"fsfsfsfsd"};
 $.post("login.cgi", json, function(){
-		replace.innerHTML = data;
-});
+		$("body").html(data);
 });
 </script>
-<p id="replace"></p>
  </body>
 </html>
-)";
-		else if(!strncmp(s.data(), "POST", 4)) {
-			stringstream ss;
-			ss << s;
-			while(s != "\r") getline(ss, s);//pass header part
-			auto m = parse_post(ss);
-			for(auto el : m) content += el.first + ':' + el.second + '\n';
-		}
-		i++;
-		
-		string re = header + to_string(content.size()) + "\r\n\r\n" + content;
-		cout << "sending" << endl << re;
-		return re;
-	}
-
-private:
-	string header = R"(
-HTTP/1.1 200 OK
-Content-Type: text/html;
-Content-Length: )";
-	string content;
-} f;
-
-int main(int ac, char** av)
-{
-	int port = ac < 2 ? 2001 : atoi(av[1]);
-	Server sv{port};
-	sv.start(f);
-}

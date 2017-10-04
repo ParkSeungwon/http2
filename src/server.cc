@@ -47,7 +47,7 @@ void Server::start(function<string(string)> f)
 				auto ff = [&](string s) {//add timer to server function
 					time_left = time_out;
 					return f(s);
-				};
+				};//chatting server can be made, if you use 2 asyncqueue.
 				AsyncQueue<string> aq{bind(&Tcpip::recv, this), //multi thread
 					bind(&Tcpip::send, this, bind(ff, placeholders::_1))};
 				//timer. aq will destroy its thread automatically when out of range
