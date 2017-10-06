@@ -35,3 +35,4 @@ public:
 
 protected:
 	static std::vector<std::string> rooms_;
+};

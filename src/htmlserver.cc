@@ -1,33 +1,33 @@
 #include<fstream>
 #include<thread>
 #include<sstream>
+#include<iostream>
 #include"util.h"
 #include"server.h"
 #include"htmlserver.h"
 using namespace std;
 
 static map<string, string> tmp;
-static map<string, string> set_template(string filename)
-{
-	string s; char c;
-	ifstream f(filename);
-	while(f >> noskipws >> c) s += c;
-	tmp[filename] = s;
-}
 
-static map<string, string>&& init()
+static map<string, string> init()
 {
 	for(auto& a : getdir(".")) {//read html files in the current directory
 		size_t pos = a.first.find_last_of('.');
 		if(pos != string::npos) {
 			string ext = a.first.substr(pos+1);
-			if(ext == "html" || ext == "js" || ext == "css") set_template(a.first);
+			if(ext == "html" || ext == "js" || ext == "css") {
+				cout << a.first << endl;
+				string s; char c;
+				ifstream f(a.first);
+				while(f >> noskipws >> c) s += c;
+				tmp[a.first] = s;
+			}
 		}
 	}
-	return move(tmp);
+	return tmp;
 }
 
-HTMLServer::HTMLServer() : fileNhtml_{init()} {}
+map<string, string> HTMLServer::fileNhtml_ = init();
 
 std::string HTMLServer::event()
 {//event from server
