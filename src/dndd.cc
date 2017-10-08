@@ -41,8 +41,8 @@ void Dndd::upload()
 {
 //	if(level != "" && stoi(level) < 2) return;
 	sq.select("상품", "limit 1");
-	sq.insert({"null", id, nameNvalue_["desc"], nameNvalue_["goods"]});
-	ofstream f("image/" + nameNvalue_["file"]);
-	f << nameNvalue_[nameNvalue_["file"]];
+	sq.insert({"null", "zezeon@msn.com", nameNvalue_["desc"], nameNvalue_["goods"]});
+	ofstream f("image/fdfd.jpg");
+	content_ = nameNvalue_["file"];
 }
 

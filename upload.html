@@ -3,23 +3,45 @@
   <meta charset="utf8" />
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
   </script>
-  <script src="jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+ 
   <script>
+
 function f() {
-}  
+	var jv = {
+		file : file_content,
+		goods : goods.value,
+		desc : desc.value
+	};
+	$.post('up.cgi', jv, function (dat) {
+		replace.innerHTML = data;
+	});
+};  
+
+  function openFile(event) {
+    var input = event.target;
+
+    var reader = new FileReader();
+    reader.onload = function(){
+      file_content = reader.result;
+    
+         };
+    reader.readAsDataURL(input.files[0]);
+  };
+</script>
+
   </script>
  </head>
  <body>
  상품 업로드 
- 
-<form action="up.cgi" method="post" enctype="multipart/form-data">
-			상품이미지 파일<input type="file" name="file" ><br>
-			상품명<input type='text' name='goods'/><br>
+ <br>
+			상품이미지 파일<input type="file" id="file" onchange="openFile(event)"><br>
+			상품명<input type='text' id='goods'/><br>
 			설명<br>
-			<textarea name="desc" rows="20" cols="70">
+			<textarea id="desc" rows="20" cols="70">
 			</textarea><br>
-			<input type="submit" name="up" value="ok">
-		</form>
+			<button onclick="f()">ok</button>
+
 
 <p id="replace"></p>
  </body>

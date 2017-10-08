@@ -13,7 +13,6 @@ protected:
 	std::string content_, requested_document_;//set content_
 
 private:
-	void parse_multipart(std::istream& is);
 	std::string boundary_;
 	static std::map<std::string, std::string> fileNhtml_;
 	const std::string header_ 
