@@ -13,7 +13,7 @@ function f() {
 		goods : goods.value,
 		desc : desc.value
 	};
-	$.post('up.cgi', jv, function (dat) {
+	$.post('up.cgi', jv, function (data) {
 		replace.innerHTML = data;
 	});
 };  
