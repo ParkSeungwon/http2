@@ -1,0 +1,51 @@
+<html>
+ <head>
+  <meta charset="utf8" />
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+  </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script>
+function f() {
+	var json_data = {
+		email : email.value,
+		password : password.value,
+		verify : verify.value,
+		address : address.value,
+		tel : tel.value,
+		username : name_.value
+	};
+	replace.innerHTML = "HELLO";
+	if (json_data[password] == json_data[verify]) {
+		$.post("signin.cgi", json_data, function (data, status) {
+			replace.innerHTML = data;
+		});
+	} else {
+		replace.innerHTML ='password not match';
+	}
+}  
+  </script>
+ </head>
+ <body>
+
+   이메일
+   <input id="email" type="email" />
+   <br />
+   패스워드
+   <input id="password" type="password" />
+   <br />
+   확인
+   <input id="verify" type="password" />
+   <br />
+   이름
+   <input id="name_" type="text" />
+   <br />
+   주소
+   <input id="address" type="text" />
+   <br />
+   전화번호
+   <input id="tel" type="text" />
+   <br />
+   <button onclick="f()">OK</button>
+<p id="replace"></p>
+ </body>
+</html>

@@ -1,0 +1,26 @@
+<html>
+ <head>
+  <meta charset="utf8" />
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+  </script>
+  <script src="jquery.min.js"></script>
+  <script>
+function f() {
+}  
+  </script>
+ </head>
+ <body>
+ 상품 업로드 
+ 
+<form action="up.cgi" method="post" enctype="multipart/form-data">
+			상품이미지 파일<input type="file" name="file" ><br>
+			상품명<input type='text' name='goods'/><br>
+			설명<br>
+			<textarea name="desc" rows="20" cols="70">
+			</textarea><br>
+			<input type="submit" name="up" value="ok">
+		</form>
+
+<p id="replace"></p>
+ </body>
+</html>

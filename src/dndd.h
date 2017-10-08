@@ -5,13 +5,12 @@ class Dndd : public HTMLServer
 {
 public:
 	Dndd();
-	std::string id, password;
-	int level;
+	std::string id, password, level;
 
 protected:
 	SqlQuery sq;
 	virtual void process();
 
 private:
-	void login();
+	void login(), signin(), upload();
 };
