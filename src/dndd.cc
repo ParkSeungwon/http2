@@ -25,6 +25,8 @@ void Dndd::login()
 		level = static_cast<string>((*it)[5]);
 		content_ = static_cast<string>((*it)[1]) + "님 반갑습니다.";
 	} else content_ = "log in failed";
+	cookie_["email"] = nameNvalue_["email"];
+	cookie_["level"] = "1";
 }
 
 void Dndd::signin()

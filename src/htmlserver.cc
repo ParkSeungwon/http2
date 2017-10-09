@@ -49,5 +49,9 @@ std::string HTMLServer::operator()(string s)
 	if(requested_document_ == "") requested_document_ = "index.html";
 	content_ = fileNhtml_[requested_document_];
 	process();//derived class should implement this-> set content_ & cookie
-	return header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
+	string cookie;
+	for(const auto& a : cookie_) 
+		cookie += "Set-Cookie:" + a.first + '=' + a.second + ";\r\n";
+	cookie_.clear();
+	return ok_ + cookie + header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
 }
