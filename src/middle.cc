@@ -17,28 +17,25 @@ void MiddleConn::set_result(string s)
 	lck_.lock();
 	s_ = s;
 	lck_.unlock();
+	ok_ = true;
 	cv_.notify_all();
 }
 
 
 string Middle::operator()(string s)
 {
+	cout << s << endl;
 	regex e{R"(Cookie:.*middleID=(\d+))"};
-	smatch m;
-	if(regex_search(s, m, e)) {//if already connected
-		int id = stoi(m[1].str());
-		idNconn_[id]->send(s);
-		return idNconn_[id]->recv();
-	} else {//first connected
-		string r;
-		idNconn_[++id_] = new MiddleConn{r, port_, "128.0.0.1"};
-		idNconn_[id_]->send(s);
-		unique_lock<mutex> lck{idNconn_[id_]->mtx_};
-		while(r == "") idNconn_[id_]->cv_.wait(lck);
-		cout << "sending" << endl << s << endl << "receiving" << endl << r;
-//		r.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
-		return r;
-	}
+	smatch m; int id;
+	if(regex_search(s, m, e)) id = stoi(m[1].str());//if already connected
+	else idNconn_[id = ++id_] = new MiddleConn{result_, port_, "localhost"};
+	idNconn_[id]->send(s);
+	unique_lock<mutex> lck{idNconn_[id]->mtx_};
+	while(!idNconn_[id]->ok_) idNconn_[id]->cv_.wait(lck);
+	idNconn_[id]->ok_ = false;
+	cout << "sending" << endl << s << endl << "receiving" << endl << result_;
+	result_.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
+	return result_;
 }
 
 Middle::~Middle()

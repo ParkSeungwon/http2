@@ -1,6 +1,5 @@
 #pragma once
 #include<map>
-#include<memory>
 #include"asyncqueue.h"
 #include"server.h"
 
@@ -10,6 +9,7 @@ public:
 	MiddleConn(std::string& s, int port = 2001, std::string ip = "127.0.0.1");
 	std::condition_variable cv_;
 	std::mutex mtx_;
+	bool ok_ = false;
 
 protected:
 	std::unique_lock<std::mutex> lck_;
@@ -28,6 +28,7 @@ public:
 
 protected:
 	static std::map<int, MiddleConn*> idNconn_;
+	std::string result_;
 
 private:
 	int id_ = 0;
