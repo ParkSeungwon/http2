@@ -7,9 +7,9 @@
 #include"htmlserver.h"
 using namespace std;
 
-static map<string, string> init()
-{//load webpages
-	map<string, string> tmp;
+map<string, string> HTMLServer::fileNhtml_;
+HTMLServer::HTMLServer()
+{
 	for(auto& a : getdir(".")) {//read html files in the current directory
 		size_t pos = a.first.find_last_of('.');
 		if(pos != string::npos) {
@@ -19,14 +19,11 @@ static map<string, string> init()
 				string s; char c;
 				ifstream f(a.first);
 				while(f >> noskipws >> c) s += c;
-				tmp[a.first] = s;
+				fileNhtml_[a.first] = s;
 			}
 		}
 	}
-	return tmp;
 }
-
-map<string, string> HTMLServer::fileNhtml_ = init();
 
 std::string HTMLServer::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
@@ -53,5 +50,7 @@ std::string HTMLServer::operator()(string s)
 	for(const auto& a : cookie_) 
 		cookie += "Set-Cookie:" + a.first + '=' + a.second + ";\r\n";
 	cookie_.clear();
-	return ok_ + cookie + header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
+	string r = ok_ + cookie + header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
+	cout << r.size() << " sent " << endl;
+	return r;
 }

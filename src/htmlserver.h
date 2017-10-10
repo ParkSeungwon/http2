@@ -5,6 +5,7 @@ using namespace std;
 
 class HTMLServer {
 public:
+	HTMLServer();
 	std::string operator()(std::string s);
 
 protected:
