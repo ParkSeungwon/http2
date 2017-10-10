@@ -7,9 +7,9 @@ class MiddleConn : public Client, public AsyncQueue<std::string>
 {
 public:
 	MiddleConn(std::string& s, int port = 2001, std::string ip = "127.0.0.1");
-	std::condition_variable cv_;
-	std::mutex mtx_;
-	bool ok_ = false;
+	static std::condition_variable cv_;
+	static std::mutex mtx_;
+	static bool ok_;
 
 protected:
 	std::unique_lock<std::mutex> lck_;
