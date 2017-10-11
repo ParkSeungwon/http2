@@ -34,6 +34,7 @@ void Middle::send(Packet p)
 Packet Middle::loop()
 {
 	while(1) this_thread::sleep_for(1s);
+	return Packet{0,0,""};
 }
 
 void Middle::sow(Packet p)
