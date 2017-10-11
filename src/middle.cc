@@ -1,36 +1,54 @@
 #include<iostream>
+#include<cassert>
 #include<regex>
 #include"middle.h"
 using namespace std;
 
-mutex MiddleConn::mtx_;
-condition_variable MiddleConn::cv_;
-bool MiddleConn::ok_ = false;
-map<int, MiddleConn*> Middle::idNconn_;
-Middle::Middle(int port) : port_{port} {}
-
-MiddleConn::MiddleConn(string& s, int port, string ip)
-	: s_{s}, Client{ip, port}, lck_{mtx_, defer_lock}, 
-	  AsyncQueue{bind(&Tcpip::recv, this), 
-			     bind(&MiddleConn::set_result, this, placeholders::_1)} 
+Middle::Middle(int outport, int inport)
+	: outport_{outport}, inport_{inport}, 
+	  influx_{bind(&Middle::recv, this), },
+	  outflux_{, bind(&Middle::send, this, placeholders::_1)}
 { }
 
-void MiddleConn::set_result(string s)
-{
-	lck_.lock();
-	s_ = s;
-	lck_.unlock();
-	ok_ = true;
-	cv_.notify_all();
+Packet Middle::recv()
+{//no need to lock around client_fd. cause async class provide it
+	client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
+	assert(client_fd != -1);// cout << "accept() error" << endl;
+	string s = Tcpip::recv();
+	cout << "receiving " << s << endl;
+	regex e{R"(Cookie:.*middleID=(\d+))"};
+	int id = 0;
+	if(regex_search(s, m, e)) id = stoi(m[1].str());//if already connected
+	return {client_fd, id, s};
 }
 
+void Middle::send(Packet p)
+{
+//	if(!p.id) p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
+	write(p.fd, p.content.data(), p.content.size()+1);
+	close(p.fd);
+}
+
+void Middle::start()
+{
+	while(1) this_thread::sleep_for(1s);
+}
+
+void Middle::alloc2clients(Packet p)
+{
+	if(!p.id) idNconn_[p.id = ++id_] = new Client{"localhost", inport_};
+	if(idNconn_[p.id]) idNconn_[p.id]->send(p.content);
+	string s = idNconn_[p.id]->recv();
+}
+
+Packet Middle::gather_from_clients()
+{
+	
+}
 
 string Middle::operator()(string s)
 {
-	cout << "receiving " << s << endl;
-	regex e{R"(Cookie:.*middleID=(\d+))"};
 	smatch m; int id;
-	if(regex_search(s, m, e)) id = stoi(m[1].str());//if already connected
 	else idNconn_[id = ++id_] = new MiddleConn{result_, port_, "localhost"};
 	idNconn_[id]->send(s);//should implement when id is not present
 	unique_lock<mutex> lck{idNconn_[id]->mtx_};

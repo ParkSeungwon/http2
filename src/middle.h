@@ -3,34 +3,28 @@
 #include"asyncqueue.h"
 #include"server.h"
 
-class MiddleConn : public Client, public AsyncQueue<std::string>
+struct Packet
 {
-public:
-	MiddleConn(std::string& s, int port = 2001, std::string ip = "127.0.0.1");
-	static std::condition_variable cv_;
-	static std::mutex mtx_;
-	static bool ok_;
-
-protected:
-	std::unique_lock<std::mutex> lck_;
-	std::string& s_;
-
-private:
-	void set_result(std::string s);
+	int fd, id;
+	std::string content;
 };
-	
-class Middle 
+
+class Middle : public Server
 {
 public:
-	Middle(int port = 2001);
+	Middle(int outport = 3000, int inport = 2001);
 	virtual ~Middle();
 	std::string operator()(std::string s);
+	void start();
 
 protected:
-	static std::map<int, MiddleConn*> idNconn_;
-	std::string result_;
+	AsyncQueue<Packet> influx_, outflux_;
+	std::map<int, Client*> idNconn_;
 
 private:
+	Packet recv();
+	void send(Packet p);
+	std::deque<Packet> q_;
+	const int inport_, outport_;
 	int id_ = 0;
-	const int port_;
 };
