@@ -14,8 +14,7 @@ class Middle : public Server
 public:
 	Middle(int outport = 3000, int inport = 2001);
 	virtual ~Middle();
-	std::string operator()(std::string s);
-	void start();
+	Packet loop();
 
 protected:
 	AsyncQueue<Packet> influx_, outflux_;
@@ -23,7 +22,7 @@ protected:
 
 private:
 	Packet recv();
-	void send(Packet p);
+	void send(Packet p), sow(Packet p);
 	std::deque<Packet> q_;
 	const int inport_, outport_;
 	int id_ = 0;
