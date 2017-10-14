@@ -23,6 +23,6 @@ protected:
 private:
 	Packet recv();
 	void send(Packet p), sow(Packet p);
-	const int inport_, outport_;
+	const int inport_;
 	int id_ = 0;
 };

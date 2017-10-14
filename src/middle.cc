@@ -6,7 +6,7 @@
 using namespace std;
 
 Middle::Middle(int outport, int inport)
-	: Server{outport}, outport_{outport}, inport_{inport}, 
+	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
 	  outflux_{bind(&Middle::loop, this), bind(&Middle::send, this, placeholders::_1)}
 { }
@@ -33,7 +33,8 @@ void Middle::send(Packet p)
 
 Packet Middle::loop()
 {
-	while(1) this_thread::sleep_for(1s);
+	this_thread::sleep_for(1s);
+	return Packet{0,0,""};
 }
 
 void Middle::sow(Packet p)
