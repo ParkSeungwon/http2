@@ -4,34 +4,34 @@
 #include <deque>
 #include <mutex>
 
-template <typename T> class AsyncQueue 
+template <typename T> class WaitQueue
+{
+public:
+	WaitQueue(std::function<void(T)> consumer);
+	WaitQueue(WaitQueue&& r);
+	virtual ~WaitQueue();
+	void push_back(T s);
+
+protected:
+	std::deque<T> q;
+	std::function<void(T)> consumer;
+	bool finish = false;
+	std::thread tho;
+	std::mutex mtx;
+	std::condition_variable cv;
+	void consume();
+};
+
+template <typename T> class AsyncQueue : public WaitQueue<T>
 {//for asyncronous connection
 public:
 	AsyncQueue(std::function<T()> provider, std::function<void(T)> consumer);
 	AsyncQueue(AsyncQueue&& r);
-	~AsyncQueue();
-	void push_back(T s);
+	virtual ~AsyncQueue();
 	
 protected:
-	std::deque<T> q;///<queue to send
 	std::function<T()> provider;///<auto respond func
-	std::function<void(T)> consumer;
-	bool finish = false;
-
-private:
-	std::thread thi, tho;
-	std::mutex mtx;
-	std::condition_variable cv;
 	void provide();
-	void consume();
-};
-
-template <typename T> class WaitQueue : public AsyncQueue<T>
-{//asyncqueue without provider, push_back from outside
-public:
-	WaitQueue(std::function<void(T)> f);
-	
-private:
-	T wait();
+	std::thread thi;
 };
 

@@ -8,37 +8,50 @@ using namespace std;
 
 template class AsyncQueue<std::string>;
 
-template <typename T> 
-AsyncQueue<T>::AsyncQueue(function<T()> provider, function<void(T)> consumer)
+template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {
-	this->provider = provider;
 	this->consumer = consumer;
-	thi = thread(&AsyncQueue::provide, this);
-	tho = thread(&AsyncQueue::consume, this);
+	tho = thread(&WaitQueue::consume, this);
 }
 
-template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r)
+template <typename T> 
+AsyncQueue<T>::AsyncQueue(function<T()> provider, function<void(T)> consumer) 
+	: WaitQueue<T>{consumer}
+{
+	this->provider = provider;
+	thi = thread(&AsyncQueue::provide, this);
+}
+
+template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
 {
 	q = move(r.q);
-	thi = move(r.thi);
 	tho = move(r.tho);
-	provider = move(r.provider);
 	consumer = move(r.consumer);
+}
+
+template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{move(r)}
+{
+	thi = move(r.thi);
+	provider = move(r.provider);
+}
+
+template<typename T> WaitQueue<T>::~WaitQueue()
+{
+	finish = true;
+	tho.join();
 }
 
 template <typename T> AsyncQueue<T>::~AsyncQueue()
 {
-	finish = true;
 	thi.join();
-	tho.join();
 }
 
 template <typename T> void AsyncQueue<T>::provide()
 {///recv->functor->q->notify to sendf
-	while(!finish) push_back(provider());
+	while(!WaitQueue<T>::finish) WaitQueue<T>::push_back(provider());
 }
 	
-template <typename T> void AsyncQueue<T>::consume()
+template <typename T> void WaitQueue<T>::consume()
 {
 	unique_lock<mutex> lck{mtx, defer_lock};
 	while(!finish) {
@@ -50,23 +63,13 @@ template <typename T> void AsyncQueue<T>::consume()
 	}
 }
 
-template <typename T> void AsyncQueue<T>::push_back(T s)
+template <typename T> void WaitQueue<T>::push_back(T s)
 {///asynchronous send, ->sendf()
 	unique_lock<mutex> lck{mtx};
 	q.push_back(s);
 	lck.unlock();
 	cv.notify_all();
 }
-
-template<typename T> WaitQueue<T>::WaitQueue(std::function<void(T)> f) 
-	: AsyncQueue<T>{bind(&WaitQueue<T>::wait, this), f}
-{}
-
-template<typename T>  T WaitQueue<T>::wait()
-{
-	while(!AsyncQueue<T>::finish) this_thread::sleep_for(1s);
-}
-
 
 static void init()
 {
