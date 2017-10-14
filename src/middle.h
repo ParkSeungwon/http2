@@ -14,10 +14,10 @@ class Middle : public Server
 public:
 	Middle(int outport = 3000, int inport = 2001);
 	virtual ~Middle();
-	Packet loop();//blank function
 
 protected:
-	AsyncQueue<Packet> influx_, outflux_;
+	AsyncQueue<Packet> influx_;
+	WaitQueue<Packet> outflux_;
 	std::map<int, Client*> idNconn_;
 
 private:

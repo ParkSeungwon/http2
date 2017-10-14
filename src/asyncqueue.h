@@ -16,12 +16,22 @@ protected:
 	std::deque<T> q;///<queue to send
 	std::function<T()> provider;///<auto respond func
 	std::function<void(T)> consumer;
+	bool finish = false;
 
 private:
 	std::thread thi, tho;
 	std::mutex mtx;
 	std::condition_variable cv;
-	bool finish = false;
 	void provide();
 	void consume();
 };
+
+template <typename T> class WaitQueue : public AsyncQueue<T>
+{//asyncqueue without provider, push_back from outside
+public:
+	WaitQueue(std::function<void(T)> f);
+	
+private:
+	T wait();
+};
+

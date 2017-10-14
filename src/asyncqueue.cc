@@ -58,7 +58,18 @@ template <typename T> void AsyncQueue<T>::push_back(T s)
 	cv.notify_all();
 }
 
+template<typename T> WaitQueue<T>::WaitQueue(std::function<void(T)> f) 
+	: AsyncQueue<T>{bind(&WaitQueue<T>::wait, this), f}
+{}
+
+template<typename T>  T WaitQueue<T>::wait()
+{
+	while(!AsyncQueue<T>::finish) this_thread::sleep_for(1s);
+}
+
+
 static void init()
 {
 	AsyncQueue<Packet> aq{[](){return Packet{0,0,""};}, [](Packet p){}};
+	WaitQueue<Packet> wq{[](Packet p){}};
 }

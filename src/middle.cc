@@ -8,7 +8,7 @@ using namespace std;
 Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
-	  outflux_{bind(&Middle::loop, this), bind(&Middle::send, this, placeholders::_1)}
+	  outflux_{bind(&Middle::send, this, placeholders::_1)}
 { }
 
 Packet Middle::recv()
@@ -31,12 +31,6 @@ void Middle::send(Packet p)
 	close(p.fd);
 }
 
-Packet Middle::loop()
-{
-	this_thread::sleep_for(1s);
-	return Packet{0,0,""};
-}
-
 void Middle::sow(Packet p)
 {
 	bool newly_connected = false;
@@ -45,7 +39,7 @@ void Middle::sow(Packet p)
 		newly_connected = true;
 	}
 	if(idNconn_[p.id]) idNconn_[p.id]->send(p.content);
-	string s = idNconn_[p.id]->recv();
+	p.content = idNconn_[p.id]->recv();
 	if(newly_connected) 
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
 	outflux_.push_back(p);
