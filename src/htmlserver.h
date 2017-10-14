@@ -16,7 +16,6 @@ protected:
 private:
 	std::string boundary_;
 	static std::map<std::string, std::string> fileNhtml_;
-	const std::string ok_ = "HTTP/1.1 200 OK\r\n";
-	const std::string header_ 
-		= "Content-Type: text/html; charset=utf-8\r\nContent-Length: ";
+	const std::string header_[3] = {"HTTP/1.1 200 OK\r\n", "Content-Type: ", "\r\nContent-Length: "};
+	const std::string mime_[2] = { "text/html; charset=utf-8", "image/jpeg" };
 };

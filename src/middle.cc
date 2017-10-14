@@ -38,7 +38,8 @@ void Middle::sow(Packet p)
 		idNconn_[p.id = ++id_] = new Client{"localhost", inport_};
 		newly_connected = true;
 	}
-	if(idNconn_[p.id]) idNconn_[p.id]->send(p.content);
+	if(!idNconn_[p.id]) return;//if there is no connection.->error
+	idNconn_[p.id]->send(p.content);
 	p.content = idNconn_[p.id]->recv();
 	if(newly_connected) 
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");

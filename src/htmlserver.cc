@@ -50,7 +50,9 @@ std::string HTMLServer::operator()(string s)
 	for(const auto& a : cookie_) 
 		cookie += "Set-Cookie:" + a.first + '=' + a.second + ";\r\n";
 	cookie_.clear();
-	string r = ok_ + cookie + header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
+	string r = header_[0] + cookie + header_[1] + 
+			mime_[requested_document_.find(".jpg") != string::npos]
+			+ header_[2] + to_string(content_.size()) + "\r\n\r\n" + content_;
 	cout << r.size() << " sent " << endl;
 	return r;
 }

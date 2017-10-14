@@ -6,10 +6,7 @@ all :
 PHONY : clean test
 
 clean :
-	rm obj/*.x obj/*.o  *.x obj/*.t
-
-ls :
-	echo $(EXE)
+	rm obj/*.?
 
 test : 
 	make -C obj/ test
