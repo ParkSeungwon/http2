@@ -40,13 +40,20 @@ void Dndd::index()
 	if(nameNvalue_.empty()) {//just page load, no submit click
 		if(id != "") if_logged();//if logged in
 	} else {//submit click
+		for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 		if(id == "") {//login attempt
 			if(!sq.select("회원", "where 이메일='" + nameNvalue_["email"] + "';"))
 				swap("replace\">", "replace\">No such ID");
 			else {
 				vector<string> v;
 				for(auto& a : sq) for(auto& b : a) v.push_back(b);
-				if(v[2] == nameNvalue_["password"]) {//login succeed
+				for(auto& a : v) cout << a << endl;
+				cout << v[2] << ':' << nameNvalue_["pass"]  << ':' << endl;
+				if(v[2] == nameNvalue_["pass"]) cout << "same" << endl;
+				else cout << "different" << endl;
+				for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
+				cout << v[2].size() << ' ' << nameNvalue_["pass"].size() << endl;
+				if(v[2] == nameNvalue_["pass"]) {//login succeed
 					id = v[0]; name = v[1]; password = v[2]; level = v[5];
 					if_logged();
 					assert(id != "");

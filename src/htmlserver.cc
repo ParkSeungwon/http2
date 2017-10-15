@@ -33,7 +33,7 @@ int HTMLServer::swap(string b, string a)
 std::string HTMLServer::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
 	nameNvalue_.clear();
-	cout << s << flush;
+//	cout << s << flush;
 	stringstream ss; ss << s; ss >> s;
 	if(s == "POST") {//parse request and header
 		ss >> requested_document_;
@@ -50,8 +50,7 @@ std::string HTMLServer::operator()(string s)
 	if(requested_document_ == "") requested_document_ = "index.html";
 	content_ = fileNhtml_[requested_document_];
 	process();//derived class should implement this-> set content_ & cookie
-	string r = header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
-	cout << r.size() << " sent " << endl;
-	return r;
+	cout << "content size : " << content_.size() << endl;
+	return header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
 }
 

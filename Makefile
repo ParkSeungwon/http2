@@ -5,7 +5,7 @@ all :
 PHONY : clean test
 
 clean :
-	rm obj/*.?
+	rm obj/*.? *.x
 
 test : 
 	make -C tst/
