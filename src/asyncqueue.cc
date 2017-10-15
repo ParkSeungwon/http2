@@ -6,7 +6,7 @@
 
 using namespace std;
 
-template class AsyncQueue<std::string>;
+template class AsyncQueue<Packet>;
 
 template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {
@@ -70,9 +70,10 @@ template <typename T> void WaitQueue<T>::push_back(T s)
 	lck.unlock();
 	cv.notify_all();
 }
-
-static void init()
-{
-	AsyncQueue<Packet> aq{[](){return Packet{0,0,""};}, [](Packet p){}};
-	WaitQueue<Packet> wq{[](Packet p){}};
-}
+//
+//static void init()
+//{
+//	//template class AsyncQueue<std::string>;
+//	AsyncQueue<Packet> aq{[](){return Packet{0,0,""};}, [](Packet p){}};
+//	//WaitQueue<Packet> wq{[](Packet p){}};
+//}

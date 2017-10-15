@@ -10,9 +10,10 @@ struct Packet
 };
 
 class Middle : public Server
-{
+{//middle server that will connect to html server, provide state to html server
 public:
 	Middle(int outport = 3000, int inport = 2001);
+	void start();
 	virtual ~Middle();
 
 protected:

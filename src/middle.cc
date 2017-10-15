@@ -32,21 +32,28 @@ void Middle::send(Packet p)
 }
 
 void Middle::sow(Packet p)
-{
+{//recv -> sow -> send
 	bool newly_connected = false;
-	if(!p.id) {
+	if(!p.id) {//rafting, same connection use same furrow(middle <-> htmlserver)
 		idNconn_[p.id = ++id_] = new Client{"localhost", inport_};
 		newly_connected = true;
 	}
-	if(!idNconn_[p.id]) return;//if there is no connection.->error
-	idNconn_[p.id]->send(p.content);
-	p.content = idNconn_[p.id]->recv();
-	if(newly_connected) 
+	if(!idNconn_[p.id]) return;//if there is no furrow -> error
+	idNconn_[p.id]->send(p.content);//sow to server
+	p.content = idNconn_[p.id]->recv();//reap from html server
+	if(newly_connected)//set id for the browser
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
-	outflux_.push_back(p);
+	outflux_.push_back(p);//sell to browser
 }
 
 Middle::~Middle()
 {
 	for(auto& a : idNconn_) delete a.second;
+}
+
+void Middle::start()
+{
+	string s;
+	cout << "starting middle server, enter \'end\' to end the server." << endl;
+	while(cin >> s) if(s == "end") break;
 }
