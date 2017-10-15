@@ -50,19 +50,8 @@ std::string HTMLServer::operator()(string s)
 	if(requested_document_ == "") requested_document_ = "index.html";
 	content_ = fileNhtml_[requested_document_];
 	process();//derived class should implement this-> set content_ & cookie
-	string r = header_[0] + set_cookie() + header_[1] + 
-			mime_[requested_document_.find(".jpg") != string::npos]
-			+ header_[2] + to_string(content_.size()) + "\r\n\r\n" + content_;
+	string r = header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
 	cout << r.size() << " sent " << endl;
 	return r;
-}
-
-string HTMLServer::set_cookie()
-{//manipulate map cookie_ to set cookie --> deprecated because of middle server
-	string cookie;
-	for(const auto& a : cookie_) 
-		cookie += "Set-Cookie:" + a.first + '=' + a.second + ";\r\n";
-	cookie_.clear();
-	return cookie;
 }
 

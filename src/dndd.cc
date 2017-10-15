@@ -44,13 +44,10 @@ void Dndd::index()
 			if(!sq.select("회원", "where 이메일='" + nameNvalue_["email"] + "';"))
 				swap("replace\">", "replace\">No such ID");
 			else {
-				auto it = sq.begin();
-				if((*it)[2] == nameNvalue_["password"]) {//login succeed
-					for(int i=0; i<6; i++) cout << (*it)[i] << ' ';
-					id = static_cast<string>((*it)[0]);
-					password = static_cast<string>((*it)[2]);
-					level = static_cast<string>((*it)[5]);
-					name = static_cast<string>((*it)[1]);
+				vector<string> v;
+				for(auto& a : sq) for(auto& b : a) v.push_back(b);
+				if(v[2] == nameNvalue_["password"]) {//login succeed
+					id = v[0]; name = v[1]; password = v[2]; level = v[5];
 					if_logged();
 					assert(id != "");
 					swap("replace\">", "replace\">" + id + "님 반갑습니다.");
