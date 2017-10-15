@@ -15,11 +15,9 @@ int main(int ac, char** av)
 	int port = ac < 2 ? 2001 : atoi(av[2]);
 	Client cl{host, port};
 	AsyncQueue<string> aq{bind(&Client::recv, &cl), f};//how beautiful
-	int j;
-	while(cin >> j) {
-		string s;
-		for(int i=0; i<j; i++) s += 'a';
-		cl.send(s + '\n');
+	string s;
+	while(cin >> s) {
+		cl.send(s + "\r\n\r\n");
 		if(s == "end") break;
 	}
 }

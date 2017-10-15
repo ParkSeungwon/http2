@@ -1,3 +1,4 @@
+#include<regex>
 #include<fstream>
 #include"dndd.h"
 using namespace std;
@@ -9,9 +10,26 @@ Dndd::Dndd()
 
 void Dndd::process()
 {
-	if(requested_document_ == "login.cgi") login();
-	else if(requested_document_ == "signin.cgi") signin();
-	else if(requested_document_ == "up.cgi") upload();
+	const char* rq[]
+		= {"login.cgi", "signin.cgi", "up.cgi", "index.html", "logo.jpg", ""};
+	int i;
+	for(i=0; i<6; i++) if(rq[i] == requested_document_) break;
+	switch(i) {
+		case 0: login(); break;
+		case 1: signin(); break;
+		case 2: upload(); break;
+		case 3: index(); break;
+		case 4: {
+					ofstream f("/tmp/tt");
+					f << content_ << endl;
+				}
+	}
+}
+
+void Dndd::index()
+{
+	regex e{R"((log_panel.+?>)[\s\S]+?<br>[\s\S]+?<br>)"};
+	if(id != "") content_ = regex_replace(content_, e, "$1<h3>" + id + " Hello</h3>");
 }
 	
 void Dndd::login()
@@ -23,10 +41,9 @@ void Dndd::login()
 		id = static_cast<string>((*it)[0]);
 		password = static_cast<string>((*it)[2]);
 		level = static_cast<string>((*it)[5]);
-		content_ = static_cast<string>((*it)[1]) + "님 반갑습니다.";
+		name = static_cast<string>((*it)[1]);
+		content_ = name + "님 반갑습니다.";
 	} else content_ = "log in failed";
-	cookie_["email"] = nameNvalue_["email"];
-	cookie_["level"] = "1";
 }
 
 void Dndd::signin()
@@ -37,13 +54,14 @@ void Dndd::signin()
 		sq.insert({nameNvalue_["email"], nameNvalue_["username"], nameNvalue_["password"], nameNvalue_["address"], nameNvalue_["tel"], "1"});
 		content_ = "가입완료";
 	}
+	cout << id << endl;
 }
 
 void Dndd::upload()
 {
 //	if(level != "" && stoi(level) < 2) return;
 	sq.select("상품", "limit 1");
-	sq.insert({"null", "zezeon@msn.com", nameNvalue_["desc"], nameNvalue_["goods"]});
+	sq.insert({"null", id, nameNvalue_["desc"], nameNvalue_["goods"]});
 	ofstream f("image/fdfd.jpg");
 	content_ = nameNvalue_["file"];
 }

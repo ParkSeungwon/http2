@@ -43,6 +43,7 @@ void Middle::sow(Packet p)
 	p.content = idNconn_[p.id]->recv();//reap from html server
 	if(newly_connected)//set id for the browser
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
+	cout << p.content << endl;
 	outflux_.push_back(p);//sell to browser
 }
 
