@@ -5,7 +5,7 @@
 #include <mutex>
 
 template <typename T> class WaitQueue
-{
+{//wait without polling until data is stored by push_back -> consume data 
 public:
 	WaitQueue(std::function<void(T)> consumer);
 	WaitQueue(WaitQueue&& r);
@@ -13,9 +13,10 @@ public:
 	void push_back(T s);
 
 protected:
+	bool finish = false;
+
 	std::deque<T> q;
 	std::function<void(T)> consumer;
-	bool finish = false;
 	std::thread tho;
 	std::mutex mtx;
 	std::condition_variable cv;
