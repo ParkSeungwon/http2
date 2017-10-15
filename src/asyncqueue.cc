@@ -6,8 +6,8 @@
 
 using namespace std;
 
-template class AsyncQueue<Packet>;//automatically create WaitQueue
-template class AsyncQueue<string>;
+template class AsyncQueue<Packet>;//automatically create WaitQueue object also
+template class AsyncQueue<string>;//prevent undefined reference
 
 template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {

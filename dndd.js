@@ -56,7 +56,7 @@ function login() {
 	};
 	replace.innerHTML = 'login';
 	$.post("login.cgi", json, function(data, status) {
-		if(data != "Login failed") {
+		if(data != "login failed") {
 			$(".input-group").hide();
 			var vs = data.split("\n");
 			email_ = vs[0];

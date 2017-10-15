@@ -28,7 +28,7 @@ HTMLServer::HTMLServer()
 std::string HTMLServer::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
 	nameNvalue_.clear();
-	cout << s << flush;
+//	cout << s << flush;
 	stringstream ss; ss << s; ss >> s;
 	if(s == "POST") {//parse request and header
 		ss >> requested_document_;
