@@ -25,10 +25,15 @@ HTMLServer::HTMLServer()
 	}
 }
 
+int HTMLServer::swap(string b, string a)
+{//child classes will use this to change content_
+	content_.replace(content_.find(b), b.size(), a);
+}
+
 std::string HTMLServer::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
 	nameNvalue_.clear();
-//	cout << s << flush;
+	cout << s << flush;
 	stringstream ss; ss << s; ss >> s;
 	if(s == "POST") {//parse request and header
 		ss >> requested_document_;

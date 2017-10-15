@@ -11,6 +11,7 @@ public:
 
 protected:
 	virtual void process() {}//child should implement this
+	int swap(std::string, std::string);
 	std::map<std::string, std::string> nameNvalue_, cookie_;//parameter& cookie
 	std::string content_, requested_document_;//set content_
 

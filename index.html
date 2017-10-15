@@ -13,7 +13,7 @@
     			email : email.value,
     			password : pass.value
     		}
-	    	$.post("login.cgi", logdata, function (data, status) {
+	    	$.post("index.html", logdata, function (data, status) {
 				replace.innerHTML = data;   		 		
    		 		if (data != "log in failed\n") {//\n!!!!!
     				$("input").attr('readonly', true);
@@ -126,11 +126,12 @@
 	font-family:'Malgun Gothic';
 	<div id="jb-top-sidebar">
 	<div id="log_panel" style="visibility:visible;">
-	email<input type="email" id="email"/><br>
-	password<input type="password" id="pass"/><br>
-		<input type="button" onclick="log()" id="loginbt" value="Login" class="LogInButton">
-		<a id="link" href="signin.html"><input type="button" id="signin" value="Sign in" class="SignInButon"></a>
-		
+		<form action="index.html" method="post">
+	email<input type="email" name="email"/><br>
+	password<input type="password" name="pass"/><br>
+		<input type="submit" id="loginbt" value="LogIn" class="LogInButton">
+		<a id="link" href="signin.html"><input type="button" id="signin" value="SignIn" class="SignInButon"></a>
+		</form>
       	</div>
     	<p id="replace"></p> 
       </div>

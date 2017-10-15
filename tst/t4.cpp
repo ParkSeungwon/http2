@@ -11,6 +11,10 @@ int main()
 	while(f >> noskipws >> c) s += c;
 	regex e{R"((log_panel.+?>)([\s\S]+?)(</div>))"};
 	s = regex_replace(s, e, "$1박승원$3");
-	cout << s;
+	cout << s << endl;
+
+	string t = "abcde";
+	t.replace(t.find("cd"), 2, "ak");
+	cout << t << endl;
 }
 
