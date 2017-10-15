@@ -5,34 +5,6 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
   </script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <script>
-    function log() {
-    	if(loginbt.value == 'Login') {
-    		if(email.value =='') return;
-    		var logdata = {
-    			email : email.value,
-    			password : pass.value
-    		}
-	    	$.post("index.html", logdata, function (data, status) {
-				replace.innerHTML = data;   		 		
-   		 		if (data != "log in failed\n") {//\n!!!!!
-    				$("input").attr('readonly', true);
-   		 			loginbt.value ='Logout';
-   		 			signin.value = 'sell item';
-   		 			link.href = 'upload.html';
-    			}
-    		} );
-    	} else {
-    		$("input").attr('readonly', false);
-    		loginbt.value ='Login';
-    		email.value = '';
-    		pass.value = '';
-    		link.href = 'signin.html';
-    		signin.value = 'signin';
-    		replace.innerHTML = '';
-    	}
-    }
-    </script>
   <style>
 	body
 	{
@@ -125,14 +97,14 @@
   <body>
 	font-family:'Malgun Gothic';
 	<div id="jb-top-sidebar">
-	<div id="log_panel" style="visibility:visible;">
 		<form action="index.html" method="post">
+	<div id="log_panel" style="visibility:visible;">
 	email<input type="email" name="email"/><br>
 	password<input type="password" name="pass"/><br>
-		<input type="submit" id="loginbt" value="LogIn" class="LogInButton">
-		<a id="link" href="signin.html"><input type="button" id="signin" value="SignIn" class="SignInButon"></a>
-		</form>
       	</div>
+		<input type="submit" id="loginbt" value="LOGIN" class="LogInButton">
+		<a id="link" href="signin.html"><input type="button" id="SignIn" value="SIGNIN" class="SignInButon"></a>
+		</form>
     	<p id="replace"></p> 
       </div>
       <div id="jb-content">

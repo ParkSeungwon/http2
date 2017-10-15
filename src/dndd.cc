@@ -29,8 +29,8 @@ void Dndd::process()
 
 void Dndd::if_logged()
 {
-	swap("LogIn", "LogOut");
-	swap("SignIn", "Sell Item");
+	swap("LOGIN", "LogOut");
+	swap("SIGNIN", "Sell Item");
 	swap("signin.html", "upload.html");
 	swap("visible", "hidden");
 }
@@ -47,21 +47,15 @@ void Dndd::index()
 			else {
 				vector<string> v;
 				for(auto& a : sq) for(auto& b : a) v.push_back(b);
-				for(auto& a : v) cout << a << endl;
-				cout << v[2] << ':' << nameNvalue_["pass"]  << ':' << endl;
-				if(v[2] == nameNvalue_["pass"]) cout << "same" << endl;
-				else cout << "different" << endl;
-				for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
-				cout << v[2].size() << ' ' << nameNvalue_["pass"].size() << endl;
 				if(v[2] == nameNvalue_["pass"]) {//login succeed
 					id = v[0]; name = v[1]; password = v[2]; level = v[5];
 					if_logged();
 					assert(id != "");
-					swap("replace\">", "replace\">" + id + "님 반갑습니다.");
+					swap("replace\">", "replace\">" + name + "님 반갑습니다.");
 				} else swap("replace\">", "replace\">Log in failed"); 
 			}
 		} else {//logout
-
+			id = name = password = level = "";
 		}
 	}
 }
