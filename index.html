@@ -1,34 +1,40 @@
 <html lang="ko">
-  <head>
-    <meta charset="utf-8">
-    <title>InterNet Shopping Mall</title>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
-  </script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="shop.css" />
-  </head>
-	
-  <body>
-	font-family:'Malgun Gothic';
-	<div id="jb-top-sidebar">
-		<form action="index.html" method="post">
-	<div id="log_panel" style="visibility:visible;">
-	email<input type="email" name="email"/><br>
-	password<input type="password" name="pass"/><br>
-      	</div>
-		<input type="submit" id="loginbt" value="LOGIN" class="LogInButton">
-		<a id="link" href="signin.html"><input type="button" id="SignIn" value="SIGNIN" class="SignInButon"></a>
-		</form>
-    	<p id="replace"></p> 
-      </div>
-      <div id="jb-content">
-        <h2>Team 5 Shopping Mall</h2>
-      </div>
-     
-      <div id="jb-SearchLayout">
-        <input type="text" name="" size="25" class="searchTBox">
-	<input type="button" name="" value="Search" class="searchButton">
-      </div>
-	  <img src="image/22" />
-  </body>
+	<head>
+		<meta charset="utf-8">
+		<title>InterNet Shopping Mall</title>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"> </script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="shop.css" />
+		<script>
+function f() {
+	$.post("search.cgi", {"search" : $("#search-box").val() }, function(data) {
+		$('#search-result').html( data);
+	});
+}
+		</script>
+	</head>
+
+	<body>
+		font-family:'Malgun Gothic';
+		<div id="jb-top-sidebar">
+			<form action="index.html" method="post">
+				<div id="log_panel" style="visibility:visible;">
+					email<input type="email" name="email"/><br>
+					password<input type="password" name="pass"/><br>
+				</div>
+				<input type="submit" id="loginbt" value="LOGIN" class="LogInButton">
+				<a id="link" href="signin.html"><input type="button" id="SignIn" value="SIGNIN" class="SignInButon"></a>
+			</form>
+			<p id="replace"></p> 
+		</div>
+		<div id="jb-content">
+			<h2>Team 5 Shopping Mall</h2>
+		</div>
+
+		<div id="jb-SearchLayout">
+			<input type="text"  size="25" class="searchTBox" id="search-box">
+			<button onclick="f()" class="searchButton">Serch</button>
+		</div>
+		<div id="search-result"></div>
+	</body>
 </html>

@@ -10,20 +10,36 @@ Dndd::Dndd()
 
 void Dndd::process()
 {
+	cout << requested_document_ << endl;
+	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	const char* rq[]
-		= {"index.html", "signin.cgi", "up.cgi", "index.html", "logo.jpg", ""};
+		= {"index.html", "signin.cgi", "up.cgi", "search.cgi", ""};
 	int i;
-	for(i=0; i<6; i++) if(rq[i] == requested_document_) break;
+	for(i=0; i<5; i++) if(rq[i] == requested_document_) break;
 	switch(i) {
 		case 0: index(); break;
 		case 1: signin(); break;
 		case 2: upload(); break;
-		case 3: index(); break;
-		case 4: {
-					ofstream f("/tmp/tt");
-					f << content_ << endl;
-				}
+		case 3: search(); break;
 	}
+}
+
+void Dndd::search()
+{
+	string s = nameNvalue_["search"];
+	sq.select("상품", 
+			"where 상품정보 like \'%" + s + "%\' or 상품명 like \'%" + s + "%\'");
+	content_ = "<table>";
+	for(auto& a : sq) {
+		content_ += "<tr><td><img src=\"";
+		ifstream f("image/" + (string)a[0]);
+		char c;
+		while(f >> noskipws >> c) content_ += c;
+		content_ += "\" height=300 width=300 /></td>";
+		for(auto& b : a) "<td>" + (string)b + "</td>";
+		content_ += "</tr>";
+	}
+	content_ += "</table>";
 }
 
 void Dndd::if_logged()
@@ -63,7 +79,7 @@ void Dndd::signin()
 		content_ = "아이디가 이미 존재합니다.";
 	else {//select will retrieve table structure, which makes inserting possible
 		sq.insert({nameNvalue_["email"], nameNvalue_["username"], nameNvalue_["password"], nameNvalue_["address"], nameNvalue_["tel"], "1"});
-		content_ = "가입완료";
+		content_ = "가입완료<br><a href=\"index.html\">메인화면으로</a><br>";
 	}
 	cout << id << endl;
 }
