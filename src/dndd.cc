@@ -1,5 +1,4 @@
 #include<cassert>
-#include<regex>
 #include<fstream>
 #include"dndd.h"
 using namespace std;
@@ -54,9 +53,7 @@ void Dndd::index()
 					swap("replace\">", "replace\">" + name + "님 반갑습니다.");
 				} else swap("replace\">", "replace\">Log in failed"); 
 			}
-		} else {//logout
-			id = name = password = level = "";
-		}
+		} else id = name = password = level = "";//logout
 	}
 }
 
@@ -73,10 +70,14 @@ void Dndd::signin()
 
 void Dndd::upload()
 {
-//	if(level != "" && stoi(level) < 2) return;
-	sq.select("상품", "limit 1");
-	sq.insert({"null", id, nameNvalue_["desc"], nameNvalue_["goods"]});
-	ofstream f("image/fdfd.jpg");
-	content_ = nameNvalue_["file"];
+	if(level != "" && stoi(level) < 2) return;
+	sq.select("상품", "order by 상품아이디 desc limit 1");
+	int max;
+	for(auto& a : sq) max = a[0];
+	sq.insert({to_string(max+1), id, nameNvalue_["desc"], nameNvalue_["goods"]});
+	ofstream f("image/" + to_string(max+1));
+	for(char& c : nameNvalue_["file"]) if(c == ' ') c = '+';//post parse contradiction
+	f << nameNvalue_["file"];
+	content_ = "uploaded<br> <a href=\"index.html\">메인화면으로</a><br>";
 }
 

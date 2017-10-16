@@ -1,0 +1,85 @@
+	body
+	{
+		background-image:url('background.jpg');
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		background-size: cover;
+	}
+	#bg {
+	  position: fixed; 
+	  top: 0; 
+	  left: 0; 
+	  min-width: 100%;
+	  min-height: 100%;
+	}
+      #jb-top-sidebar{
+	width: 100%;
+	padding: 5px;
+	margin-bottom: 15%;
+	color:#FFFFFF;
+	text-align:right
+	
+	}      
+      #jb-content {
+        width: 100%;
+	min-height: 10%;
+        margin-bottom: 20px;
+        
+
+	color:#FFFFFF;
+	font-size: 30pt;
+	text-align:center
+
+      }
+      #jb-SearchLayout {
+        clear: both;
+        padding: 5px;
+
+	margin-bottom: 15%;
+	text-align:center
+      }
+	.searchTBox {
+	padding: 2px 2px 2px 2px; 
+	text-align: left; 
+	border: #888888 1px solid;
+	background-color: #FFFFFF;
+
+	border-right: #888888 1px solid;
+	border-left: #888888 1px solid;
+	border-top: #888888 1px solid;
+	border-bottom: #888888 1px solid;
+       
+	color: #000000;
+	font-size: 30pt; 
+	font-weight: normal; 	
+	font-style: normal; 
+    }
+	.searchButton	
+	{
+		padding: 10px 30px 8px 30px; 
+		text-align: center; 
+
+		font-size: 20pt; 
+		font-weight: normal; 	
+		font-style: normal;
+	}
+	.LogInButton
+	{
+		padding: 10px 30px 8px 30px; 
+		text-align: center; 
+
+		font-size: 20pt; 
+		font-weight: normal; 	
+		font-style: normal;
+	}
+	
+	.SignInButton
+	{
+		padding: 10px 30px 8px 30px; 
+		text-align: center; 
+
+		font-size: 20pt; 
+		font-weight: normal; 	
+		font-style: normal;
+	}	
+

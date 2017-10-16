@@ -9,9 +9,9 @@
 
 function f() {
 	var jv = {
-		file : file_content,
 		goods : goods.value,
-		desc : desc.value
+		desc : desc.value,
+		file : file_content
 	};
 	$.post('up.cgi', jv, function (data) {
 		replace.innerHTML = data;
@@ -26,7 +26,7 @@ function f() {
       file_content = reader.result;
     
          };
-     //reader.readAsText(input.files[0]);
+    // reader.readAsText(input.files[0]);
     reader.readAsDataURL(input.files[0]);
   };
 </script>
