@@ -1,10 +1,10 @@
 #include"mysqldata.h"
 #include"htmlserver.h"
 
-class Dndd : public HTMLServer 
+class DnDD : public HTMLServer 
 {
 public:
-	Dndd();
+	DnDD();
 
 protected:
 	SqlQuery sq;
@@ -12,5 +12,6 @@ protected:
 
 private:
 	void login(), signin(), upload(), index(), if_logged(), search();
-	std::string id, password, level, name;
+	std::string id, password, level, name, db, table, book, page;
 };
+

@@ -1,40 +1,89 @@
-<html lang="ko">
-	<head>
-		<meta charset="utf-8">
-		<title>InterNet Shopping Mall</title>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"> </script>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-		<link rel="stylesheet" type="text/css" href="shop.css" />
-		<script>
-function f() {
-	$.post("search.cgi", {"search" : $("#search-box").val() }, function(data) {
-		$('#search-result').html( data);
-	});
-}
-		</script>
-	</head>
-
-	<body>
-		font-family:'Malgun Gothic';
-		<div id="jb-top-sidebar">
-			<form action="index.html" method="post">
-				<div id="log_panel" style="visibility:visible;">
-					email<input type="email" name="email"/><br>
-					password<input type="password" name="pass"/><br>
-				</div>
-				<input type="submit" id="loginbt" value="LOGIN" class="LogInButton">
-				<a id="link" href="signin.html"><input type="button" id="SignIn" value="SIGNIN" class="SignInButon"></a>
-			</form>
-			<p id="replace"></p> 
-		</div>
-		<div id="jb-content">
-			<h2>Team 5 Shopping Mall</h2>
-		</div>
-
-		<div id="jb-SearchLayout">
-			<input type="text"  size="25" class="searchTBox" id="search-box">
-			<button onclick="f()" class="searchButton">Serch</button>
-		</div>
-		<div id="search-result"></div>
-	</body>
+<html>
+ <head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+  <link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" rel="stylesheet" />
+  <link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" rel="stylesheet" />
+  <script crossorigin="anonymous" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+  </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js">
+  </script>
+  <style type="text/css" src="dndd.css"></style>
+  <script src="dndd.js"></script>
+  <title>
+   토론과 민주적인 의사 결정
+  </title>
+ </head>
+ <body>
+  <nav class="navbar navbar-inverse bg-primary">
+   <ul class="nav nav-pills" id="li">
+   </ul>
+  </nav>
+  <div class="container">
+   <div class="row">
+    <div class="col-sm-9">
+     <div class="jumbotron">
+      <h1 class="hero-header">
+       <small>
+        토론과 민주적인 의사 결정
+       </small>
+      </h1>
+     </div>
+    </div>
+    <div class="col-sm-3">
+     <p id="logged">
+     </p>
+     <div class="input-group">
+      <span class="input-group-addon">
+       Group
+      </span>
+      <input class="form-control" id="msg" name="msg" placeholder="Additional Info" type="text" />
+     </div>
+     <div class="input-group">
+      <span class="input-group-addon">
+       <i class="glyphicon glyphicon-user">
+       </i>
+      </span>
+      <input class="form-control" id="email" name="email" placeholder="Email" type="text" />
+     </div>
+     <div class="input-group">
+      <span class="input-group-addon">
+       <i class="glyphicon glyphicon-lock">
+       </i>
+      </span>
+      <input class="form-control" id="password" name="password" placeholder="Password" type="password" />
+      <div class="input-group-btn">
+       <button class="btn btn-default" onclick="login()">
+        <i class="glyphicon glyphicon-log-in">
+        </i>
+       </button>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="row">
+    <div class="list-group" id="replace">
+    </div>
+   </div>
+   <div class="row" id="page_content" >
+    <div class="col-md-9">
+     <div class="panel panel-primary">
+      <div class="panel-heading" id="mt">
+      </div>
+      <div class="panel-body" id='mb'>
+      </div>
+     </div>
+    </div>
+    <div class="col-md-3">
+     <div class="panel panel-default">
+      <div class="panel-heading">
+       Group
+      </div>
+      <div class="panel-body">
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </body>
 </html>

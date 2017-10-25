@@ -3,46 +3,40 @@
 #include"dndd.h"
 using namespace std;
 
-Dndd::Dndd()
+DnDD::DnDD()
 {
-	sq.connect("localhost", "shopping_mall", "shopping_mall", "shopping_mall");
+	sq.connect("localhost", "dndd", "dndddndd", db);
 }
 
-void Dndd::process()
+void DnDD::process()
 {
 	cout << requested_document_ << endl;
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
-	const char* rq[]
-		= {"index.html", "signin.cgi", "up.cgi", "search.cgi", ""};
-	int i;
-	for(i=0; i<5; i++) if(rq[i] == requested_document_) break;
-	switch(i) {
-		case 0: index(); break;
-		case 1: signin(); break;
-		case 2: upload(); break;
-		case 3: search(); break;
-	}
+	if(requested_document_ == "index.html") index();
+	else if(requested_document_ == "signin.cgi") signin();
+	else if(requested_document_ == "up.cgi") upload();
+	else if(requested_document_ == "search.cgi") search();
 }
 
-void Dndd::search()
+void DnDD::search()
 {
 	string s = nameNvalue_["search"];
 	sq.select("상품", 
 			"where 상품정보 like \'%" + s + "%\' or 상품명 like \'%" + s + "%\'");
-	content_ = "<table>";
+	content_ = "<table bgcolor=\"#005500\" border=\"1\">";
 	for(auto& a : sq) {
 		content_ += "<tr><td><img src=\"";
 		ifstream f("image/" + (string)a[0]);
 		char c;
 		while(f >> noskipws >> c) content_ += c;
 		content_ += "\" height=300 width=300 /></td>";
-		for(auto& b : a) "<td>" + (string)b + "</td>";
+		for(const string& b : a) content_ += "<td>" + b + "</td>";
 		content_ += "</tr>";
 	}
 	content_ += "</table>";
 }
 
-void Dndd::if_logged()
+void DnDD::if_logged()
 {
 	swap("LOGIN", "LogOut");
 	swap("SIGNIN", "Sell Item");
@@ -50,19 +44,20 @@ void Dndd::if_logged()
 	swap("visible", "hidden");
 }
 
-void Dndd::index()
+void DnDD::index()
 {
 	if(nameNvalue_.empty()) {//just page load, no submit click
 		if(id != "") if_logged();//if logged in
 	} else {//submit click
 		for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 		if(id == "") {//login attempt
-			if(!sq.select("회원", "where 이메일='" + nameNvalue_["email"] + "';"))
+			if(!sq.connect("localhost", "dndd", "dndddndd", nameNvalue_["group"])) return;
+			if(!sq.select("Users", "where email='" + nameNvalue_["id"] + "' order by date desc limit 1"))
 				swap("replace\">", "replace\">No such ID");
 			else {
 				vector<string> v;
 				for(auto& a : sq) for(auto& b : a) v.push_back(b);
-				if(v[2] == nameNvalue_["pass"]) {//login succeed
+				if(v[1] == sq.password(nameNvalue_["pass"])) {//login succeed
 					id = v[0]; name = v[1]; password = v[2]; level = v[5];
 					if_logged();
 					assert(id != "");
@@ -73,7 +68,7 @@ void Dndd::index()
 	}
 }
 
-void Dndd::signin()
+void DnDD::signin()
 {//sq.select returns row count
 	if(sq.select("회원", "where 이메일='" + nameNvalue_["email"] + "';"))
 		content_ = "아이디가 이미 존재합니다.";
@@ -84,11 +79,11 @@ void Dndd::signin()
 	cout << id << endl;
 }
 
-void Dndd::upload()
+void DnDD::upload()
 {
-	if(level != "" && stoi(level) < 2) return;
+	if(level != "" && stoi(level) < 2 && nameNvalue_["desc"].size() < 2) return;
 	sq.select("상품", "order by 상품아이디 desc limit 1");
-	int max;
+	int max = 1;
 	for(auto& a : sq) max = a[0];
 	sq.insert({to_string(max+1), id, nameNvalue_["desc"], nameNvalue_["goods"]});
 	ofstream f("image/" + to_string(max+1));
