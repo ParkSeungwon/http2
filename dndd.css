@@ -15,3 +15,11 @@ width:27%; float:right; padding:1%; }
 section { width:67%; float:left; padding:2%; }
 footer { background-color:black; color:white; clear:both;
 text-align:center; padding:5px;	} 
+
+img {
+      width: 70%;
+      margin: auto;
+  }
+  .carousel-indicators .active{
+    background-color: #f00;
+}

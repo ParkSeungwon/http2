@@ -1,11 +1,12 @@
 #include<cassert>
 #include<fstream>
+#include<regex>
 #include"dndd.h"
 using namespace std;
 
 DnDD::DnDD()
 {
-	sq.connect("localhost", "dndd", "dndddndd", db);
+	sq.connect("localhost", "dndd", "dndddndd", "dndd");
 }
 
 void DnDD::process()
@@ -13,6 +14,7 @@ void DnDD::process()
 	cout << requested_document_ << endl;
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
+	else if(requested_document_ == "main.html") mn();
 	else if(requested_document_ == "signin.cgi") signin();
 	else if(requested_document_ == "up.cgi") upload();
 	else if(requested_document_ == "search.cgi") search();
@@ -46,25 +48,54 @@ void DnDD::if_logged()
 
 void DnDD::index()
 {
-	if(nameNvalue_.empty()) {//just page load, no submit click
-		if(id != "") if_logged();//if logged in
-	} else {//submit click
-		for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
-		if(id == "") {//login attempt
-			if(!sq.connect("localhost", "dndd", "dndddndd", nameNvalue_["group"])) return;
-			if(!sq.select("Users", "where email='" + nameNvalue_["id"] + "' order by date desc limit 1"))
-				swap("replace\">", "replace\">No such ID");
-			else {
-				vector<string> v;
-				for(auto& a : sq) for(auto& b : a) v.push_back(b);
-				if(v[1] == sq.password(nameNvalue_["pass"])) {//login succeed
-					id = v[0]; name = v[1]; password = v[2]; level = v[5];
-					if_logged();
-					assert(id != "");
-					swap("replace\">", "replace\">" + name + "님 반갑습니다.");
-				} else swap("replace\">", "replace\">Log in failed"); 
+	ifstream f("carousel.txt");
+	int n; string s; vector<string> v[3];
+	f >> n;
+	getline(f, s);
+	for(int i=0; i<n; i++) {
+		for(int j=0; j<3; j++) {
+			getline(f, s);
+			v[j].push_back(s);
+		}
+	}
+	swap("CAROUSEL", carousel(v[0], v[1], v[2]));
+}
+
+void DnDD::mn()
+{
+	if(nameNvalue_["db"] != "")//if first connection -> set database
+		sq.connect("localhost", "dndd", "dndddndd", db = nameNvalue_["db"]);
+	vector<string> v = sq.show_tables();//navbar setting
+	string t;
+	for(auto s : v) 
+		if(s != "Users" && s != "Vote" && s != "Follow")
+			t += "<li><a href=\"main.html?field=" + s + "\">" + s + "</a></li>"; 
+	swap("NAVITEM", t); t = "";
+
+	if(nameNvalue_["email"] != "") {//if login attempt
+		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
+		v.clear();
+		for(auto a : sq) for(auto b : a) v.push_back(b);
+		if(v[1] == sq.encrypt(nameNvalue_["pwd"])) id=v[0], level=v[2], name=v[3];
+	}
+	regex e{R"(<form[\s\S]+?</form>)"};
+	if(id != "") content_ = regex_replace(content_, e, name + "님 레벨" + level +"으로 로그인되었습니다.");
+
+	if(nameNvalue_["field"] != "") {//if navbar select
+		sq.select(table = nameNvalue_["field"], "where title <> \'코멘트임.\' order by num desc, page, date, edit desc");
+		sq.group_by("email", "date");
+		for(auto& a : sq) {
+			v.clear();
+			for(auto b : a) v.push_back(b);
+			if(a[1] == "0") {//if book
+				t += "<div class=\"panel-heading\"><a href=\"." + v[0];
+				t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>";
+			} else {
+				t += "<div class=\"panel-body collapse ";
+				t += v[0] + "\">&nbsp;&nbsp;" + v[1] + ". " + v[3] + "</div>";
 			}
-		} else id = name = password = level = "";//logout
+		}
+		swap("PANEL", t);
 	}
 }
 

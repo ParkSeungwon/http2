@@ -1,7 +1,7 @@
 #include"mysqldata.h"
-#include"htmlserver.h"
+#include"bootstrap.h"
 
-class DnDD : public HTMLServer 
+class DnDD : public BootStrapServer
 {
 public:
 	DnDD();
@@ -11,7 +11,7 @@ protected:
 	virtual void process();
 
 private:
-	void login(), signin(), upload(), index(), if_logged(), search();
-	std::string id, password, level, name, db, table, book, page;
+	void login(), signin(), upload(), index(), if_logged(), search(), mn();
+	std::string id, level, name, db, table, book, page;
 };
 
