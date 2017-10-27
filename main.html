@@ -11,25 +11,11 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> 
 <script>
 function f() {
-	var json_data = {
-		email : email.value,
-		password : password.value,
-		verify : verify.value,
-		address : address.value,
-		tel : tel.value,
-		username : name_.value,
-		check : check.value
-	};
-	replace.innerHTML = "HELLO";
-	if (json_data[password] == json_data[verify]) {
-		$.post("signin.cgi", json_data, function (data, status) {
-			replace.innerHTML = data;
-		});
-	} else {
-		replace.innerHTML ='password not match';
-	}
+	$.post("search", {search : $("#search-text").val()}, function (data, status) {
+		$('.panel').html(data);
+	});
 }  
-  </script>
+</script>
   <style type="text/css">
   .jumbotron {
     background: transparent url("lg.png");
@@ -65,7 +51,7 @@ function f() {
 				 NAVITEM
 			 </ul>
 		 </nav>
-
+		<input type="text" id="search-text" /> <button onclick="f()">Search</button>
 		 <div class="panel panel-info">
 			 PANEL
 		 </div>

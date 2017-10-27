@@ -16,34 +16,7 @@ void DnDD::process()
 	if(requested_document_ == "index.html") index();
 	else if(requested_document_ == "main.html") mn();
 	else if(requested_document_ == "signin.cgi") signin();
-	else if(requested_document_ == "up.cgi") upload();
-	else if(requested_document_ == "search.cgi") search();
-}
-
-void DnDD::search()
-{
-	string s = nameNvalue_["search"];
-	sq.select("상품", 
-			"where 상품정보 like \'%" + s + "%\' or 상품명 like \'%" + s + "%\'");
-	content_ = "<table bgcolor=\"#005500\" border=\"1\">";
-	for(auto& a : sq) {
-		content_ += "<tr><td><img src=\"";
-		ifstream f("image/" + (string)a[0]);
-		char c;
-		while(f >> noskipws >> c) content_ += c;
-		content_ += "\" height=300 width=300 /></td>";
-		for(const string& b : a) content_ += "<td>" + b + "</td>";
-		content_ += "</tr>";
-	}
-	content_ += "</table>";
-}
-
-void DnDD::if_logged()
-{
-	swap("LOGIN", "LogOut");
-	swap("SIGNIN", "Sell Item");
-	swap("signin.html", "upload.html");
-	swap("visible", "hidden");
+	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 }
 
 void DnDD::index()
@@ -61,42 +34,73 @@ void DnDD::index()
 	swap("CAROUSEL", carousel(v[0], v[1], v[2]));
 }
 
+vector<string> DnDD::tables()
+{//return data tables
+	vector<string> v;
+	auto tb = sq.show_tables();
+	for(auto s : tb) if(s != "Users" && s != "Vote" && s != "Follow") v.push_back(s);
+	return v;
+}
+
+string DnDD::search(string s)
+{//return search result as a boot strap panel string
+	vector<string> v = tables();
+	string t;
+	for(int i=1; i<v.size(); i++) t += " union select * from " + v[i] + " where title like \'%" + s + "%\' and title <> \'코멘트임.\'";
+	sq.select(v[0], "where title like \'%" + s + "%\' and title <> \'코멘트임.\'"+ t); 
+	t = "";
+	sq.group_by("email", "date");
+	for(auto& a : sq) {
+		v.clear();
+		for(auto& b : a) v.push_back(b);
+		t += "<div class=\"panel-body\">" + v[3] + "</div>";
+	}
+	return t;
+}
+
+string DnDD::field(string s)
+{//return table contents as bootstrap panel string, set table variable
+	vector<string> v;
+	string t;
+	sq.select(s, "where title <> \'코멘트임.\' order by num desc, page, date, edit desc");
+	sq.group_by("email", "date");
+	for(auto& a : sq) {
+		v.clear();
+		for(auto b : a) v.push_back(b);
+		if(a[1] == "0") {//if book
+			t += "<div class=\"panel-heading\"><a href=\"." + v[0];
+			t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>";
+		} else {
+			t += "<div class=\"panel-body collapse ";
+			t += v[0] + "\">&nbsp;&nbsp;" + v[1] + ". " + v[3] + "</div>";
+		}
+	} 
+	return t;
+}
+
+
 void DnDD::mn()
-{
-	if(nameNvalue_["db"] != "")//if first connection -> set database
-		sq.connect("localhost", "dndd", "dndddndd", db = nameNvalue_["db"]);
-	vector<string> v = sq.show_tables();//navbar setting
+{//main.html
+	if(nameNvalue_["db"] != "") {//if first connection -> set database
+		sq.connect("localhost", "dndd", "dndddndd", nameNvalue_["db"]);
+		if(nameNvalue_["db"] != db) db = nameNvalue_["db"], id = level = name = "";
+	}
+	vector<string> v = tables();//navbar setting
 	string t;
 	for(auto s : v) 
-		if(s != "Users" && s != "Vote" && s != "Follow")
-			t += "<li><a href=\"main.html?field=" + s + "\">" + s + "</a></li>"; 
+		t += "<li><a href=\"main.html?field=" + s + "\">" + s + "</a></li>"; 
 	swap("NAVITEM", t); t = "";
 
-	if(nameNvalue_["email"] != "") {//if login attempt
+	if(nameNvalue_["field"] != "") swap("PANEL", field(table = nameNvalue_["field"]));
+	else if(nameNvalue_["email"] != "") {//if login attempt
 		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
 		v.clear();
 		for(auto a : sq) for(auto b : a) v.push_back(b);
 		if(v[1] == sq.encrypt(nameNvalue_["pwd"])) id=v[0], level=v[2], name=v[3];
 	}
+
 	regex e{R"(<form[\s\S]+?</form>)"};
 	if(id != "") content_ = regex_replace(content_, e, name + "님 레벨" + level +"으로 로그인되었습니다.");
-
-	if(nameNvalue_["field"] != "") {//if navbar select
-		sq.select(table = nameNvalue_["field"], "where title <> \'코멘트임.\' order by num desc, page, date, edit desc");
-		sq.group_by("email", "date");
-		for(auto& a : sq) {
-			v.clear();
-			for(auto b : a) v.push_back(b);
-			if(a[1] == "0") {//if book
-				t += "<div class=\"panel-heading\"><a href=\"." + v[0];
-				t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>";
-			} else {
-				t += "<div class=\"panel-body collapse ";
-				t += v[0] + "\">&nbsp;&nbsp;" + v[1] + ". " + v[3] + "</div>";
-			}
-		}
-		swap("PANEL", t);
-	}
 }
 
 void DnDD::signin()
