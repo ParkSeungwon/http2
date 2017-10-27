@@ -10,11 +10,14 @@ using namespace std;
 map<string, string> HTMLServer::fileNhtml_;
 HTMLServer::HTMLServer()
 {
+	const char *load[] = {"html", "js", "css", "jpg", "png", "jpeg"};
 	for(auto& a : getdir(".")) {//read html files in the current directory
 		size_t pos = a.first.find_last_of('.');
 		if(pos != string::npos) {
 			string ext = a.first.substr(pos+1);
-			if(ext == "html" || ext == "js" || ext == "css" || ext == "jpg") {
+			bool ok = false;
+			for(auto* s : load) if(s == ext) ok = true;
+			if(ok) {
 				cout << "loading " << a.first << endl;
 				string s; char c;
 				ifstream f(a.first);
@@ -25,9 +28,14 @@ HTMLServer::HTMLServer()
 	}
 }
 
-int HTMLServer::swap(string b, string a)
+void HTMLServer::swap(string b, string a)
 {//child classes will use this to change content_
 	content_.replace(content_.find(b), b.size(), a);
+}
+
+void HTMLServer::append(string a, string b)
+{
+	content_.insert(content_.find(a) + a.size(), b);
 }
 
 std::string HTMLServer::operator()(string s) 

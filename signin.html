@@ -9,27 +9,6 @@
 
 <!-- Latest compiled JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> 
-<script>
-function f() {
-	var json_data = {
-		email : email.value,
-		password : password.value,
-		verify : verify.value,
-		address : address.value,
-		tel : tel.value,
-		username : name_.value,
-		check : check.value
-	};
-	replace.innerHTML = "HELLO";
-	if (json_data[password] == json_data[verify]) {
-		$.post("signin.cgi", json_data, function (data, status) {
-			replace.innerHTML = data;
-		});
-	} else {
-		replace.innerHTML ='password not match';
-	}
-}  
-  </script>
   <style type="text/css">
   .jumbotron {
     background: transparent url("lg.png");
@@ -47,42 +26,42 @@ function f() {
     <p>그룹 설명</p>
   </div>
 </div>
-  <form class="form-horizontal">
+  <form class="form-horizontal" action="signin.html" method="post">
   <div class="form-group">
     <label class="control-label col-sm-2" for="email">Email:</label>
     <div class="col-sm-9">
-      <input type="email" class="form-control" id="email" placeholder="Enter email">
+      <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
     </div>
   </div>
   <div class="form-group">
     <label class="control-label col-sm-2" for="password">Password:</label>
     <div class="col-sm-9">
-      <input type="password" class="form-control" id="password" placeholder="Enter password">
+      <input type="password" class="form-control" id="password" name="password" placeholder="Enter password">
     </div>
   </div>
 <div class="form-group">
     <label class="control-label col-sm-2" for="verify">verify:</label>
     <div class="col-sm-9">
-      <input type="password" class="form-control" id="verify" placeholder="Enter password">
+      <input type="password" class="form-control" id="verify" name="verify" placeholder="Enter password">
     </div>
   </div>
   <div class="form-group">
-    <label class="control-label col-sm-2" for="name_">Name:</label>
+    <label class="control-label col-sm-2" for="username">Name:</label>
     <div class="col-sm-9">
-      <input type="text" class="form-control" id="name_" placeholder="Enter your name">
+      <input type="text" class="form-control" id="username" name="username" placeholder="Enter your name">
     </div>
   </div>
   
   <div class="form-group">
     <label class="control-label col-sm-2" for="address">Adress:</label>
     <div class="col-sm-9">
-      <input type="text" class="form-control" id="address" placeholder="Enter address">
+      <input type="text" class="form-control" id="address" name="address" placeholder="Enter address">
     </div>
   </div>
   <div class="form-group">
     <label class="control-label col-sm-2" for="tel">Tel:</label>
     <div class="col-sm-9">
-      <input type="text" class="form-control" id="tel" placeholder="Enter telephone number">
+      <input type="text" class="form-control" id="tel" name="tel" placeholder="Enter telephone number">
     </div>
   </div>
     
@@ -90,7 +69,7 @@ function f() {
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-9">
       <div class="checkbox">
-        <label><input type="checkbox" id="check"> Log in with this ID</label>
+        <label><input type="checkbox" id="check" name="check" value="check"> Log in with this ID</label>
       </div>
     </div>
   </div>
@@ -100,5 +79,6 @@ function f() {
     </div>
   </div>
 </form> 
+REPLACE
 </body>
 </html>

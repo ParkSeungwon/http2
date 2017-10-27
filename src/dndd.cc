@@ -15,7 +15,7 @@ void DnDD::process()
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
 	else if(requested_document_ == "main.html") mn();
-	else if(requested_document_ == "signin.cgi") signin();
+	else if(requested_document_ == "signin.html") signin();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 }
 
@@ -59,7 +59,7 @@ string DnDD::search(string s)
 }
 
 string DnDD::field(string s)
-{//return table contents as bootstrap panel string, set table variable
+{//return table contents as bootstrap panel string
 	vector<string> v;
 	string t;
 	sq.select(s, "where title <> \'코멘트임.\' order by num desc, page, date, edit desc");
@@ -105,12 +105,22 @@ void DnDD::mn()
 
 void DnDD::signin()
 {//sq.select returns row count
-	if(sq.select("회원", "where 이메일='" + nameNvalue_["email"] + "';"))
-		content_ = "아이디가 이미 존재합니다.";
+	if(nameNvalue_.empty()) return;
+	if(nameNvalue_["password"] != nameNvalue_["verify"])
+		swap("REPLACE", "password not match");
+	else if(sq.select("Users", "where email='" + nameNvalue_["email"] + "';"))
+		swap("REPLACE", "아이디가 이미 존재합니다.");
 	else {//select will retrieve table structure, which makes inserting possible
-		sq.insert({nameNvalue_["email"], nameNvalue_["username"], nameNvalue_["password"], nameNvalue_["address"], nameNvalue_["tel"], "1"});
-		content_ = "가입완료<br><a href=\"index.html\">메인화면으로</a><br>";
+		sq.insert({nameNvalue_["email"], sq.encrypt(nameNvalue_["password"]), "1", nameNvalue_["username"], nameNvalue_["tel"], sq.now()});
+		if(nameNvalue_["check"] != "") 
+			id = nameNvalue_["email"], level = "1", name = nameNvalue_["username"];
+		swap("REPLACE", "가입완료<br><a href=\"main.html\">메인화면으로</a><br>");
 	}
+
+	const char *append_str[]//to remember user input
+		= {"email", "password", "verify", "username", "address", "tel"};
+	for(string s : append_str) 
+		append("id=\"" + s + '\"', " value=\"" + nameNvalue_[s] + '\"');
 	cout << id << endl;
 }
 
