@@ -143,6 +143,9 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
+	swap("TITLE", v[3]);
+	for(auto i = v[4].find('\"'); i != string::npos; i = v[4].find('\"', i)) 
+		v[4].replace(i, 1, "%34");
 	swap("MAINTEXT", v[4]);
 }
 
