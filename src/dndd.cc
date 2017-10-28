@@ -144,9 +144,7 @@ void DnDD::pg()
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	swap("TITLE", v[3]);
-	for(auto i = v[4].find('\"'); i != string::npos; i = v[4].find('\"', i)) 
-		v[4].replace(i, 1, "%34");
-	swap("MAINTEXT", v[4]);
+	swap("MAINTEXT", quote_encode(v[4]));
 }
 
 int DnDD::maxpage(string table, string book)
@@ -155,5 +153,15 @@ int DnDD::maxpage(string table, string book)
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	return stoi(v[1]);
+}
+
+string DnDD::quote_encode(string s)
+{
+	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
+		s.replace(i, 1, "%34");
+	if(s.find('<') > 10) 
+		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
+			s.replace(i, 1, "<br>");
+	return s;
 }
 
