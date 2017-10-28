@@ -158,7 +158,7 @@ int DnDD::maxpage(string table, string book)
 string DnDD::quote_encode(string s)
 {
 	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
-		s.replace(i, 1, "%34");
+		s.replace(i, 1, "\'");
 	if(s.find('<') > 10) 
 		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
 			s.replace(i, 1, "<br>");
