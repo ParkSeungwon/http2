@@ -17,6 +17,7 @@ void DnDD::process()
 	else if(requested_document_ == "main.html") mn();
 	else if(requested_document_ == "signin.html") signin();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
+	else if(requested_document_ == "page.html") pg();
 }
 
 void DnDD::index()
@@ -44,16 +45,18 @@ vector<string> DnDD::tables()
 
 string DnDD::search(string s)
 {//return search result as a boot strap panel string
-	vector<string> v = tables();
+	vector<string> v1 = tables(), v2;
 	string t;
-	for(int i=1; i<v.size(); i++) t += " union select * from " + v[i] + " where title like \'%" + s + "%\' and title <> \'코멘트임.\'";
-	sq.select(v[0], "where title like \'%" + s + "%\' and title <> \'코멘트임.\'"+ t); 
-	t = "";
-	sq.group_by("email", "date");
-	for(auto& a : sq) {
-		v.clear();
-		for(auto& b : a) v.push_back(b);
-		t += "<div class=\"panel-body\">" + v[3] + "</div>";
+	for(string table : v1) {
+		sq.select(table, "where title like \'%" + s + "%\' and title <> \'코멘트임.\' order by num desc, page, edit desc" ); 
+		sq.group_by("email", "date");
+		for(auto& a : sq) {
+			v2.clear();
+			for(auto& b : a) v2.push_back(b);
+			t += "<div class=\"panel-body\"><a href=\"page.html?table=" + table;
+			t += "&book=" + v2[0] + "&page=" + v2[1] + "\">" + table + ' ' + v2[0];
+			t += '.' + v2[1] + ". " + v2[3] + "</a></div>\n";
+		}
 	}
 	return t;
 }
@@ -69,10 +72,11 @@ string DnDD::field(string s)
 		for(auto b : a) v.push_back(b);
 		if(a[1] == "0") {//if book
 			t += "<div class=\"panel-heading\"><a href=\"." + v[0];
-			t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>";
+			t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>\n";
 		} else {
-			t += "<div class=\"panel-body collapse ";
-			t += v[0] + "\">&nbsp;&nbsp;" + v[1] + ". " + v[3] + "</div>";
+			t += "<div class=\"panel-body collapse " + v[0];
+			t += "\">&nbsp;&nbsp;<a href=\"page.html?table=" + s + "&book=" + v[0];
+			t += "&page=" + v[1] + "\">" + v[1] + ". " + v[3] + "</a></div>\n";
 		}
 	} 
 	return t;
@@ -87,8 +91,7 @@ void DnDD::mn()
 	}
 	vector<string> v = tables();//navbar setting
 	string t;
-	for(auto s : v) 
-		t += "<li><a href=\"main.html?field=" + s + "\">" + s + "</a></li>"; 
+	for(auto s : v) t += "<li><a href=\"main.html?field=" +s+ "\">" +s+ "</a></li>"; 
 	swap("NAVITEM", t); t = "";
 
 	if(nameNvalue_["field"] != "") swap("PANEL", field(table = nameNvalue_["field"]));
@@ -124,16 +127,30 @@ void DnDD::signin()
 	cout << id << endl;
 }
 
-void DnDD::upload()
+void DnDD::pg()
 {
-	if(level != "" && stoi(level) < 2 && nameNvalue_["desc"].size() < 2) return;
-	sq.select("상품", "order by 상품아이디 desc limit 1");
-	int max = 1;
-	for(auto& a : sq) max = a[0];
-	sq.insert({to_string(max+1), id, nameNvalue_["desc"], nameNvalue_["goods"]});
-	ofstream f("image/" + to_string(max+1));
-	for(char& c : nameNvalue_["file"]) if(c == ' ') c = '+';//post parse contradiction
-	f << nameNvalue_["file"];
-	content_ = "uploaded<br> <a href=\"index.html\">메인화면으로</a><br>";
+	table = nameNvalue_["table"];
+	book = nameNvalue_["book"];
+	page = nameNvalue_["page"]; 
+	int max_page = maxpage(table, book);
+	int ipage = stoi(page);
+
+	swap("FIRST", table + "&book=" + book + "&page=0");//set buttons
+	swap("PREV", table + "&book=" + book + "&page=" + to_string(ipage ? ipage-1 : 0));
+	swap("NEXT", table + "&book=" + book + "&page=" + to_string(ipage == max_page ? max_page : ipage + 1));
+	swap("LAST", table + "&book=" + book + "&page=" + to_string(max_page));
+
+	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
+	vector<string> v;
+	for(auto& a : sq) for(string s : a) v.push_back(s);
+	swap("MAINTEXT", v[4]);
+}
+
+int DnDD::maxpage(string table, string book)
+{
+	sq.select(table, "where num=" + book + " order by page desc limit 1");
+	vector<string> v;
+	for(auto& a : sq) for(string s : a) v.push_back(s);
+	return stoi(v[1]);
 }
 
