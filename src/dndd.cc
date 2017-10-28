@@ -93,9 +93,9 @@ void DnDD::mn()
 	string t;
 	for(auto s : v) t += "<li><a href=\"main.html?field=" +s+ "\">" +s+ "</a></li>"; 
 	swap("NAVITEM", t); t = "";
-
-	if(nameNvalue_["field"] != "") swap("PANEL", field(table = nameNvalue_["field"]));
-	else if(nameNvalue_["email"] != "") {//if login attempt
+	table = nameNvalue_["field"] == "" ? v[0] : nameNvalue_["field"];
+	swap("PANEL", field(table));
+	if(nameNvalue_["email"] != "") {//if login attempt
 		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
 		v.clear();
 		for(auto a : sq) for(auto b : a) v.push_back(b);
@@ -135,16 +135,30 @@ void DnDD::pg()
 	int max_page = maxpage(table, book);
 	int ipage = stoi(page);
 
-	swap("FIRST", table + "&book=" + book + "&page=0");//set buttons
+	//set buttons
+	swap("FIRST", table + "&book=" + book + "&page=0");
 	swap("PREV", table + "&book=" + book + "&page=" + to_string(ipage ? ipage-1 : 0));
 	swap("NEXT", table + "&book=" + book + "&page=" + to_string(ipage == max_page ? max_page : ipage + 1));
 	swap("LAST", table + "&book=" + book + "&page=" + to_string(max_page));
 
+	//main frame
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	swap("TITLE", v[3]);
 	swap("MAINTEXT", quote_encode(v[4]));
+
+	//attachment덧글
+	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
+	sq.group_by("date", "email", "edit");
+	string t;
+	for(auto& a : sq) {
+		v.clear();
+		for(string s : a) v.push_back(s);
+		t += "<div class=\"panel-heading\">written by " + v[2] + " on " + v[5];
+		t += "</div>\n<div class=\"panel-body\">" + v[4] + "</div>\n";
+	}
+	swap("ATTACHMENT", t);
 }
 
 int DnDD::maxpage(string table, string book)
@@ -156,7 +170,7 @@ int DnDD::maxpage(string table, string book)
 }
 
 string DnDD::quote_encode(string s)
-{
+{//" -> ' to embed inside srcdoc, if text \n -> <br>
 	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
 		s.replace(i, 1, "\'");
 	if(s.find('<') > 10) 
