@@ -18,6 +18,13 @@ void DnDD::process()
 	else if(requested_document_ == "signin.html") signin();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "page.html") pg();
+	else if(requested_document_ == "edit.html") edit();
+}
+
+void DnDD::edit()
+{
+	swap("TITLE", tmp1);
+	swap("CONTENT", tmp2);
 }
 
 void DnDD::index()
@@ -129,9 +136,15 @@ void DnDD::signin()
 
 void DnDD::pg()
 {
-	table = nameNvalue_["table"];
-	book = nameNvalue_["book"];
-	page = nameNvalue_["page"]; 
+	if(nameNvalue_["title"] != "") {//if from edit
+		cout << "in here" << endl;
+		sq.select(table, "limit 1");
+		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], tmp3, "null"});
+	} else {//if get method
+		table = nameNvalue_["table"];
+		book = nameNvalue_["book"];
+		page = nameNvalue_["page"]; 
+	}
 	int max_page = maxpage(table, book);
 	int ipage = stoi(page);
 
@@ -145,8 +158,9 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
-	swap("TITLE", v[3]);
-	swap("MAINTEXT", quote_encode(v[4]));
+	swap("TITLE", tmp1 = v[3]);
+	swap("MAINTEXT", quote_encode(tmp2 = v[4]));
+	tmp3 = v[5];//date
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
