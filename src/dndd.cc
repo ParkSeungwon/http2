@@ -19,12 +19,42 @@ void DnDD::process()
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "page.html") pg();
 	else if(requested_document_ == "edit.html") edit();
+	else if(requested_document_ == "add.html") add();
+	else if(requested_document_ == "new.html") new_book();
+}
+
+void DnDD::new_book()
+{
+	if(id == "") content_ = "<script>alert(\"login first.\")</script>";
+	else tmp.clear();
+}
+
+void DnDD::add() 
+{
+	if(nameNvalue_["title"] != "") {//from new.html
+		cout << "0" << endl;
+		sq.select(table, "order by num desc limit 1");
+		vector<string> v;
+		for(auto& a : sq) for(string s : a) v.push_back(s);
+		book = to_string(stoi(v[0]) + 1);
+		cout << "1" << endl;
+		sq.insert({book, "0", id, nameNvalue_["title"], 
+				nameNvalue_["read"] + nameNvalue_["write"] + nameNvalue_["comment"] 
+				+ nameNvalue_["vote"] + '0' + nameNvalue_["option"] + '0', 
+				sq.now(), "null"});
+		cout << "2" << endl;
+		page = "1";
+	} else if(id != "" && stoi(level) >= allow[1])//from page.html, check write level
+		page = to_string(maxpage(table, book) + 1);
+	else content_ = "<script>alert(\"your level does not qualify.\")</script>";
 }
 
 void DnDD::edit()
 {
-	swap("TITLE", tmp[0]);
-	swap("CONTENT", tmp[1]);
+	if(id == tmp[2]) {
+		swap("TITLE", tmp[3]);
+		swap("CONTENT", tmp[4]);
+	} else content_ = "<script>alert(\"you do not own this page\");</script>";
 }
 
 void DnDD::index()
@@ -40,14 +70,6 @@ void DnDD::index()
 		}
 	}
 	swap("CAROUSEL", carousel(v[0], v[1], v[2]));
-}
-
-vector<string> DnDD::tables()
-{//return data tables
-	vector<string> v;
-	auto tb = sq.show_tables();
-	for(auto s : tb) if(s != "Users" && s != "Vote" && s != "Follow") v.push_back(s);
-	return v;
 }
 
 string DnDD::search(string s)
@@ -68,40 +90,20 @@ string DnDD::search(string s)
 	return t;
 }
 
-string DnDD::field(string s)
-{//return table contents as bootstrap panel string
-	vector<string> v;
-	string t;
-	sq.select(s, "where title <> \'코멘트임.\' order by num desc, page, date, edit desc");
-	sq.group_by("email", "date");
-	for(auto& a : sq) {
-		v.clear();
-		for(auto b : a) v.push_back(b);
-		if(a[1] == "0") {//if book
-			t += "<div class=\"panel-heading\"><a href=\"." + v[0];
-			t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>\n";
-		} else {
-			t += "<div class=\"panel-body collapse " + v[0];
-			t += "\">&nbsp;&nbsp;<a href=\"page.html?table=" + s + "&book=" + v[0];
-			t += "&page=" + v[1] + "\">" + v[1] + ". " + v[3] + "</a></div>\n";
-		}
-	} 
-	return t;
-}
-
-
 void DnDD::mn()
 {//main.html
 	if(nameNvalue_["db"] != "") {//if first connection -> set database
 		sq.connect("localhost", "dndd", "dndddndd", nameNvalue_["db"]);
 		if(nameNvalue_["db"] != db) db = nameNvalue_["db"], id = level = name = "";
 	}
+	
 	vector<string> v = tables();//navbar setting
 	string t;
 	for(auto s : v) t += "<li><a href=\"main.html?field=" +s+ "\">" +s+ "</a></li>"; 
 	swap("NAVITEM", t); t = "";
 	table = nameNvalue_["field"] == "" ? v[0] : nameNvalue_["field"];
 	swap("PANEL", field(table));
+	
 	if(nameNvalue_["email"] != "") {//if login attempt
 		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
 		v.clear();
@@ -137,9 +139,9 @@ void DnDD::signin()
 void DnDD::pg()
 {
 	if(nameNvalue_["title"] != "") {//if from edit
-		cout << "in here" << endl;
 		sq.select(table, "limit 1");
-		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], tmp[2], "null"});
+		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
+				tmp.size() ? tmp[5] : sq.now(), "null"});
 	} else {//if get method
 		table = nameNvalue_["table"];
 		book = nameNvalue_["book"];
@@ -147,6 +149,12 @@ void DnDD::pg()
 	}
 	int max_page = maxpage(table, book);
 	int ipage = stoi(page);
+	allow = allowlevel(table, book);
+
+	if(id != "" && stoi(level) < allow[0]) {//check read level
+		content_ = "<script>alert(\"not enough level to read this article\")</script>";
+		return;
+	}
 
 	//set buttons
 	swap("FIRST", table + "&book=" + book + "&page=0");
@@ -160,7 +168,7 @@ void DnDD::pg()
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	swap("TITLE", v[3]);
 	swap("MAINTEXT", quote_encode(v[4]));
-	for(int i=0; i<3; i++) tmp[i] = v[i+3];//5 date
+	tmp = v;//5 date
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
@@ -174,22 +182,3 @@ void DnDD::pg()
 	}
 	swap("ATTACHMENT", t);
 }
-
-int DnDD::maxpage(string table, string book)
-{
-	sq.select(table, "where num=" + book + " order by page desc limit 1");
-	vector<string> v;
-	for(auto& a : sq) for(string s : a) v.push_back(s);
-	return stoi(v[1]);
-}
-
-string DnDD::quote_encode(string s)
-{//" -> ' to embed inside srcdoc, if text \n -> <br>
-	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
-		s.replace(i, 1, "\'");
-	if(s.find('<') > 10) 
-		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
-			s.replace(i, 1, "<br>");
-	return s;
-}
-
