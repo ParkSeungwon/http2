@@ -16,6 +16,6 @@ private:
 	std::string search(std::string s), field(std::string s), quote_encode(std::string);
 	std::vector<std::string> tables();
 	int maxpage(std::string table, std::string book);
-	std::string tmp1, tmp2, tmp3;
+	std::string tmp[3];
 };
 
