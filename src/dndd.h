@@ -16,8 +16,8 @@ private:
 	std::string search(std::string s), field(std::string s), quote_encode(std::string);
 	std::vector<std::string> tables();
 	int maxpage(std::string table, std::string book);
-	std::array<int, 4> allowlevel(std::string table, std::string book);
+	std::array<int, 5> allowlevel(std::string table, std::string book);
 	std::vector<std::string> tmp;
-	std::array<int, 4> allow;
+	std::array<int, 5> allow;
 };
 

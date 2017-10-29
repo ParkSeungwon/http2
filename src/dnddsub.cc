@@ -1,6 +1,7 @@
 #include<cassert>
 #include<fstream>
 #include<regex>
+#include<cassert>
 #include"dndd.h"
 using namespace std;
 
@@ -12,19 +13,20 @@ vector<string> DnDD::tables()
 	return v;
 }
 
-array<int, 4> DnDD::allowlevel(string table, string book)
+array<int, 5> DnDD::allowlevel(string table, string book)
 {//read write comment vote
-	array<int, 4> ar;
+	array<int, 5> ar;
 	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by edit desc limit 1");
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	for(int i=0; i<4; i++) ar[i] = v[4][i] - '0';
+	ar[4] = v[4][5] - '0';
 	return ar;
 }
 
 int DnDD::maxpage(string table, string book)
 {
-	sq.select(table, "where num=" + book + " order by page desc limit 1");
+	assert(sq.select(table, "where num=" + book + " order by page desc limit 1") > 0);
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	return stoi(v[1]);
