@@ -138,12 +138,11 @@ void DnDD::signin()
 
 void DnDD::pg()
 {
-	cout << "-1" << endl;
 	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
 		cout << "0" << endl;
 		sq.select(table, "limit 1");
 		cout << "1" << endl;
-		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
+		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["noparse"], 
 				tmp.size() ? tmp[5] : sq.now(), "null"});//if from page no date
 		cout << "2" << endl;
 	} else {//if get method

@@ -65,9 +65,11 @@ map<string, string> parse_post(istream& post)
 	while(getline(post, s, '&')) {
 		int pos = s.find('=');
 		value = s.substr(pos+1);
-		for(auto& a : value) if(a == '+') a = ' ';
-		for(int i = value.find('%'); i != string::npos; i = value.find('%', i))
-			value.replace(i, 3, 1, (char)stoi(value.substr(i + 1, 2), nullptr,16));
+		if(s.substr(0, pos) != "noparse") {
+			for(auto& a : value) if(a == '+') a = ' ';
+			for(int i = value.find('%'); i != string::npos; i = value.find('%', i))
+				value.replace(i, 3, 1, (char)stoi(value.substr(i + 1, 2), nullptr,16));
+		}
 		if(value.back() == '\0') value.pop_back();
 		m[s.substr(0, pos)] = value;
 	}

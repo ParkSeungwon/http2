@@ -23,15 +23,20 @@
     document.getElementById("iframe").width = (newwidth) + "px";
 } 
   </script>
+  <script>
+$(function() {
+	$('#iframe').attr('srcdoc', 'data:text/html;charset=utf-8,' + atob(decodeURI("MAINTEXT")));
+}
+);
+  </script>
  </head>
- 
  <body>
 	 <div class="container">
 		 <div class="row">
 			 <h1>TITLE</h2>
 		 </div>
 		 <div class="row">
-			 <iframe width=100%  height="100%" width="100%" onLoad="resizeIframe()" id="iframe" srcdoc="MAINTEXT"></iframe>
+			 <iframe width=100%  height="100%" width="100%" onLoad="resizeIframe()" id="iframe"></iframe>
 		 </div>
 		 <div class="row">
 			 <a href="page.html?table=FIRST" class="btn btn-primary">&lt;==</a>
