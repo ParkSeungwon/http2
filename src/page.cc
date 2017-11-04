@@ -53,6 +53,7 @@ void DnDD::pg()
 	swap("PREV", table + "&book=" + book + "&page=" + to_string(ipage ? ipage-1 : 0));
 	swap("NEXT", table + "&book=" + book + "&page=" + to_string(ipage == max_page ? max_page : ipage + 1));
 	swap("LAST", table + "&book=" + book + "&page=" + to_string(max_page));
+	swap("RESULT", table + "&book=" + book + "&option=" + to_string(allow[4]));
 
 	//main frame
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");

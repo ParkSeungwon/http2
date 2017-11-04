@@ -2,6 +2,7 @@
 #include<fstream>
 #include<regex>
 #include"dndd.h"
+#include"util.h"
 using namespace std;
 
 DnDD::DnDD()
@@ -24,6 +25,13 @@ void DnDD::process()
 	else if(requested_document_ == "comment.html") comment();
 	else if(requested_document_ == "vote.html") vote();
 	else if(requested_document_ == "follow") content_ = follow();
+	else if(requested_document_ == "result.html") result();
+}
+
+void DnDD::result()
+{
+	string s = psstm("python dndd2.py " + nameNvalue_["table"] + ' ' + nameNvalue_["book"] + ' ' + nameNvalue_["option"]);
+	swap("GRAPH", s);
 }
 
 string DnDD::follow()
