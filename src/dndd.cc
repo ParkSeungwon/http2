@@ -21,16 +21,40 @@ void DnDD::process()
 	else if(requested_document_ == "edit.html") edit();
 	else if(requested_document_ == "add.html") add();
 	else if(requested_document_ == "new.html") new_book();
+	else if(requested_document_ == "comment.html") comment();
+	else if(requested_document_ == "vote.html") vote();
+}
+
+void DnDD::vote()
+{
+	if(nameNvalue_["option"] == "") {//vote page load
+		string r, s = "<label class=\"radio-inline\"><input type=\"radio\" name=\"option\" value=\"";
+		for(int i=1; i<=allow[4]; i++) 
+			r += s + to_string(i) + "\">" + to_string(i) + "</label>\n";
+		swap("OPTIONS", r);
+	} else {//vote action post
+		sq.select("Vote", "limit 1");
+		sq.insert({table, book, id, nameNvalue_["option"], 
+				nameNvalue_["secret"] == "on" ? "1" : "0", sq.now(), level});
+		content_ = "<a href=\"page.html?table=" + table + "&book=" + book + "&page=" + page + "\">back to page</a>";
+	}
+}
+
+void DnDD::comment()
+{
+	if(id == "") content_ = "<script>alert(\"login first.\")</script>";
+	else if(stoi(level) < allow[2]) 
+		content_ = "<script>alert(\"your level does not qualify.\")</script>"; 
 }
 
 void DnDD::new_book()
 {
 	if(id == "") content_ = "<script>alert(\"login first.\")</script>";
-	else tmp.clear();
 }
 
 void DnDD::add() 
 {
+	tmp.clear();
 	if(nameNvalue_["title"] != "") {//from new.html
 		cout << "0" << endl;
 		sq.select(table, "order by num desc limit 1");
@@ -51,7 +75,9 @@ void DnDD::add()
 
 void DnDD::edit()
 {
-	if(id == tmp[2]) {
+	if(page == "0") 
+		content_ = "<script>alert(\"This page cannot be edited.\");</script>";
+	else if(id == tmp[2]) {
 		swap("TITLE", tmp[3]);
 		swap("CONTENT", tmp[4]);
 	} else content_ = "<script>alert(\"you do not own this page\");</script>";
@@ -136,53 +162,3 @@ void DnDD::signin()
 	cout << id << endl;
 }
 
-void DnDD::pg()
-{
-	cout << "-1" << endl;
-	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
-		cout << "0" << endl;
-		sq.select(table, "limit 1");
-		cout << "1" << endl;
-		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
-				tmp.size() ? tmp[5] : sq.now(), "null"});//if from page no date
-		cout << "2" << endl;
-	} else {//if get method
-		table = nameNvalue_["table"];
-		book = nameNvalue_["book"];
-		page = nameNvalue_["page"]; 
-	}
-	int max_page = maxpage(table, book);
-	int ipage = stoi(page);
-	allow = allowlevel(table, book);
-
-	if(id != "" && stoi(level) < allow[0]) {//check read level
-		content_ = "<script>alert(\"not enough level to read this article\")</script>";
-		return;
-	}
-
-	//set buttons
-	swap("FIRST", table + "&book=" + book + "&page=0");
-	swap("PREV", table + "&book=" + book + "&page=" + to_string(ipage ? ipage-1 : 0));
-	swap("NEXT", table + "&book=" + book + "&page=" + to_string(ipage == max_page ? max_page : ipage + 1));
-	swap("LAST", table + "&book=" + book + "&page=" + to_string(max_page));
-
-	//main frame
-	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
-	vector<string> v;
-	for(auto& a : sq) for(string s : a) v.push_back(s);
-	swap("TITLE", v[3]);
-	swap("MAINTEXT", quote_encode(v[4]));
-	tmp = v;//5 date
-
-	//attachment덧글
-	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
-	sq.group_by("date", "email", "edit");
-	string t;
-	for(auto& a : sq) {
-		v.clear();
-		for(string s : a) v.push_back(s);
-		t += "<div class=\"panel-heading\">written by " + v[2] + " on " + v[5];
-		t += "</div>\n<div class=\"panel-body\">" + v[4] + "</div>\n";
-	}
-	swap("ATTACHMENT", t);
-}

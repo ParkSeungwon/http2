@@ -32,16 +32,6 @@ int DnDD::maxpage(string table, string book)
 	return stoi(v[1]);
 }
 
-string DnDD::quote_encode(string s)
-{//" -> ' to embed inside srcdoc, if text \n -> <br>
-	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
-		s.replace(i, 1, "\'");
-	if(s.find('<') > 10) 
-		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
-			s.replace(i, 1, "<br>");
-	return s;
-}
-
 string DnDD::field(string s)
 {//return table contents as bootstrap panel string
 	vector<string> v;
