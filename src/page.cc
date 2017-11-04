@@ -58,6 +58,7 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	vector<string> v;
 	for(auto& a : sq) for(string s : a) v.push_back(s);
+	swap("FOLLOW", v[2]);
 	swap("TITLE", v[3]);
 	swap("MAINTEXT", page == "0" ? level2txt(allow) : quote_encode(v[4]));
 	tmp = v;//5 date

@@ -23,6 +23,26 @@ void DnDD::process()
 	else if(requested_document_ == "new.html") new_book();
 	else if(requested_document_ == "comment.html") comment();
 	else if(requested_document_ == "vote.html") vote();
+	else if(requested_document_ == "follow") follow();
+}
+
+void DnDD::follow()
+{
+	if(id == "") content_ = "login first";
+	else if(stoi(level) > 2) 
+		content_ = "representative cannot follow"; 
+	else {
+		sq.select("Users", "where email=\'" + nameNvalue_["follow"] + "\' order by date desc limit 1");
+		vector<string> v;
+		for(auto& a : sq) for(string s : a) v.push_back(s);
+		if(stoi(v[2]) < 3) content_ = "you can only follow representatives";
+		else {
+			sq.select("Follow", "limit 1");
+			sq.insert({nameNvalue_["follow"], id, 
+					nameNvalue_["secret"] == "on" ? "1" : "0", sq.now()});
+			content_ = "follow complete";
+		}
+	}
 }
 
 void DnDD::vote()

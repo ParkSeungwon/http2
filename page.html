@@ -22,6 +22,14 @@
     document.getElementById("iframe").height = 50 + (newheight) + "px";
     document.getElementById("iframe").width = (newwidth) + "px";
 } 
+
+function follow() {
+	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').val()},
+			function(data, status) {
+				alert(data);
+			}
+		)
+}
   </script>
  </head>
  
@@ -49,7 +57,7 @@
 			 <a href="comment.html" class="btn btn-success">comment</a>
 			 <a href="vote.html" class="btn btn-info">vote</a>
 			 <button class="btn btn-info">view progress</button>
-			 <a href="follow.html" class="btn btn-info">follow</a>
+			 <button type="button" class="btn btn-info" onclick="$('.modal').modal()">follow</button>
 		 </div>
 		 <div class="row">
 			 <br>
@@ -58,6 +66,33 @@
 			 </div>
 		 </div>
 	 </div>
+<div class="container">
+
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+    
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header" style="padding:35px 50px;">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4><span class="glyphicons glyphicons-user-structure"></span> Follow</h4>
+        </div>
+        <div class="modal-body" style="padding:40px 50px;">
+            <div class="form-group">
+              <label for="usrname"><span class="glyphicon glyphicon-user"></span> email to follow</label>
+              <input type="text" class="form-control" name="follow" id="usrname" value="FOLLOW">
+            </div>
+            <div class="checkbox">
+              <label><input type="checkbox" value="on" checked id="secret"> secret</label>
+            </div>
+              <button class="btn btn-success btn-block" onclick="follow()" data-dismiss="modal"><span class="glyphicon glyphicon-off"></span> OK</button>
+        </div>
+      </div>
+      
+    </div>
+  </div> 
+</div>
  </body>
 
 </html>
