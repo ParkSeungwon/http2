@@ -30,7 +30,7 @@ void DnDD::process()
 
 void DnDD::result()
 {
-	string s = psstm("python dndd2.py " + nameNvalue_["table"] + ' ' + nameNvalue_["book"] + ' ' + nameNvalue_["option"]);
+	string s = psstm("python dndd.py " + nameNvalue_["table"] + ' ' + nameNvalue_["book"] + ' ' + nameNvalue_["option"]);
 	swap("GRAPH", s);
 }
 
