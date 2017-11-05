@@ -44,11 +44,10 @@ string DnDD::field(string s)
 		if(a[1] == "0") {//if book
 			t += "<div class=\"panel-heading\"><a href=\"." + v[0];
 			t += "\" data-toggle=\"collapse\">" + v[0] + ". " + v[3] + "</div>\n";
-		} else {
-			t += "<div class=\"panel-body collapse " + v[0];
-			t += "\">&nbsp;&nbsp;<a href=\"page.html?table=" + s + "&book=" + v[0];
-			t += "&page=" + v[1] + "\">" + v[1] + ". " + v[3] + "</a></div>\n";
-		}
+		} 
+		t += "<div class=\"panel-body collapse " + v[0];
+		t += "\">&nbsp;&nbsp;<a href=\"page.html?table=" + s + "&book=" + v[0];
+		t += "&page=" + v[1] + "\">" + v[1] + ". " + v[3] + "</a></div>\n";
 	} 
 	return t;
 }

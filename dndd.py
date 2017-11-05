@@ -4,7 +4,6 @@ import mpld3 as d3
 import matplotlib.pyplot as plt
 import sys
 conn = sql.create_engine('mysql://dndd:dndddndd@localhost/dndd?charset=utf8')
-
 field = sys.argv[1]
 num = sys.argv[2]
 opt = int(sys.argv[3])
@@ -16,7 +15,7 @@ reg = reg.groupby('email').apply(lambda x : x.iloc[0, :])
 follow = pd.read_sql('select * from Follow order by date desc', conn)
 follow = follow.groupby('email').apply(lambda x: x.iloc[0,:])
 auto = pd.merge(rep, follow, on='email')
-if reg.size: auto = auto[~auto['follower'].isin(reg['email']) ]
+if reg.size > 0: auto = auto[~auto['follower'].isin(reg['email']) ]
 auto = auto.rename(columns = {'secret_y':'secret'})
 
 option = [0] * opt
@@ -37,7 +36,6 @@ ar[1,0].set_title('public')
 ar[1,1].pie(public, labels=label, autopct='%1.1f%%')
 ar[1,1].set_title('public')
 f.subplots_adjust(hspace=0.3)
-
 ax = plt.gca()
 fig = ax.get_figure()
 print d3.fig_to_html(fig)
@@ -48,11 +46,9 @@ if reg.size:
     reg = reg[['votedfor']]
 auto = auto[auto['secret']==0]
 auto = auto[['votedfor']]
-
 print '<h2> Votings of Representatives</h2>'
 print rep.to_html()
 print '<h2> Votings of Regular by public</h2>'
 print reg.to_html()
 print '<h2> Votings of Followers by public</h2>'
 print auto.to_html()
-

@@ -26,7 +26,21 @@ void DnDD::process()
 	else if(requested_document_ == "vote.html") vote();
 	else if(requested_document_ == "follow") content_ = follow();
 	else if(requested_document_ == "result.html") result();
+	else if(requested_document_ == "close") content_ = close();
 }
+
+string DnDD::close()
+{
+	if(id == "") return "login first";
+	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by date, edit desc limit 1");
+	vector<string> v;
+	for(auto& a : sq) for(string s : a) v.push_back(s);
+	if(id != v[2]) return "you do not own this discussion";
+	v[4][1] = '5'; v[4][3] = '5'; v[6] = "null";
+	sq.insert(v);
+	allow = allowlevel(table, book);
+	return "Discussion closed";
+}	
 
 void DnDD::result()
 {
@@ -52,6 +66,10 @@ string DnDD::follow()
 
 void DnDD::vote()
 {
+	if(stoi(level) < allow[3]) {
+		content_ = "<script>alert(\"your level does not qualify\")</script>";
+		return;
+	}
 	if(nameNvalue_["option"] == "") {//vote page load
 		string r, s = "<label class=\"radio-inline\"><input type=\"radio\" name=\"option\" value=\"";
 		for(int i=1; i<=allow[4]; i++) 
@@ -102,6 +120,8 @@ void DnDD::edit()
 {
 	if(page == "0") 
 		content_ = "<script>alert(\"This page cannot be edited.\");</script>";
+	else if(stoi(level) < allow[3]) 
+		content_ = "<script>alert(\"your level does not qualify\")</script>";
 	else if(id == tmp[2]) {
 		swap("TITLE", tmp[3]);
 		swap("CONTENT", tmp[4]);
