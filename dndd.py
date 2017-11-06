@@ -3,10 +3,11 @@ import sqlalchemy as sql
 import mpld3 as d3
 import matplotlib.pyplot as plt
 import sys
-conn = sql.create_engine('mysql://dndd:dndddndd@localhost/dndd?charset=utf8')
 field = sys.argv[1]
 num = sys.argv[2]
 opt = int(sys.argv[3])
+db = sys.argv[4]
+conn = sql.create_engine('mysql://dndd:dndddndd@localhost/' + db + '?charset=utf8')
 
 rep = pd.read_sql("select * from Vote where num=" + num + " and field='" + field + "' and level>2 order by email, date desc", conn)
 rep = rep.groupby('email').apply(lambda x : x.iloc[0, :])
@@ -36,6 +37,8 @@ ar[1,0].set_title('public')
 ar[1,1].pie(public, labels=label, autopct='%1.1f%%')
 ar[1,1].set_title('public')
 f.subplots_adjust(hspace=0.3)
+f.set_figheight(12)
+f.set_figwidth(12)
 ax = plt.gca()
 fig = ax.get_figure()
 print d3.fig_to_html(fig)
@@ -45,7 +48,7 @@ if reg.size:
     reg = reg[reg['secret']==0]
     reg = reg[['votedfor']]
 auto = auto[auto['secret']==0]
-auto = auto[['votedfor']]
+auto = auto[['email','follower', 'votedfor']]
 print '<h2> Votings of Representatives</h2>'
 print rep.to_html()
 print '<h2> Votings of Regular by public</h2>'

@@ -28,14 +28,18 @@ HTMLServer::HTMLServer()
 	}
 }
 
-void HTMLServer::swap(string b, string a)
+bool HTMLServer::swap(string b, string a)
 {//child classes will use this to change content_
+	if(content_.find(b) == string::npos) return false;
 	content_.replace(content_.find(b), b.size(), a);
+	return true;	
 }
 
-void HTMLServer::append(string a, string b)
+bool HTMLServer::append(string a, string b)
 {
+	if(content_.find(a) == string::npos) return false;
 	content_.insert(content_.find(a) + a.size(), b);
+	return true;	
 }
 
 std::string HTMLServer::operator()(string s) 

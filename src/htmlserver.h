@@ -11,7 +11,7 @@ public:
 
 protected:
 	virtual void process() {}//child should implement this
-	void swap(std::string, std::string), append(std::string, std::string);
+	bool swap(std::string, std::string), append(std::string, std::string);
 	std::map<std::string, std::string> nameNvalue_;//parameter
 	std::string content_, requested_document_;//set content_
 

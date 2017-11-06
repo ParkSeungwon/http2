@@ -24,7 +24,7 @@
 } 
 
 function follow() {
-	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').val()},
+	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').prop('checked')},
 			function(data, status) {
 				alert(data);
 			}
@@ -93,7 +93,7 @@ function conf() {
               <input type="text" class="form-control" name="follow" id="usrname" value="FOLLOW">
             </div>
             <div class="checkbox">
-              <label><input type="checkbox" value="on" checked id="secret"> secret</label>
+              <label><input type="checkbox" id="secret"> secret</label>
             </div>
               <button class="btn btn-success btn-block" onclick="follow()" data-dismiss="modal"><span class="glyphicon glyphicon-off"></span> OK</button>
         </div>

@@ -17,15 +17,15 @@ void DnDD::process()
 	if(requested_document_ == "index.html") index();
 	else if(requested_document_ == "main.html") mn();
 	else if(requested_document_ == "signin.html") signin();
-	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "page.html") pg();
 	else if(requested_document_ == "edit.html") edit();
 	else if(requested_document_ == "add.html") add();
 	else if(requested_document_ == "new.html") new_book();
 	else if(requested_document_ == "comment.html") comment();
 	else if(requested_document_ == "vote.html") vote();
-	else if(requested_document_ == "follow") content_ = follow();
 	else if(requested_document_ == "result.html") result();
+	else if(requested_document_ == "follow") content_ = follow();
+	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "close") content_ = close();
 }
 
@@ -37,15 +37,16 @@ string DnDD::close()
 	for(auto& a : sq) for(string s : a) v.push_back(s);
 	if(id != v[2]) return "you do not own this discussion";
 	v[4][1] = '5'; v[4][3] = '5'; v[6] = "null";
+	allow[1] = 5; allow[3] = 5;
 	sq.insert(v);
-	allow = allowlevel(table, book);
 	return "Discussion closed";
 }	
 
 void DnDD::result()
 {
-	string s = psstm("python dndd.py " + nameNvalue_["table"] + ' ' + nameNvalue_["book"] + ' ' + nameNvalue_["option"]);
+	string s = psstm("python dndd.py " + nameNvalue_["table"] + ' ' + nameNvalue_["book"] + ' ' + nameNvalue_["option"] + ' ' + nameNvalue_["db"]);
 	swap("GRAPH", s);
+	while(swap("dataframe\"", "dataframe table\""));
 }
 
 string DnDD::follow()
@@ -59,8 +60,9 @@ string DnDD::follow()
 	if(stoi(v[2]) < 3) return "you can only follow representatives";
 
 	sq.select("Follow", "limit 1");
+	cout << nameNvalue_["secret"] << endl;
 	sq.insert({nameNvalue_["follow"], id, 
-			nameNvalue_["secret"] == "on" ? "1" : "0", sq.now()});
+			nameNvalue_["secret"] == "true" ? "1" : "0", sq.now()});
 	return "follow complete";
 }
 
