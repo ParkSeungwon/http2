@@ -16,7 +16,7 @@ private:
 	std::array<int, 5> allowlevel(std::string table, std::string book);
 	std::vector<std::string> tables();
 	int maxpage(std::string table, std::string book);
-	std::string id, level, name, db, table, book, page;
+	std::string id, level="0", name, db, table, book, page, group, group_desc, logo;
 	std::vector<std::string> tmp;
 	std::array<int, 5> allow;
 };

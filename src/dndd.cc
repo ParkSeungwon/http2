@@ -68,6 +68,7 @@ string DnDD::follow()
 
 void DnDD::vote()
 {
+	cout << "level is " << level << endl;
 	if(stoi(level) < allow[3]) {
 		content_ = "<script>alert(\"your level does not qualify\")</script>";
 		return;
@@ -101,19 +102,16 @@ void DnDD::add()
 {
 	tmp.clear();
 	if(nameNvalue_["title"] != "") {//from new.html
-		cout << "0" << endl;
 		sq.select(table, "order by num desc limit 1");
 		vector<string> v;
 		for(auto& a : sq) for(string s : a) v.push_back(s);
 		book = to_string(stoi(v[0]) + 1);
-		cout << "1" << endl;
 		sq.insert({book, "0", id, nameNvalue_["title"], 
 				nameNvalue_["read"] + nameNvalue_["write"] + nameNvalue_["comment"] 
 				+ nameNvalue_["vote"] + '0' + nameNvalue_["option"] + '0', 
 				sq.now(), "null"});
-		cout << "2" << endl;
 		page = "1";
-	} else if(id != "" && stoi(level) >= allow[1])//from page.html, check write level
+	} else if(stoi(level) >= allow[1])//from page.html, check write level
 		page = to_string(maxpage(table, book) + 1);
 	else content_ = "<script>alert(\"your level does not qualify.\")</script>";
 }
@@ -167,7 +165,11 @@ void DnDD::mn()
 {//main.html
 	if(nameNvalue_["db"] != "") {//if first connection -> set database
 		sq.connect("localhost", "dndd", "dndddndd", nameNvalue_["db"]);
-		if(nameNvalue_["db"] != db) db = nameNvalue_["db"], id = level = name = "";
+		if(nameNvalue_["db"] != db) db = nameNvalue_["db"], id = name = "", level="0";
+		ifstream f(db + ".txt");
+		getline(f, group);
+		getline(f, group_desc);
+		getline(f, logo);
 	}
 	
 	vector<string> v = tables();//navbar setting
@@ -176,6 +178,9 @@ void DnDD::mn()
 	swap("NAVITEM", t); t = "";
 	table = nameNvalue_["field"] == "" ? v[0] : nameNvalue_["field"];
 	swap("PANEL", field(table));
+	swap("GROUP", group);
+	swap("GROUP_DESC", group_desc);
+	swap("LOGO", logo);
 	
 	if(nameNvalue_["email"] != "") {//if login attempt
 		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
@@ -190,16 +195,19 @@ void DnDD::mn()
 
 void DnDD::signin()
 {//sq.select returns row count
+	swap("GROUP", group);
+	swap("GROUP_DESC", group_desc);
+	swap("LOGO", logo);
 	if(nameNvalue_.empty()) return;
 	if(nameNvalue_["password"] != nameNvalue_["verify"])
-		swap("REPLACE", "password not match");
+		append("REPLACE\">", "password not match");
 	else if(sq.select("Users", "where email='" + nameNvalue_["email"] + "';"))
-		swap("REPLACE", "아이디가 이미 존재합니다.");
+		append("REPLACE\">", "아이디가 이미 존재합니다.");
 	else {//select will retrieve table structure, which makes inserting possible
 		sq.insert({nameNvalue_["email"], sq.encrypt(nameNvalue_["password"]), "1", nameNvalue_["username"], nameNvalue_["tel"], sq.now()});
 		if(nameNvalue_["check"] != "") 
 			id = nameNvalue_["email"], level = "1", name = nameNvalue_["username"];
-		swap("REPLACE", "가입완료<br><a href=\"main.html\">메인화면으로</a><br>");
+		append("REPLACE\">", "가입완료<br><a href=\"main.html\">메인화면으로</a><br>");
 	}
 
 	const char *append_str[]//to remember user input
