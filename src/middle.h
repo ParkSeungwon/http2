@@ -1,6 +1,7 @@
 #pragma once
 #include<map>
 #include<chrono>
+#include<mutex>
 #include"asyncqueue.h"
 #include"server.h"
 
@@ -30,4 +31,6 @@ private:
 	void garbage_collection();
 	const int inport_;
 	int id_ = 0;
+	std::mutex mtx_;
+	std::unique_lock<std::mutex> lck_;
 };

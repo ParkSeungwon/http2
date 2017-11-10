@@ -61,8 +61,8 @@ std::string HTMLServer::operator()(string s)
 	}
 	if(requested_document_ == "") requested_document_ = "index.html";
 	content_ = fileNhtml_[requested_document_];
-	process();//derived class should implement this-> set content_ & cookie
-	cout << "content size : " << content_.size() << endl;
+	process();//derived class should implement this -> set content_ & cookie
+//	cout << "content size : " << content_.size() << endl;
 	return header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
 }
 

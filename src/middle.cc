@@ -9,7 +9,7 @@ Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
 	  outflux_{bind(&Middle::send, this, placeholders::_1)},
-	  th{&Middle::garbage_collection, this}
+	  th{&Middle::garbage_collection, this}, lck_{mtx_, defer_lock}
 { }
 
 Packet Middle::recv()
@@ -40,9 +40,11 @@ void Middle::sow(Packet p)
 		newly_connected = true;
 	}
 	if(!idNconn_[p.id]) idNconn_[p.id] = new Client{"localhost", inport_};//reconnect
+	lck_.lock();
 	idNtime_[p.id] = std::chrono::system_clock::now();//set time for garbage collection
 	idNconn_[p.id]->send(p.content);//sow to server
 	p.content = idNconn_[p.id]->recv();//reap from html server
+	lck_.unlock();
 	if(newly_connected)//set id for the browser
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
 //	cout << p.content << endl;
@@ -53,14 +55,18 @@ void Middle::garbage_collection()
 {
 	while(1) {
 		int k = 0;
-		for(auto& a : idNtime_) if(a.second < std::chrono::system_clock::now() - 300s) {
+		for(auto& a : idNtime_) if(a.second < chrono::system_clock::now() - 300s) {
+			lck_.lock();
+			idNconn_[a.first]->send("end");
+			this_thread::sleep_for(1s);
 			delete idNconn_[a.first];
 			idNconn_.erase(a.first);
 			idNtime_.erase(a.first);
 			k++;
+			lck_.unlock();
 		}
 		if(k) cout << "colleced " << k << " garbages" << endl;
-		this_thread::sleep_for(60s);
+		this_thread::sleep_for(10s);
 	}
 }
 

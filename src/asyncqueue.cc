@@ -26,6 +26,7 @@ template<typename T> WaitQueue<T>::~WaitQueue()
 {
 	finish = true;
 	tho.join();
+	cout << "destroyed" << endl;
 }
 
 template <typename T> void WaitQueue<T>::consume()
@@ -65,6 +66,7 @@ template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{m
 
 template <typename T> AsyncQueue<T>::~AsyncQueue()
 {
+	WaitQueue<T>::finish = true;
 	thi.join();
 }
 

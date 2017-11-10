@@ -6,8 +6,8 @@
 using namespace std;
 
 DnDD::DnDD()
-{
-	sq.connect("localhost", "dndd", "dndddndd", "dndd");
+{//SqlQuery destructor -> mysqlquery destructor nullify
+	sq.connect("localhost", "dndd", "dndddndd", "dndd");//sq prohibit destruct
 }
 
 void DnDD::process()
