@@ -8,7 +8,8 @@ using namespace std;
 Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
-	  outflux_{bind(&Middle::send, this, placeholders::_1)}
+	  outflux_{bind(&Middle::send, this, placeholders::_1)},
+	  th{&Middle::garbage_collection, this}
 { }
 
 Packet Middle::recv()
@@ -38,7 +39,8 @@ void Middle::sow(Packet p)
 		idNconn_[p.id = ++id_] = new Client{"localhost", inport_};
 		newly_connected = true;
 	}
-	if(!idNconn_[p.id]) return;//if there is no furrow -> error
+	if(!idNconn_[p.id]) idNconn_[p.id] = new Client{"localhost", inport_};//reconnect
+	idNtime_[p.id] = std::chrono::system_clock::now();//set time for garbage collection
 	idNconn_[p.id]->send(p.content);//sow to server
 	p.content = idNconn_[p.id]->recv();//reap from html server
 	if(newly_connected)//set id for the browser
@@ -47,9 +49,24 @@ void Middle::sow(Packet p)
 	outflux_.push_back(p);//sell to browser
 }
 
+void Middle::garbage_collection()
+{
+	while(1) {
+		int k = 0;
+		for(auto& a : idNtime_) if(a.second < std::chrono::system_clock::now() - 300s) {
+			delete idNconn_[a.first];
+			idNconn_.erase(a.first);
+			idNtime_.erase(a.first);
+			k++;
+		}
+		if(k) cout << "colleced " << k << " garbages" << endl;
+		this_thread::sleep_for(60s);
+	}
+}
+
 Middle::~Middle()
 {
-	for(auto& a : idNconn_) delete a.second;
+	for(auto& a : idNconn_) if(a.second) delete a.second;
 }
 
 void Middle::start()
