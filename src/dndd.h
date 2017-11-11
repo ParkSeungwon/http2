@@ -11,8 +11,8 @@ protected:
 	void process();
 
 private:
-	void signin(), index(), search(), mn(), pg(), edit(), add(), new_book(), comment(), vote(), result();
-	std::string search(std::string s), field(std::string s), follow(), close();
+	void signin(), index(), search(), mn(), pg(), edit(), add(), new_book(), comment(),result();
+	std::string search(std::string s), field(std::string s), follow(), close(), vote();
 	std::array<int, 5> allowlevel(std::string table, std::string book);
 	std::vector<std::string> tables();
 	int maxpage(std::string table, std::string book);

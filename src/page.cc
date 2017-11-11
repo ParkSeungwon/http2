@@ -54,6 +54,10 @@ void DnDD::pg()
 	swap("NEXT", table + "&book=" + book + "&page=" + to_string(ipage == max_page ? max_page : ipage + 1));
 	swap("LAST", table + "&book=" + book + "&page=" + to_string(max_page));
 	swap("RESULT", table + "&book=" + book + "&option=" + to_string(allow[4]) + "&db=" + db);
+	string r, s = "<label class=\"radio-inline\"><input type=\"radio\" name=\"option\" value=\"";
+	for(int i=1; i<=allow[4]; i++) 
+		r += s + to_string(i) + "\">" + to_string(i) + "</label>\n";
+	swap("OPTIONS", r);
 
 	//main frame
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");

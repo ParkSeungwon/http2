@@ -22,7 +22,7 @@ void DnDD::process()
 	else if(requested_document_ == "add.html") add();
 	else if(requested_document_ == "new.html") new_book();
 	else if(requested_document_ == "comment.html") comment();
-	else if(requested_document_ == "vote.html") vote();
+	else if(requested_document_ == "vote") content_ = vote();
 	else if(requested_document_ == "result.html") result();
 	else if(requested_document_ == "follow") content_ = follow();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
@@ -66,24 +66,15 @@ string DnDD::follow()
 	return "follow complete";
 }
 
-void DnDD::vote()
+string DnDD::vote()
 {
 	cout << "level is " << level << endl;
-	if(stoi(level) < allow[3]) {
-		content_ = "<script>alert(\"your level does not qualify\")</script>";
-		return;
-	}
-	if(nameNvalue_["option"] == "") {//vote page load
-		string r, s = "<label class=\"radio-inline\"><input type=\"radio\" name=\"option\" value=\"";
-		for(int i=1; i<=allow[4]; i++) 
-			r += s + to_string(i) + "\">" + to_string(i) + "</label>\n";
-		swap("OPTIONS", r);
-	} else {//vote action post
-		sq.select("Vote", "limit 1");
-		sq.insert({table, book, id, nameNvalue_["option"], 
-				nameNvalue_["secret"] == "on" ? "1" : "0", sq.now(), level});
-		content_ = "<a href=\"page.html?table=" + table + "&book=" + book + "&page=" + page + "\">back to page</a>";
-	}
+	if(stoi(level) < allow[3])
+		return "your level does not qualify";
+	sq.select("Vote", "limit 1");
+	sq.insert({table, book, id, nameNvalue_["option"], 
+			nameNvalue_["secret"] == "on" ? "1" : "0", sq.now(), level});
+	return "Vote complete";
 }
 
 void DnDD::comment()

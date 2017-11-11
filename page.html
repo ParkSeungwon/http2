@@ -37,6 +37,13 @@ function conf() {
 		});
 	}
 }
+
+function vote() {
+	$.post("vote", {option : $("input[name=option]:checked").val(), 
+		secret : $("#votesecret:checked").val()}, function(data) {
+			alert(data);
+		});
+}
   </script>
  </head>
  
@@ -62,7 +69,7 @@ function conf() {
 			 <a href="add.html" class="btn btn-success">add page</a>
 			 <a href="edit.html" class="btn btn-success">edit</a>
 			 <a href="comment.html" class="btn btn-success">comment</a>
-			 <a href="vote.html" class="btn btn-info">vote</a>
+			 <button type="button" class="btn btn-info" onclick="$('#vote').modal()">vote</button>
 			 <a href="result.html?table=RESULT" class="btn btn-info">vote result</a>
 			 <button type="button" class="btn btn-info" onclick="$('#myModal').modal()">follow</button>
 			 <button class="btn btn-danger" onclick="conf()">close</button>
@@ -75,36 +82,55 @@ function conf() {
 		 </div>
 	 </div>
 
-<div class="container">
+	 <div class="container">
 
-  <!-- Modal -->
-  <div class="modal fade" id="myModal" role="dialog">
-    <div class="modal-dialog">
-    
-      <!-- Modal content-->
-      <div class="modal-content">
-        <div class="modal-header" style="padding:35px 50px;">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4><span class="glyphicons glyphicons-user-structure"></span> Follow</h4>
-        </div>
-        <div class="modal-body" style="padding:40px 50px;">
-            <div class="form-group">
-              <label for="usrname"><span class="glyphicon glyphicon-user"></span> email to follow</label>
-              <input type="text" class="form-control" name="follow" id="usrname" value="FOLLOW">
-            </div>
-            <div class="checkbox">
-              <label><input type="checkbox" id="secret"> secret</label>
-            </div>
-              <button class="btn btn-success btn-block" onclick="follow()" data-dismiss="modal"><span class="glyphicon glyphicon-off"></span> OK</button>
-        </div>
-      </div>
-      
-    </div>
-  </div> 
-</div>
+		 <!-- Modal -->
+		 <div class="modal fade" id="myModal" role="dialog">
+			 <div class="modal-dialog">
 
+				 <!-- Modal content-->
+				 <div class="modal-content">
+					 <div class="modal-header" style="padding:35px 50px;">
+						 <button type="button" class="close" data-dismiss="modal">&times;</button>
+						 <h4><span class="glyphicons glyphicons-flag"></span> Follow</h4>
+					 </div>
+					 <div class="modal-body" style="padding:40px 50px;">
+						 <div class="form-group">
+							 <label for="usrname"><span class="glyphicon glyphicon-user"></span> email to follow</label>
+							 <input type="text" class="form-control" name="follow" id="usrname" value="FOLLOW">
+						 </div>
+						 <div class="checkbox">
+							 <label><input type="checkbox" id="secret"> secret</label>
+						 </div>
+						 <button class="btn btn-success btn-block" data-dismiss="modal"  onclick="follow()">ok<span class="glyphicon glyphicon-off"></span></button>
+					 </div>
+				 </div>
 
-
+			 </div>
+		 </div> 
+	 </div>
+	 <div class="container">
+		 <div class="modal fade" id="vote" role="dialog">
+			 <div class="modal-dialog">
+				 <div class="modal-content">
+					 <div class="modal-header" style="padding:35px 50px;">
+					 <button type="button" class="close" data-dismiss="modal">&times;</button>
+					 <h4>Vote</h4>
+					 </div>
+					 <div classs="modal-body" style="padding:40px 50px;">
+						 <div class="form-group">
+							 <label for="options">Voting Options</label><br>
+							 OPTIONS
+							 <div class="checkbox">
+								 <label><input type="checkbox" id="votesecret"> secret</label>
+							 </div>
+							 <button class="btn btn-success" data-dismiss="modal" onclick="vote()">ok</button>
+						 </div>
+					 </div>
+				 </div>
+			 </div>
+		 </div>
+	 </div>
  </body>
 
 </html>

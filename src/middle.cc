@@ -55,10 +55,9 @@ void Middle::garbage_collection()
 {
 	while(1) {
 		int k = 0;
-		for(auto& a : idNtime_) if(a.second < chrono::system_clock::now() - 300s) {
+		for(auto& a : idNtime_) if(a.second < chrono::system_clock::now() - 600s) {
 			lck_.lock();
 			idNconn_[a.first]->send("end");
-			this_thread::sleep_for(1s);
 			delete idNconn_[a.first];
 			idNconn_.erase(a.first);
 			idNtime_.erase(a.first);
@@ -66,7 +65,7 @@ void Middle::garbage_collection()
 			lck_.unlock();
 		}
 		if(k) cout << "colleced " << k << " garbages" << endl;
-		this_thread::sleep_for(10s);
+		this_thread::sleep_for(60s);
 	}
 }
 
