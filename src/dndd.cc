@@ -69,8 +69,10 @@ string DnDD::follow()
 string DnDD::vote()
 {
 	cout << "level is " << level << endl;
-	if(stoi(level) < allow[3])
-		return "your level does not qualify";
+	if(stoi(level) < allow[3]) return "your level does not qualify";
+	if(nameNvalue_["option"] == "") return "choose one";
+	if(nameNvalue_["secret"] == "on" && stoi(level) > 2) 
+		return "registered cannot vote secretly";
 	sq.select("Vote", "limit 1");
 	sq.insert({table, book, id, nameNvalue_["option"], 
 			nameNvalue_["secret"] == "on" ? "1" : "0", sq.now(), level});
