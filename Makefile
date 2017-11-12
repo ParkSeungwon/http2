@@ -1,5 +1,7 @@
 all : 
 	make -C src/
+	make -C framework/
+	make -C database/
 	make -C obj/
 
 PHONY : clean test

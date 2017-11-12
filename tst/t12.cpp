@@ -1,7 +1,7 @@
 #include<iostream>
 #include<server.h>
-#include"src/htmlserver.h"
-#include"src/dndd.h"
+#include"htmlserver.h"
+#include"dndd.h"
 using namespace std;
 
 //string f(string s) { 
