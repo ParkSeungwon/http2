@@ -12,8 +12,8 @@ DnDD::DnDD()
 
 void DnDD::process()
 {
-//	cout << requested_document_ << endl;
-//	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
+	cout << requested_document_ << endl;
+	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
 	else if(requested_document_ == "main.html") mn();
 	else if(requested_document_ == "signin.html") signin();

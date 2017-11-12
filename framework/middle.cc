@@ -43,8 +43,8 @@ void Middle::sow(Packet p)
 	lck_.lock();
 	idNtime_[p.id] = std::chrono::system_clock::now();//set time for garbage collection
 	idNconn_[p.id]->send(p.content);//sow to server
-	p.content = idNconn_[p.id]->recv();//reap from html server
 	lck_.unlock();
+	p.content = idNconn_[p.id]->recv();//reap from html server
 	if(newly_connected)//set id for the browser
 		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
 //	cout << p.content << endl;

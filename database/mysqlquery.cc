@@ -9,12 +9,11 @@ using namespace std;
 bool Mysqlquery::myQuery(std::string str)
 {
 	//cout << str << endl;
-    bool ok = false;
 	try {
         //cout << "Executing query....." << endl << endl;
         res = stmt->executeQuery(str);
 		//cout << "Done." << endl;
-        ok = true;
+        return true;
 	} catch (sql::SQLException &e) {
 		if(e.getErrorCode() != 0) {
 			cout << "# ERR: SQLException in " << __FILE__ ;
@@ -23,13 +22,12 @@ bool Mysqlquery::myQuery(std::string str)
 			cout << "  (MySQL error code: " << e.getErrorCode();
 			cout << ", SQLState: " << e.getSQLState() << " )"  << endl << endl;
 		}
+		return false;
 	}
-    return ok;
 }
 
 bool Mysqlquery::connect(string host, string user, string pass, string db)
 {
-    bool ok = false;
     try {
         //cout << "Connecting database to " << host << endl << endl;
         driver = get_driver_instance();
@@ -37,15 +35,15 @@ bool Mysqlquery::connect(string host, string user, string pass, string db)
         con->setSchema(db);
         stmt = con->createStatement();
         //std::cout << "done.." << std::endl;
-        ok = true;
+        return true;
     } catch (sql::SQLException &e) {
 		cout << "# ERR: SQLException in " << __FILE__ ;
 		cout << "(" << __FUNCTION__<< ") on line " << __LINE__  << endl;
 		cout << "# ERR: " << e.what();
 		cout << "  (MySQL error code: " << e.getErrorCode();
 		cout << ", SQLState: " << e.getSQLState() << " )"  << endl << endl;
+		return false;
 	}
-    return ok;
 }
 
 void Mysqlquery::connect(Mysqlquery& copy)
@@ -58,13 +56,13 @@ void Mysqlquery::connect(Mysqlquery& copy)
 
 Mysqlquery::~Mysqlquery()
 {
-//	try {
-//		cerr << "trying to close" << endl;
-//        con->close();
-//        if(con) delete con;
-//        driver->threadEnd();
-//    } catch(sql::SQLException &e) {
-//        cerr << "Failed To Close Connection to DataBase Server" << e.what() << endl;       }
+	try {
+		cerr << "trying to close" << endl;
+        con->close();
+        if(con) delete con;
+        driver->threadEnd();
+    } catch(sql::SQLException &e) {
+        cerr << "Failed To Close Connection to DataBase Server" << e.what() << endl;       }
 //	cout << "mysql query destroying" << endl;
 //    if(con != NULL) {con->close(); delete con;}
 //    if(stmt != NULL) delete stmt;

@@ -25,9 +25,10 @@ template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
 template<typename T> WaitQueue<T>::~WaitQueue()
 {
 	finish = true;
-	cout << "dest WaitQ" << endl;
-	tho.join();
-	cout << "destroy WaitQ complete" << endl;
+//	cout << "dest WaitQ" << endl;
+	tho.detach();
+	tho.~thread();
+//	cout << "destroy WaitQ complete" << endl;
 }
 
 template <typename T> void WaitQueue<T>::consume()
@@ -67,11 +68,10 @@ template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{m
 
 template <typename T> AsyncQueue<T>::~AsyncQueue()
 {
-	WaitQueue<T>::finish = true;
-	cout << "dest asynQ" << endl;
+//	cout << "dest asynQ" << endl;
 	thi.detach();//thi.join() ???
 	thi.~thread();
-	cout << "dest asynQ complete" << endl;
+//	cout << "dest asynQ complete" << endl;
 }
 
 template <typename T> void AsyncQueue<T>::provide()
