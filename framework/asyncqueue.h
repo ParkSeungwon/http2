@@ -12,9 +12,6 @@ public:
 	virtual ~WaitQueue();
 	void push_back(T s);
 
-protected:
-	bool finish = false;
-
 private:
 	std::deque<T> q;
 	std::function<void(T)> consumer;

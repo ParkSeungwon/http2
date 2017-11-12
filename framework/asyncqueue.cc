@@ -24,17 +24,14 @@ template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
 
 template<typename T> WaitQueue<T>::~WaitQueue()
 {
-	finish = true;
-//	cout << "dest WaitQ" << endl;
 	tho.detach();
 	tho.~thread();
-//	cout << "destroy WaitQ complete" << endl;
 }
 
 template <typename T> void WaitQueue<T>::consume()
 {
 	unique_lock<mutex> lck{mtx, defer_lock};
-	while(!finish) {
+	while(1) {
 		lck.lock();
 		while(q.empty()) cv.wait(lck);
 		for(auto& a : q) consumer(a);
@@ -68,14 +65,12 @@ template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{m
 
 template <typename T> AsyncQueue<T>::~AsyncQueue()
 {
-//	cout << "dest asynQ" << endl;
 	thi.detach();//thi.join() ???
 	thi.~thread();
-//	cout << "dest asynQ complete" << endl;
 }
 
 template <typename T> void AsyncQueue<T>::provide()
 {///recv->functor->q->notify to sendf
-	while(!WaitQueue<T>::finish) WaitQueue<T>::push_back(provider());
+	while(1) WaitQueue<T>::push_back(provider());
 }
 	

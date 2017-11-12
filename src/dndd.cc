@@ -34,10 +34,10 @@ string DnDD::close()
 	if(id == "") return "login first";
 	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by date, edit desc limit 1");
 	if(id != sq[0]["email"].asString()) return "you do not own this discussion";
-	sq[0]["contents"].asString()[1] = '5';
-	sq[0]["contents"].asString()[3] = '5';
+	string s = sq[0]["contents"].asString();
+	s[1] = '5'; s[3] = '5'; allow[1] = 5; allow[3] = 5;
+	sq[0]["contents"] = s;
 	sq[0]["edit"] = "null";
-	allow[1] = 5; allow[3] = 5;
 	sq.insert(0);
 	return "Discussion closed";
 }	

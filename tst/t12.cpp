@@ -8,9 +8,10 @@ using namespace std;
 //	cout << s << endl;
 //	return s; }
 
+string f(string s) {return s;}
 int main(int ac, char** av)
 {
-	HTMLServer f;//DnDD bug proved
+//	HTMLServer f;//DnDD bug proved
 	Server sv{atoi(av[1])};
 	sv.start(f);
 }

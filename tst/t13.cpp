@@ -1,10 +1,12 @@
 #include<thread>
+#include<unistd.h>
 #include<iostream>
 using namespace std;
 int main()
 {
-	thread th{[]() {while(1) cout << this_thread::get_id();}};
-	cout << th.get_id();
-	this_thread::sleep_for(10s);
-
+	int k = 0;
+	while(1) {
+		if(!fork()) cout << k++ << endl;
+		this_thread::sleep_for(1s);
+	}
 }
