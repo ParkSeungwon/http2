@@ -56,17 +56,17 @@ void Mysqlquery::connect(Mysqlquery& copy)
 	res = copy.res;
 }
 
-Mysqlquery::Mysqlquery()
-{
-    con = NULL;
-    stmt = NULL;
-    res = NULL;
-}
-
 Mysqlquery::~Mysqlquery()
 {
-	cout << "mysql query destroying" << endl;
-    if(con != NULL) {con->close(); delete con;}
-    if(stmt != NULL) delete stmt;
-    if(res != NULL) delete res;
+//	try {
+//		cerr << "trying to close" << endl;
+//        con->close();
+//        if(con) delete con;
+//        driver->threadEnd();
+//    } catch(sql::SQLException &e) {
+//        cerr << "Failed To Close Connection to DataBase Server" << e.what() << endl;       }
+//	cout << "mysql query destroying" << endl;
+//    if(con != NULL) {con->close(); delete con;}
+//    if(stmt != NULL) delete stmt;
+//    if(res != NULL) delete res;
 }

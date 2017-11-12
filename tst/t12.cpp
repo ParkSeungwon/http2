@@ -10,7 +10,7 @@ using namespace std;
 
 int main(int ac, char** av)
 {
-	DnDD f;//DnDD bug proved
+	HTMLServer f;//DnDD bug proved
 	Server sv{atoi(av[1])};
 	sv.start(f);
 }

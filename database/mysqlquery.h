@@ -7,18 +7,17 @@
 class Mysqlquery 
 {
 private:
-    sql::Driver *driver;
-    sql::Connection *con;
-    sql::Statement *stmt;
+    sql::Driver *driver = nullptr;
+    sql::Connection *con = nullptr;
+    sql::Statement *stmt = nullptr;
 
 protected:
-	sql::ResultSet *res;
+	sql::ResultSet *res = nullptr;
     bool myQuery(std::string str);
 
 public:
     bool connect(std::string host, std::string user, std::string pass, std::string db);
     void connect(Mysqlquery& copy);
-    Mysqlquery();
 	virtual ~Mysqlquery();
 };
 

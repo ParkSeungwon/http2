@@ -58,6 +58,7 @@ void Middle::garbage_collection()
 		for(auto& a : idNtime_) if(a.second < chrono::system_clock::now() - 600s) {
 			lck_.lock();
 			idNconn_[a.first]->send("end");
+			idNconn_[a.first]->send("end");
 			delete idNconn_[a.first];
 			idNconn_.erase(a.first);
 			idNtime_.erase(a.first);

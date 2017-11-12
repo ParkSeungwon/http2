@@ -8,7 +8,7 @@ class Tcpip
 public:
 	Tcpip(int port = 2001);
 	virtual ~Tcpip();
-	void send(std::string s);
+	void send(const std::string s);
 	std::string recv();
 
 protected:

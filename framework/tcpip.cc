@@ -23,15 +23,15 @@ Tcpip::~Tcpip()
 	close(server_fd);
 	cout << "destroying Tcpip" << endl;
 }
-void Tcpip::send(string s) 
+void Tcpip::send(const string s) 
 {
-	write(client_fd, s.data(), s.size()+1);
+	write(client_fd, s.data(), s.size());
 }
 
 string Tcpip::recv()
 {
 	int i = read(client_fd, buffer, 4095999);//error
-	buffer[i] = '\0';
+//	buffer[i] = '\0';
 	return string(buffer, i);
 }
 
