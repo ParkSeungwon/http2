@@ -65,7 +65,8 @@ Mysqlquery::Mysqlquery()
 
 Mysqlquery::~Mysqlquery()
 {
-//    if(con != NULL) delete con;
-//    if(stmt != NULL) delete stmt;
-//    if(res != NULL) delete res;
+	cout << "mysql query destroying" << endl;
+    if(con != NULL) {con->close(); delete con;}
+    if(stmt != NULL) delete stmt;
+    if(res != NULL) delete res;
 }

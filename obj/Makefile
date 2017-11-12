@@ -8,7 +8,7 @@ all : $(EXE)
 test : $(TEST)
 
 ../%.x : %.x $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lzezeon -lpthread -lmysqlcppconn
+	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn
 
 ../%.x : %.t $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lzezeon -lpthread -lmysqlcppconn
+	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn
