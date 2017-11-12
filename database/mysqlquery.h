@@ -21,13 +21,3 @@ public:
 	virtual ~Mysqlquery();
 };
 
-/*Tclass
-class Tcls
-{
-public:
-	static string table_name;
-	static unordered_map<string name, string type> structure;
-	string contents[];
-}
-*/
-

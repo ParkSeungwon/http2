@@ -17,7 +17,7 @@ private:
 	std::vector<std::string> tables();
 	int maxpage(std::string table, std::string book);
 	std::string id, level="0", name, db, table, book, page, group, group_desc, logo;
-	std::vector<std::string> tmp;
+	Json::Value tmp;
 	std::array<int, 5> allow;
 };
 

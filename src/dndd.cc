@@ -33,12 +33,12 @@ string DnDD::close()
 {
 	if(id == "") return "login first";
 	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by date, edit desc limit 1");
-	vector<string> v;
-	for(auto& a : sq) for(string s : a) v.push_back(s);
-	if(id != v[2]) return "you do not own this discussion";
-	v[4][1] = '5'; v[4][3] = '5'; v[6] = "null";
+	if(id != sq[0]["email"].asString()) return "you do not own this discussion";
+	sq[0]["contents"].asString()[1] = '5';
+	sq[0]["contents"].asString()[3] = '5';
+	sq[0]["edit"] = "null";
 	allow[1] = 5; allow[3] = 5;
-	sq.insert(v);
+	sq.insert(0);
 	return "Discussion closed";
 }	
 
@@ -55,9 +55,7 @@ string DnDD::follow()
 	if(stoi(level) > 2) return "representative cannot follow"; 
 
 	sq.select("Users", "where email=\'" + nameNvalue_["follow"] + "\' order by date desc limit 1");
-	vector<string> v;
-	for(auto& a : sq) for(string s : a) v.push_back(s);
-	if(stoi(v[2]) < 3) return "you can only follow representatives";
+	if(sq[0]["level"] < 3) return "you can only follow representatives";
 
 	sq.select("Follow", "limit 1");
 	cout << nameNvalue_["secret"] << endl;
@@ -96,9 +94,7 @@ void DnDD::add()
 	tmp.clear();
 	if(nameNvalue_["title"] != "") {//from new.html
 		sq.select(table, "order by num desc limit 1");
-		vector<string> v;
-		for(auto& a : sq) for(string s : a) v.push_back(s);
-		book = to_string(stoi(v[0]) + 1);
+		book = to_string(sq[0]["num"].asInt() + 1);
 		sq.insert({book, "0", id, nameNvalue_["title"], 
 				nameNvalue_["read"] + nameNvalue_["write"] + nameNvalue_["comment"] 
 				+ nameNvalue_["vote"] + '0' + nameNvalue_["option"] + '0', 
@@ -115,9 +111,9 @@ void DnDD::edit()
 		content_ = "<script>alert(\"This page cannot be edited.\");</script>";
 	else if(stoi(level) < allow[3]) 
 		content_ = "<script>alert(\"your level does not qualify\")</script>";
-	else if(id == tmp[2]) {
-		swap("TITLE", tmp[3]);
-		swap("CONTENT", tmp[4]);
+	else if(id == tmp[0]["email"].asString()) {
+		swap("TITLE", tmp[0]["title"].asString());
+		swap("CONTENT", tmp[0]["contents"].asString());
 	} else content_ = "<script>alert(\"you do not own this page\");</script>";
 }
 
@@ -138,17 +134,17 @@ void DnDD::index()
 
 string DnDD::search(string s)
 {//return search result as a boot strap panel string
-	vector<string> v1 = tables(), v2;
+	vector<string> v1 = tables();
 	string t;
 	for(string table : v1) {
 		sq.select(table, "where title like \'%" + s + "%\' and title <> \'코멘트임.\' order by num desc, page, edit desc" ); 
-		sq.group_by("email", "date");
-		for(auto& a : sq) {
-			v2.clear();
-			for(auto& b : a) v2.push_back(b);
+		sq.group_by({"email", "date"});
+		for(int i=0; i<sq.size(); i++) {
+			string n = sq[i]["num"].asString();
+			string p = sq[i]["page"].asString();
 			t += "<div class=\"panel-body\"><a href=\"page.html?table=" + table;
-			t += "&book=" + v2[0] + "&page=" + v2[1] + "\">" + table + ' ' + v2[0];
-			t += '.' + v2[1] + ". " + v2[3] + "</a></div>\n";
+			t += "&book=" + n + "&page=" + p + "\">" + table + ' ' + n;
+			t += '.' + p + ". " + sq[i]["title"].asString() + "</a></div>\n";
 		}
 	}
 	return t;
@@ -177,9 +173,11 @@ void DnDD::mn()
 	
 	if(nameNvalue_["email"] != "") {//if login attempt
 		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
-		v.clear();
-		for(auto a : sq) for(auto b : a) v.push_back(b);
-		if(v[1] == sq.encrypt(nameNvalue_["pwd"])) id=v[0], level=v[2], name=v[3];
+		if(sq[0]["password"] == sq.encrypt(nameNvalue_["pwd"])) {
+			id = sq[0]["email"].asString();
+			level = sq[0]["level"].asString();
+			name = sq[0]["name"].asString();
+		}
 	}
 
 	regex e{R"(<form[\s\S]+?</form>)"};

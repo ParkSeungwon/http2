@@ -2,38 +2,27 @@
 #include<initializer_list>
 #include<unordered_map>
 #include <ctime>
+#include<sstream>
 #include "mysqldata.h"
 using namespace std;
 
-bool SqlData::is_int(int n)
+bool SqlQuery::is_int(int n)
 {
-	return structure[n].second.find("INT") != string::npos;
+	return columns[n].type.find("INT") != string::npos;
 }
-std::vector<Any>* SqlData::begin() {return &contents[0];}
-std::vector<Any>* SqlData::end() {return &contents[contents.size()];}
 
-void SqlQuery::create_table(string tb) {
-	table_name = tb;
-	string s = "create table ";
-	s += tb + " (";
-	for(auto& a : structure) {
-		for(auto& b : a.first) if(b == ' ') b = '_';
-		s += a.first + ' ';
-		s += a.second + ',';
-	}
-	s.back() = ')';
-	s += ';';
-	cout << s << endl;
-	myQuery(s);
+bool SqlQuery::is_real(int n)
+{
+	return columns[n].type.find("FLOAT") != string::npos || 
+		columns[n].type.find("DOUBLE") != string::npos;
 }
 
 bool SqlQuery::insert(vector<string> v) 
 {//d should be 1 record
 	string q = "insert into " + table_name + " values (";
-	for(int i=0; i<structure.size(); i++) {
+	for(int i=0; i<columns.size(); i++) {
 		string s = v[i];
-		if(structure[i].second == "INT" || structure[i].second == "FLOAT" || s == "null") 
-			q += s + ",";
+		if(columns[i].type == "INT" || columns[i].type == "FLOAT" || s == "null" || columns[i].type == "DOUBLE") q += s + ",";
 		else q += "'" + s + "',";
 	}
 	q.back() = ')';
@@ -41,18 +30,14 @@ bool SqlQuery::insert(vector<string> v)
 	return myQuery(q);
 }
 
-bool SqlQuery::insert()
-{//d should be 1 record
-	auto& record = contents[0];
-	string q = "insert into " + table_name + " values (";
-	for(int i=0; i<structure.size(); i++) {
-		string s = record[i];
-		if(structure[i].second.find("INT") != string::npos) q += s + ",";
-		else q += "'" + s + "',";
-	}
-	q.back() = ')';
-	q += ";";
-	return myQuery(q);
+bool SqlQuery::insert(int n)
+{//seekp rewind
+	stringstream ss; ss << "insert into " << table_name << " (";
+	for(int i=0; i<columns.size(); i++) ss << columns[i].name << ',';
+	ss.seekp(-1, ss.cur); ss << ") values (";
+	for(int i=0; i<columns.size(); i++) ss << (*this)[n][columns[i].name] << ',';
+	ss.seekp(-1, ss.cur); ss << ");";
+	return myQuery(ss.str());
 }
 
 string SqlQuery::now()
@@ -76,41 +61,20 @@ int SqlQuery::select(string table, string where)
 
 	table_name = table;
 	sql::ResultSetMetaData* mt = res->getMetaData();
+	columns.clear();
 	int c = mt->getColumnCount();
-	structure.clear();
-	contents.clear();
-	for(int i = 0; i < c; i++) //populate structure
-		structure.push_back({mt->getColumnName(i+1), mt->getColumnTypeName(i+1)});
-	vector<Any> record;
-	while(res->next()) { //populate contents
-		record.clear();
+	for(int i = 0; i < c; i++) //populate columns
+		columns.push_back({mt->getColumnName(i+1), mt->getColumnDisplaySize(i+1), mt->getColumnTypeName(i+1)});
+	for(int j=0; res->next(); j++) { //populate contents
 		for(int i = 0; i < c; i++) {
-			if(is_int(i)) record.push_back(res->getInt(i+1));
-			else record.push_back(Any(res->getString(i+1)));
+			if(is_int(i)) (*this)[j][columns[i].name] = res->getInt(i+1);
+			else if(is_real(i)) 
+				(*this)[j][columns[i].name] = static_cast<double>(res->getDouble(i+1));
+			else (*this)[j][columns[i].name] = static_cast<string>(res->getString(i+1));
 		}
-		contents.push_back(record);
 	}
-	return contents.size();
+	return size();
 }
-
-
-/*string SqlData::now()
-{
-	auto now = chrono::system_clock::now();
-	auto tp = chrono::system_clock::to_time_t(now);
-	string t = ctime(&tp);
-	unordered_map<string, string> months {
-		{"Jan", "01"}, {"Feb", "02"}, {"Mar", "03"}, {"Apr", "04"}, 
-		{"May", "05"}, {"Jun", "06"}, {"Jul", "07"}, {"Aug", "08"}, 
-		{"Sep", "09"}, {"Oct", "10"}, {"Nov", "11"}, {"Dec", "12"}
-	};
-
-	string s = t.substr(20, 4) + "-" + months[t.substr(4, 3)] + "-";
-	if(t[8] == ' ') s += '0';
-	else s += t[8];
-	s += t.substr(9, 10);
-	return s;
-}*/
 
 vector<string> SqlQuery::show_tables()
 {
@@ -120,16 +84,14 @@ vector<string> SqlQuery::show_tables()
 	return record;
 }
 
-bool SqlQuery::order_lambda(const std::vector<Any>& a, 
-		const std::vector<Any>& b, std::vector<int> cols)
-{
-	int i=0;
-	while(a[abs(cols[i])-1] == b[abs(cols[i])-1] && i < cols.size()-1) i++; 
-	bool desc = false;
-	if(cols[i] < 0) {
-		cols[i] = -cols[i];
-		desc = true;
-	}
-	bool asc = a[cols[i]-1] < b[cols[i]-1];
-	return desc ? !asc : asc;
+void SqlQuery::group_by(vector<string> v)
+{//v:group by column name, will return like old mysql group by
+	Json::Value r;
+	r[0] = (*this)[0];
+	for(int i=1, k=0; i<size(); i++) for(int j=0; j<v.size(); j++) 
+		if((*this)[i][v[j]] != (*this)[i-1][v[j]]) {//if diffrent insert
+			r[k++] = (*this)[i];
+			break;
+		}
+	this->Json::Value::operator=(r);
 }

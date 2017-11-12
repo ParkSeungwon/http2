@@ -28,9 +28,9 @@ static string level2txt(array<int, 5> allow)
 void DnDD::pg()
 {
 	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
-		sq.select(table, "limit 1");
+		sq.select(table, "limit 1");//if from page no date
 		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
-				tmp.size() ? tmp[5] : sq.now(), "null"});//if from page no date
+				tmp.size() ? tmp[0]["date"].asString() : sq.now(), "null"});
 	} else if(nameNvalue_["comment"] != "") {//if from comment
 		sq.select(table, "limit 1");
 		sq.insert({book, page, id, "코멘트임.", nameNvalue_["comment"], sq.now(), "null"});
@@ -61,22 +61,21 @@ void DnDD::pg()
 
 	//main frame
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
-	vector<string> v;
-	for(auto& a : sq) for(string s : a) v.push_back(s);
-	swap("FOLLOW", v[2]);
-	swap("TITLE", v[3]);
-	swap("MAINTEXT", page == "0" ? level2txt(allow) : quote_encode(v[4]));
-	tmp = v;//5 date
+	swap("FOLLOW", sq[0]["email"].asString());
+	swap("TITLE", sq[0]["title"].asString());
+	swap("MAINTEXT", page == "0" ? 
+			level2txt(allow) : quote_encode(sq[0]["contents"].asString()));
+	tmp = sq[0];//5 date
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
-	sq.group_by("date", "email", "edit");
+	sq.group_by({"date", "email", "edit"});
 	string t;
-	for(auto& a : sq) {
-		v.clear();
-		for(string s : a) v.push_back(s);
-		t += "<div class=\"panel-heading\">written by " + v[2] + " on " + v[5];
-		t += "</div>\n<div class=\"panel-body\">" + v[4] + "</div>\n";
+	for(int i=0; i<sq.size(); i++) {
+		t += "<div class=\"panel-heading\">written by ";
+		t += sq[i]["email"].asString() + " on " + sq[i]["date"].asString();
+		t += "</div>\n<div class=\"panel-body\">";
+		t += sq[i]["contents"].asString() + "</div>\n";
 	}
 	swap("ATTACHMENT", t);
 }

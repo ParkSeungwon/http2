@@ -60,7 +60,10 @@ Mysqlquery::~Mysqlquery()
 		cerr << "trying to close" << endl;
         con->close();
         if(con) delete con;
+		if(res) delete res;
+		if(stmt) delete stmt;
         driver->threadEnd();
+		cout << "mysql closed" << endl;
     } catch(sql::SQLException &e) {
         cerr << "Failed To Close Connection to DataBase Server" << e.what() << endl;       }
 //	cout << "mysql query destroying" << endl;
