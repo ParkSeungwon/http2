@@ -1,12 +1,14 @@
 all : 
-	make -C gtk/
 	make -C src/
+	make -C framework/
+	make -C database/
 	make -C obj/
 
-PHONY : clean
+PHONY : clean test
 
 clean :
-	rm obj/*.o obj/*.x *.x
+	rm obj/*.? *.x
 
-ls :
-	echo $(EXE)
+test : 
+	make -C tst/
+	make -C obj/ test

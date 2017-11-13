@@ -2,6 +2,7 @@ html/
 latex/
 rtf/
 *.x
+*.t
 *~
 *.swp
 *.swo

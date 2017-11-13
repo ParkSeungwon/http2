@@ -1,5 +1,5 @@
 CFLAG = -g -c -std=c++14 -fmax-errors=1 -pthread
-INCLUDE = -I../ -I../database -I../framework -I/usr/include/jsoncpp
+INCLUDE = -I../ -I../src/ -I../framework/ -I/usr/include/jsoncpp
 CC = g++
 OBJ = $(patsubst %.cc, ../obj/%.o, $(wildcard *.cc))
 MAIN_OBJ = $(patsubst %.cpp, ../obj/%.x, $(wildcard *.cpp))

@@ -1,23 +1,23 @@
 #include<iostream>
 #include<string>
 #include<atomic>
-#include"tcpip.h"
+#include"server.h"
+#include"asyncqueue.h"
 using namespace std;
 
-Client cl;
-atomic<bool> ended {false};
-void recv_th(Client& cl) {
-	while(!ended) cout << cl.recv() << endl;
+void f(string s) {
+	cout << s << endl;
 }
+
 int main(int ac, char** av)
 {
+	string host = ac < 3 ? "127.0.0.1" : av[1];
+	int port = ac < 2 ? 2001 : atoi(av[2]);
+	Client cl{host, port};
+	AsyncQueue<string> aq{bind(&Client::recv, &cl), f};//how beautiful
 	string s;
-	thread th{recv_th, ref(cl)};
-
 	while(cin >> s) {
 		cl.send(s);
 		if(s == "end") break;
 	}
-	ended = true;
-	th.join();
 }

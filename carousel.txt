@@ -1,0 +1,10 @@
+3
+background.jpg
+shopping mall
+main.html?db=dndd
+logo.jpg
+동국대학교
+main.html?db=dndd2
+Samsung.png
+삼성전자
+main.html?db=dndd
