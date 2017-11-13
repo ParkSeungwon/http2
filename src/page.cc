@@ -70,9 +70,7 @@ void DnDD::pg()
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
-	cout << sq << endl;
 	sq.group_by({"date", "email", "edit"});
-	cout << sq << endl;
 	string t;
 	for(int i=0; i<sq.size(); i++) {
 		t += "<div class=\"panel-heading\">written by ";
