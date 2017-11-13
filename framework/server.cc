@@ -40,7 +40,10 @@ void Server::start(function<string(string)> f)
 	while(1) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 		if(client_fd == -1) cout << "accept() error" << endl;
-		else if(!fork()) for(string s; (s = recv()) != end_string; send(f(s)));
+		else if(!fork()) {
+			for(string s; (s = recv()) != end_string; send(f(s)));
+			break;
+		}
 	}
 }
 
