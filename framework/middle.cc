@@ -9,7 +9,7 @@ Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
 	  outflux_{bind(&Middle::send, this, placeholders::_1)},
-	  th{&Middle::garbage_collection, this}, lck_{mtx_, defer_lock}
+	  th_{&Middle::garbage_collection, this}, lck_{mtx_, defer_lock}
 { }
 
 Packet Middle::recv()

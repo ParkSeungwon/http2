@@ -23,7 +23,6 @@ protected:
 	WaitQueue<Packet> outflux_;
 	std::map<int, Client*> idNconn_;
 	std::map<int, std::chrono::system_clock::time_point> idNtime_;
-	std::thread th;
 
 private:
 	Packet recv();
@@ -31,6 +30,7 @@ private:
 	void garbage_collection();
 	const int inport_;
 	int id_ = 0;
+	std::thread th_;
 	std::mutex mtx_;
 	std::unique_lock<std::mutex> lck_;
 };

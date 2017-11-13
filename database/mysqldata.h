@@ -15,16 +15,12 @@ public:
 	std::vector<std::string> show_tables();
 	std::string now();//system clock->mysql datetime string
 
+protected:
 	struct Column {
 		std::string name;
 		unsigned size;
 		std::string type;
 	};
-	std::vector<Column>& desc() {
-		return columns;
-	}
-
-protected:
 	std::string table_name;
 	std::vector<Column> columns;
 
