@@ -18,8 +18,10 @@ array<int, 5> DnDD::allowlevel(string table, string book)
 	array<int, 5> ar;
 	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by edit desc limit 1");
 
-	for(int i=0; i<4; i++) ar[i] = sq[0]["contents"].asString()[i] - '0';
-	ar[4] = sq[0]["content"].asString()[5] - '0';
+	string s = sq[0]["contents"].asString();
+	for(int i=0; i<4; i++) ar[i] = s[i] - '0';
+	ar[4] = s[5] - '0';
+	for(int i=0; i<5; i++) cout << ar[i];
 	return ar;
 }
 

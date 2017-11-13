@@ -43,7 +43,7 @@ void DnDD::pg()
 	int ipage = stoi(page);
 	allow = allowlevel(table, book);
 
-	if(id != "" && stoi(level) < allow[0]) {//check read level
+	if(stoi(level) < allow[0]) {//check read level
 		content_ = "<script>alert(\"not enough level to read this article\")</script>";
 		return;
 	}
@@ -63,13 +63,16 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", sq[0]["title"].asString());
+	cout << sq << endl;
 	swap("MAINTEXT", page == "0" ? 
 			level2txt(allow) : quote_encode(sq[0]["contents"].asString()));
 	tmp = sq[0];//5 date
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
+	cout << sq << endl;
 	sq.group_by({"date", "email", "edit"});
+	cout << sq << endl;
 	string t;
 	for(int i=0; i<sq.size(); i++) {
 		t += "<div class=\"panel-heading\">written by ";
