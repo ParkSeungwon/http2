@@ -9,7 +9,6 @@ template <typename T> class WaitQueue
 public:
 	WaitQueue(std::function<void(T)> consumer);
 	WaitQueue(WaitQueue&& r);
-	virtual ~WaitQueue();
 	void push_back(T s);
 
 private:
@@ -26,7 +25,6 @@ template <typename T> class AsyncQueue : public WaitQueue<T>
 public:
 	AsyncQueue(std::function<T()> provider, std::function<void(T)> consumer);
 	AsyncQueue(AsyncQueue&& r);
-	virtual ~AsyncQueue();
 	
 private:
 	std::function<T()> provider;///<auto respond func

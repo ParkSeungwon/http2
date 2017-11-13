@@ -13,6 +13,7 @@ template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {
 	this->consumer = consumer;
 	tho = thread(&WaitQueue::consume, this);
+	tho.detach();
 }
 
 template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
@@ -20,12 +21,6 @@ template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
 	q = move(r.q);
 	tho = move(r.tho);
 	consumer = move(r.consumer);
-}
-
-template<typename T> WaitQueue<T>::~WaitQueue()
-{
-	tho.detach();
-	tho.~thread();
 }
 
 template <typename T> void WaitQueue<T>::consume()
@@ -42,12 +37,10 @@ template <typename T> void WaitQueue<T>::consume()
 
 template <typename T> void WaitQueue<T>::push_back(T s)
 {///asynchronous send, ->sendf()
-	unique_lock<mutex> lck{mtx};
+	lock_guard<mutex> lck{mtx};
 	q.push_back(s);
-	lck.unlock();
 	cv.notify_all();
 }
-
 
 template <typename T> 
 AsyncQueue<T>::AsyncQueue(function<T()> provider, function<void(T)> consumer) 
@@ -55,6 +48,7 @@ AsyncQueue<T>::AsyncQueue(function<T()> provider, function<void(T)> consumer)
 {
 	this->provider = provider;
 	thi = thread(&AsyncQueue::provide, this);
+	thi.detach();
 }
 
 template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{move(r)}
@@ -63,14 +57,7 @@ template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{m
 	provider = move(r.provider);
 }
 
-template <typename T> AsyncQueue<T>::~AsyncQueue()
-{
-	thi.detach();//thi.join() ???
-	thi.~thread();
-}
-
 template <typename T> void AsyncQueue<T>::provide()
 {///recv->functor->q->notify to sendf
 	while(1) WaitQueue<T>::push_back(provider());
 }
-	
