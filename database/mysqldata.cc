@@ -86,8 +86,8 @@ vector<string> SqlQuery::show_tables()
 
 void SqlQuery::group_by(vector<string> v)
 {//v:group by column name, will return like old mysql group by
-	Json::Value r;
 	if(!size()) return;
+	Json::Value r;
 	r[0] = (*this)[0];
 	for(int i=1, k=1; i<size(); i++) for(int j=0; j<v.size(); j++) 
 		if((*this)[i][v[j]] != (*this)[i-1][v[j]]) {//if diffrent insert

@@ -111,9 +111,9 @@ void DnDD::edit()
 		content_ = "<script>alert(\"This page cannot be edited.\");</script>";
 	else if(stoi(level) < allow[3]) 
 		content_ = "<script>alert(\"your level does not qualify\")</script>";
-	else if(id == tmp[0]["email"].asString()) {
-		swap("TITLE", tmp[0]["title"].asString());
-		swap("CONTENT", tmp[0]["contents"].asString());
+	else if(id == tmp["email"].asString()) {
+		swap("TITLE", tmp["title"].asString());
+		swap("CONTENT", tmp["contents"].asString());
 	} else content_ = "<script>alert(\"you do not own this page\");</script>";
 }
 
