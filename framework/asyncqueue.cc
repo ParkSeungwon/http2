@@ -13,7 +13,7 @@ template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {
 	this->consumer = consumer;
 	tho = thread(&WaitQueue::consume, this);
-	tho.detach();
+	tho.detach();//blocking functions cannot be joined
 }
 
 template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)

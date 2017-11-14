@@ -1,10 +1,13 @@
-3
-background.jpg
-shopping mall
-main.html?db=dndd
-logo.jpg
-동국대학교
+4
+chicago.jpg
+토론과 민주적인 의사 결정
 main.html?db=dndd2
-Samsung.png
-삼성전자
+la.jpg
+인터넷 쇼핑몰
+http://localhost:8080/In
+ny.jpg
+Inzent ECM Monitoring System
+http://localhost:8080/inzent
+chicago.jpg
+나의 정리노트
 main.html?db=dndd

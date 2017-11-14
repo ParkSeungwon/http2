@@ -2,6 +2,7 @@
 #include<map>
 #include<chrono>
 #include<mutex>
+#include<shared_mutex>
 #include"asyncqueue.h"
 #include"server.h"
 
@@ -23,6 +24,7 @@ protected:
 	WaitQueue<Packet> outflux_;
 	std::map<int, Client*> idNconn_;
 	std::map<int, std::chrono::system_clock::time_point> idNtime_;
+	std::vector<std::thread> ths_;
 
 private:
 	Packet recv();
@@ -31,6 +33,6 @@ private:
 	const int inport_;
 	int id_ = 0;
 	std::thread th_;
-	std::mutex mtx_;
+	std::shared_mutex mtx_;
 	std::unique_lock<std::mutex> lck_;
 };
