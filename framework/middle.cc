@@ -8,7 +8,8 @@ using namespace std;
 Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
-	  outflux_{bind(&Middle::send, this, placeholders::_1)}
+	  outflux_{bind(&Middle::send, this, placeholders::_1)},
+	  th_{&Middle::garbage_collection, this}
 { }
 
 Packet Middle::recv()
@@ -49,10 +50,12 @@ void Middle::send(Packet p)
 void Middle::sow(Packet p)
 {//recv -> sow -> send
 	//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
-	if(!p.id) {
+	//time check 500 - 600, no need to use mutex
+	if(!p.id || idNchannel_[p.id]->time_stamp_ < chrono::system_clock::now() - 500s) {
 		idNchannel_[++id_] = new Channel{inport_, outflux_};
 		p.id = -id_;
-	} else if(!idNchannel_[p.id]) idNchannel_[p.id] = new Channel{inport_, outflux_};
+	} else if(!idNchannel_[p.id])//reconnect
+		idNchannel_[p.id] = new Channel{inport_, outflux_};
 	idNchannel_[abs(p.id)]->push_back(p);//sow to server
 }
 

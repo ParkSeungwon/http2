@@ -43,4 +43,5 @@ private:
 	void garbage_collection();
 	const int inport_;
 	int id_ = 0;
+	std::thread th_;
 };
