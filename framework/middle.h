@@ -2,7 +2,6 @@
 #include<map>
 #include<chrono>
 #include<mutex>
-#include<shared_mutex>
 #include"asyncqueue.h"
 #include"server.h"
 
@@ -11,6 +10,20 @@ struct Packet
 	int fd, id;//client_fd, cookie id
 	std::string content;
 };
+
+class Channel : public WaitQueue<Packet>, public Client
+{
+public:
+	Channel(int port, WaitQueue<Packet>& out);
+	std::chrono::system_clock::time_point time_stamp_;
+
+protected:
+	WaitQueue<Packet>& out_;
+
+private:
+	void consumer(Packet p);
+};
+
 
 class Middle : public Server
 {//middle server that will connect to html server, provide state to html server
@@ -22,9 +35,7 @@ public:
 protected:
 	AsyncQueue<Packet> influx_;
 	WaitQueue<Packet> outflux_;
-	std::map<int, Client*> idNconn_;
-	std::map<int, std::chrono::system_clock::time_point> idNtime_;
-	std::vector<std::thread> ths_;
+	std::map<int, Channel*> idNchannel_;
 
 private:
 	Packet recv();
@@ -32,7 +43,4 @@ private:
 	void garbage_collection();
 	const int inport_;
 	int id_ = 0;
-	std::thread th_;
-	std::shared_mutex mtx_;
-	std::unique_lock<std::mutex> lck_;
 };

@@ -7,9 +7,8 @@ using namespace std;
 
 Middle::Middle(int outport, int inport)
 	: Server{outport}, inport_{inport}, 
-	  influx_{bind(&Middle::recv, this), thread{bind(&Middle::sow, this, placeholders::_1)}},
-	  outflux_{bind(&Middle::send, this, placeholders::_1)},
-	  th_{&Middle::garbage_collection, this}, lck_{mtx_, defer_lock}
+	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
+	  outflux_{bind(&Middle::send, this, placeholders::_1)}
 { }
 
 Packet Middle::recv()
@@ -26,6 +25,21 @@ Packet Middle::recv()
 	return {client_fd, id, s};
 }
 
+Channel::Channel(int port, WaitQueue<Packet>& out)
+	: WaitQueue<Packet>{bind(&Channel::consumer, this, placeholders::_1)},
+	  Client{"localhost", port}, out_{out}
+{ }
+
+void Channel::consumer(Packet p)
+{
+	time_stamp_ = chrono::system_clock::now();
+	send(p.content);
+	p.content = recv();
+	if(p.id < 0) p.content.replace(16, 1, 
+			"\nSet-Cookie: middleID=" + to_string(p.id = -p.id) + "\r\n");
+	out_.push_back(p);
+}
+
 void Middle::send(Packet p)
 {
 	write(p.fd, p.content.data(), p.content.size()+1);
@@ -34,37 +48,25 @@ void Middle::send(Packet p)
 
 void Middle::sow(Packet p)
 {//recv -> sow -> send
-	bool newly_connected = false;
-	shared_lock<shared_mutex> lck{mtx_};
-	if(!p.id) {//rafting, same connection use same furrow(middle <-> htmlserver)
-		idNconn_[p.id = ++id_] = new Client{"localhost", inport_};
-		newly_connected = true;
-	}
-	if(!idNconn_[p.id]) idNconn_[p.id] = new Client{"localhost", inport_};//reconnect
-	idNtime_[p.id] = std::chrono::system_clock::now();//set time for garbage collection
-	ths_.push_back(thread{[&]() {
-		idNconn_[p.id]->send(p.content);//sow to server
-		p.content = idNconn_[p.id]->recv();//reap from html server
-	}});
-//	lck_.unlock();
-	if(newly_connected)//set id for the browser
-		p.content.replace(16, 1, "\nSet-Cookie: middleID=" + to_string(id_) + "\r\n");
-//	cout << p.content << endl;
-	outflux_.push_back(p);//sell to browser
+	//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
+	if(!p.id) {
+		idNchannel_[++id_] = new Channel{inport_, outflux_};
+		p.id = -id_;
+	} else if(!idNchannel_[p.id]) idNchannel_[p.id] = new Channel{inport_, outflux_};
+	idNchannel_[abs(p.id)]->push_back(p);//sow to server
 }
 
 void Middle::garbage_collection()
 {
 	while(1) {
 		int k = 0;
-		for(auto& a : idNtime_) if(a.second < chrono::system_clock::now() - 600s) {
-//			lock_guard<mutex> l{mtx_};
-			idNconn_[a.first]->send("end");
-			idNconn_[a.first]->send("end");
-			delete idNconn_[a.first];
-			idNconn_.erase(a.first);
-			idNtime_.erase(a.first);
-			k++;
+		for(auto& a : idNchannel_) {
+			if(a.second->time_stamp_ < chrono::system_clock::now() - 600s) {
+				a.second->send("end");
+				delete a.second;
+				idNchannel_.erase(a.first);
+				k++;
+			}
 		}
 		if(k) cout << "colleced " << k << " garbages" << endl;
 		this_thread::sleep_for(60s);
@@ -73,7 +75,7 @@ void Middle::garbage_collection()
 
 Middle::~Middle()
 {
-	for(auto& a : idNconn_) if(a.second) delete a.second;
+	for(auto& a : idNchannel_) if(a.second) delete a.second;
 }
 
 void Middle::start()
