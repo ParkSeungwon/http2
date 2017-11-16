@@ -8,6 +8,8 @@ static string quote_encode(string s)
 {//" -> ' to embed inside srcdoc, if text \n -> <br>
 	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
 		s.replace(i, 1, "\'");
+//	for(auto i = s.find('%'); i != string::npos; i = s.find('%', i)) 
+//		s.replace(i, 1, "%37");
 	if(s.find('<') > 10) 
 		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
 			s.replace(i, 1, "<br>");
@@ -30,7 +32,7 @@ void DnDD::pg()
 	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
 		sq.select(table, "limit 1");//if from page no date
 		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
-				tmp.size() ? tmp[0]["date"].asString() : sq.now(), "null"});
+				tmp.empty() ? sq.now() : tmp["date"].asString(), "null"});
 	} else if(nameNvalue_["comment"] != "") {//if from comment
 		sq.select(table, "limit 1");
 		sq.insert({book, page, id, "코멘트임.", nameNvalue_["comment"], sq.now(), "null"});

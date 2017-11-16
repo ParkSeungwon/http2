@@ -3,6 +3,7 @@
 #include <cppconn/exception.h>
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
+//#include<mysql_connection.h>
 #include "mysqlquery.h"
 using namespace std;
 
@@ -11,6 +12,7 @@ bool Mysqlquery::myQuery(std::string str)
 	//cout << str << endl;
 	try {
         //cout << "Executing query....." << endl << endl;
+//		str = dynamic_cast<sql::mysql::MySQL_Connection*>(con)->escapeString(str);
         res = stmt->executeQuery(str);
 		//cout << "Done." << endl;
         return true;

@@ -2,7 +2,7 @@
 #include<iostream>
 #include<fstream>
 #include<vector>
-#include"src/bootstrap.h"
+#include"bootstrap.h"
 
 using namespace std;
 

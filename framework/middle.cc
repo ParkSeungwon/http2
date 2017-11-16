@@ -56,8 +56,10 @@ void Middle::sow(Packet p)
 {//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
 	if(!p.id || !idNchannel_[p.id] ||//new connection or reconnect after disconnect
 			//time check 1400 - 1500, no need to use mutex, sequence of || important
-			*idNchannel_[p.id] < chrono::system_clock::now() - 1400s)
-		idNchannel_[-(p.id = -++id_)] = new Channel{inport_, outflux_};//mark p.id -
+			*idNchannel_[p.id] < chrono::system_clock::now() - 1400s) {
+		cout << "new channel : " << ++id_ << endl;
+		idNchannel_[-(p.id = -id_)] = new Channel{inport_, outflux_};//mark p.id -
+	}
 	idNchannel_[abs(p.id)]->push_back(p);//sow to server
 }
 

@@ -54,7 +54,7 @@ string DnDD::follow()
 	if(id == "") return "login first";
 	if(stoi(level) > 2) return "representative cannot follow"; 
 
-	sq.select("Users", "where email=\'" + nameNvalue_["follow"] + "\' order by date desc limit 1");
+	sq.select("Users", "where email='" + nameNvalue_["follow"] + "' order by date desc limit 1");
 	if(sq[0]["level"] < 3) return "you can only follow representatives";
 
 	sq.select("Follow", "limit 1");
@@ -79,14 +79,14 @@ string DnDD::vote()
 
 void DnDD::comment()
 {
-	if(id == "") content_ = "<script>alert(\"login first.\")</script>";
+	if(id == "") content_ = "<script>alert('login first.')</script>";
 	else if(stoi(level) < allow[2]) 
-		content_ = "<script>alert(\"your level does not qualify.\")</script>"; 
+		content_ = "<script>alert('your level does not qualify.')</script>"; 
 }
 
 void DnDD::new_book()
 {
-	if(id == "") content_ = "<script>alert(\"login first.\")</script>";
+	if(id == "") content_ = "<script>alert('login first.')</script>";
 }
 
 void DnDD::add() 
@@ -102,19 +102,19 @@ void DnDD::add()
 		page = "1";
 	} else if(stoi(level) >= allow[1])//from page.html, check write level
 		page = to_string(maxpage(table, book) + 1);
-	else content_ = "<script>alert(\"your level does not qualify.\")</script>";
+	else content_ = "<script>alert('your level does not qualify.')</script>";
 }
 
 void DnDD::edit()
 {
 	if(page == "0") 
-		content_ = "<script>alert(\"This page cannot be edited.\");</script>";
+		content_ = "<script>alert('This page cannot be edited.');</script>";
 	else if(stoi(level) < allow[3]) 
-		content_ = "<script>alert(\"your level does not qualify\")</script>";
+		content_ = "<script>alert('your level does not qualify')</script>";
 	else if(id == tmp["email"].asString()) {
 		swap("TITLE", tmp["title"].asString());
 		swap("CONTENT", tmp["contents"].asString());
-	} else content_ = "<script>alert(\"you do not own this page\");</script>";
+	} else content_ = "<script>alert('you do not own this page');</script>";
 }
 
 void DnDD::index()
@@ -134,13 +134,13 @@ string DnDD::search(string s)
 	vector<string> v1 = tables();
 	string t;
 	for(string table : v1) {
-		sq.select(table, "where title like \'%" + s + "%\' and title <> \'코멘트임.\' order by num desc, page, edit desc" ); 
+		sq.select(table, "where title like '%" + s + "%' and title <> '코멘트임.' order by num desc, page, edit desc" ); 
 		sq.group_by({"email", "date"});
 		for(int i=0; i<sq.size(); i++) {
 			string n = sq[i]["num"].asString();
 			string p = sq[i]["page"].asString();
-			t += "<div class=\"panel-body\"><a href=\"page.html?table=" + table;
-			t += "&book=" + n + "&page=" + p + "\">" + table + ' ' + n;
+			t += "<div class='panel-body'><a href='page.html?table=" + table;
+			t += "&book=" + n + "&page=" + p + "'>" + table + ' ' + n;
 			t += '.' + p + ". " + sq[i]["title"].asString() + "</a></div>\n";
 		}
 	}
@@ -160,7 +160,7 @@ void DnDD::mn()
 	
 	vector<string> v = tables();//navbar setting
 	string t;
-	for(auto s : v) t += "<li><a href=\"main.html?field=" +s+ "\">" +s+ "</a></li>"; 
+	for(auto s : v) t += "<li><a href='main.html?field=" +s+ "'>" +s+ "</a></li>"; 
 	swap("NAVITEM", t); t = "";
 	table = nameNvalue_["field"] == "" ? v[0] : nameNvalue_["field"];
 	swap("PANEL", field(table));
@@ -169,7 +169,7 @@ void DnDD::mn()
 	swap("LOGO", logo);
 	
 	if(nameNvalue_["email"] != "") {//if login attempt
-		sq.select("Users", "where email = \'" + nameNvalue_["email"] + "\' order by date desc limit 1");
+		sq.select("Users", "where email = '" + nameNvalue_["email"] + "' order by date desc limit 1");
 		if(sq[0]["password"] == sq.encrypt(nameNvalue_["pwd"])) {
 			id = sq[0]["email"].asString();
 			level = sq[0]["level"].asString();
@@ -195,13 +195,13 @@ void DnDD::signin()
 		sq.insert({nameNvalue_["email"], sq.encrypt(nameNvalue_["password"]), "1", nameNvalue_["username"], nameNvalue_["tel"], sq.now()});
 		if(nameNvalue_["check"] != "") 
 			id = nameNvalue_["email"], level = "1", name = nameNvalue_["username"];
-		append("REPLACE\">", "가입완료<br><a href=\"main.html\">메인화면으로</a><br>");
+		append("REPLACE\">", "가입완료<br><a href='main.html'>메인화면으로</a><br>");
 	}
 
 	const char *append_str[]//to remember user input
 		= {"email", "password", "verify", "username", "address", "tel"};
 	for(string s : append_str) 
-		append("id=\"" + s + '\"', " value=\"" + nameNvalue_[s] + '\"');
+		append("id=\"" + s + '\"', " value='" + nameNvalue_[s] + '\'');
 	cout << id << endl;
 }
 

@@ -1,11 +1,9 @@
 #include<unistd.h>
-#include"dndd.h"
+#include<iostream>
 using namespace std;
 
 int main()
 {
-	if(!fork()){
-		DnDD d;
-	}
+	cout << "hello''"<< endl;
 }
 
