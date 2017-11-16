@@ -25,7 +25,7 @@ template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
 
 template <typename T> void WaitQueue<T>::consume()
 {
-	unique_lock<mutex> lck{mtx, defer_lock};
+	unique_lock<timed_mutex> lck{mtx, defer_lock};
 	while(1) {
 		lck.lock();
 		while(q.empty()) cv.wait(lck);
@@ -37,9 +37,11 @@ template <typename T> void WaitQueue<T>::consume()
 
 template <typename T> void WaitQueue<T>::push_back(T s)
 {///asynchronous send, ->sendf()
-	lock_guard<mutex> lck{mtx};
-	q.push_back(s);
-	cv.notify_all();
+	if(mtx.try_lock_for(100ms)) {
+		q.push_back(s);
+		mtx.unlock();
+		cv.notify_all();
+	}
 }
 
 template <typename T> 

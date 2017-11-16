@@ -15,10 +15,11 @@ class Channel : public WaitQueue<Packet>, public Client
 {
 public:
 	Channel(int port, WaitQueue<Packet>& out);
-	std::chrono::system_clock::time_point time_stamp_;
+	bool operator<(const std::chrono::system_clock::time_point& r);
 
 protected:
 	WaitQueue<Packet>& out_;
+	std::chrono::system_clock::time_point time_stamp_;
 
 private:
 	void consumer(Packet p);

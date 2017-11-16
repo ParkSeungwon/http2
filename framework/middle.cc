@@ -36,23 +36,27 @@ void Channel::consumer(Packet p)
 	time_stamp_ = chrono::system_clock::now();
 	send(p.content);
 	p.content = recv();
-	if(p.id < 0) p.content.replace(16, 1, //16 : position in header
+	if(p.id < 0) p.content.replace(16, 1, //16 : first new line position in header
 			"\nSet-Cookie: middleID=" + to_string(p.id = -p.id) + "\r\n");
 	out_.push_back(p);
 }
 
-void Middle::send(Packet p)
+bool Channel::operator<(const chrono::system_clock::time_point& r)
 {
+	return time_stamp_ < r;
+}
+
+void Middle::send(Packet p)
+{//recv -> sow -> send
 	write(p.fd, p.content.data(), p.content.size());//erased +1
 	close(p.fd);
 }
 
 void Middle::sow(Packet p)
-{//recv -> sow -> send
-	//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
+{//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
 	if(!p.id || !idNchannel_[p.id] ||//new connection or reconnect after disconnect
-			idNchannel_[p.id]->time_stamp_ < chrono::system_clock::now() - 1400s)
-			//time check 1400 - 1500, no need to use mutex
+			//time check 1400 - 1500, no need to use mutex, sequence of || important
+			*idNchannel_[p.id] < chrono::system_clock::now() - 1400s)
 		idNchannel_[-(p.id = -++id_)] = new Channel{inport_, outflux_};//mark p.id -
 	idNchannel_[abs(p.id)]->push_back(p);//sow to server
 }
@@ -62,7 +66,7 @@ void Middle::garbage_collection()
 	while(1) {
 		int k = 0;
 		for(auto& a : idNchannel_) {
-			if(a.second->time_stamp_ < chrono::system_clock::now() - 1500s) {
+			if(*a.second < chrono::system_clock::now() - 1500s) {
 				a.second->send("end");
 				delete a.second;
 				idNchannel_.erase(a.first);

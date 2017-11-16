@@ -15,8 +15,8 @@ private:
 	std::deque<T> q;
 	std::function<void(T)> consumer;
 	std::thread tho;
-	std::mutex mtx;
-	std::condition_variable cv;
+	std::timed_mutex mtx;
+	std::condition_variable_any cv;
 	void consume();
 };
 
