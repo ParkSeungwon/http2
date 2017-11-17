@@ -37,7 +37,7 @@ template <typename T> void WaitQueue<T>::consume()
 
 template <typename T> void WaitQueue<T>::push_back(T s)
 {///asynchronous send, ->sendf()
-	if(mtx.try_lock_for(100ms)) {
+	if(mtx.try_lock_for(1s)) {
 		q.push_back(s);
 		mtx.unlock();
 		cv.notify_all();
