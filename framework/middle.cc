@@ -71,7 +71,7 @@ void Middle::garbage_collection()
 			if(*a.second < chrono::system_clock::now() - 1500s) {
 				a.second->send("end");
 				delete a.second;
-				idNchannel_.erase(a.first);
+				//idNchannel_.erase(a.first);
 				k++;
 			}
 		}
@@ -88,6 +88,6 @@ Middle::~Middle()
 void Middle::start()
 {
 	string s;
-	cout << "starting middle server, enter \'end\' to end the server." << endl;
+	cout << "starting middle server, enter 'end' to end the server." << endl;
 	while(cin >> s) if(s == "end") break;
 }

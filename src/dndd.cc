@@ -32,7 +32,7 @@ void DnDD::process()
 string DnDD::close()
 {
 	if(id == "") return "login first";
-	sq.select(table, "where num=" + book + " and page=0 and title <> \'코멘트임.\' order by date, edit desc limit 1");
+	sq.select(table, "where num=" + book + " and page=0 and title <> '코멘트임.' order by date, edit desc limit 1");
 	if(id != sq[0]["email"].asString()) return "you do not own this discussion";
 	string s = sq[0]["contents"].asString();
 	s[1] = '5'; s[3] = '5'; allow[1] = 5; allow[3] = 5;
