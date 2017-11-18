@@ -20,7 +20,9 @@ framework : CWFS framework(main feature)
 
 database : classes about database access(dependency : mysqlcppconn, libjsoncpp)
 
-src : website class
+src : website backend
+
+html, js files on root : website frontend
 
 ## Minimal Website
 a.html
@@ -56,3 +58,12 @@ int main()
   sv.start(f);
 }
 ```
+
+## How it works
+<ul>
+<li>Any time a page is requested, it is stored in variable requested_document_.
+<li>And all the parameters are stored in std::map<string, string> nameNvalue_.
+<li>If the framework can find the requested document(i.e index.html) on the default directory, it is stored in the variable content_.
+<li>Just before the requested document in the content_ is transferred to the browser, process() method is called.
+<li>If you want to change the content_ (ie. after database access), you can override process() method in your class.
+  </ul>
