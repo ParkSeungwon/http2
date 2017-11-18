@@ -1,8 +1,8 @@
-# C++ Web development Framework with STATE
+# C++ Web development Framework with STATE(CWFS)
 
 License : GNU GPL V2.0
 
-## What is C++ Web development Framework with STATE(CWFS)
+## What is CWFS
 
 Web server is stateless. It gives much difficulty in backend programming and results in heavy use of
 cookies. I made a programming environment that can handle this situation. There are two processes
@@ -22,7 +22,7 @@ database : classes about database access(dependency : mysqlcppconn, libjsoncpp)
 
 src : website backend
 
-html, js files on root : website frontend
+html, js, jpg files on root : website frontend
 
 ## Minimal Website
 a.html
@@ -49,8 +49,8 @@ protected :
         swap("ENTER" , "you entered" + nameNvalue_["num"]);
   }
 };
-using namespace std;
 
+using namespace std;
 int main()
 {
   MyWebSite f;
