@@ -65,10 +65,13 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", sq[0]["title"].asString());
-	swap("WHO", "by " + sq[0]["email"].asString() + " on " + sq[0]["date"].asString());
 	swap("MAINTEXT", page == "0" ? 
 			level2txt(allow) : quote_encode(sq[0]["contents"].asString()));
 	tmp = sq[0];//5 date
+	string date = sq[0]["date"].asString();
+	sq.select("Users", "where email='" + sq[0]["email"].asString() + "' order by date desc limit 1");
+	swap("WHO", "by " + sq[0]["name"].asString() + " on " + date);
+	//swap("WHO", "by " + sq[0]["email"].asString() + " on " + sq[0]["date"].asString());
 
 	//attachment덧글
 	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
