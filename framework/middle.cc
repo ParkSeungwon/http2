@@ -51,7 +51,8 @@ void Middle::send(Packet p)
 
 void Middle::sow(Packet p)
 {//rafting, same connection use same furrow(middle <-> htmlserver)new conn -> -
-	if(!p.id || !idNchannel_[p.id] ||//new connection or reconnect after disconnect
+	if(!p.id || idNchannel_.find(p.id) == idNchannel_.end() ||
+			//new connection or reconnect after disconnect
 			//time check 1400 - 1500, no need to use mutex, sequence of || important
 			*idNchannel_[p.id] < system_clock::now() - seconds(time_out_) + 100s) {
 		cout << "new channel : " << ++id_ << endl;
@@ -83,20 +84,27 @@ Middle::~Middle()
 }
 
 void Middle::start()
-{
+{//middle server can be managed here
 	string s;
 	cout << "starting middle server, enter 'end' to end the server." << endl;
 	while(cin >> s) {
 		if(s == "end") break;
 		else if(s == "time") for(auto& a : idNchannel_) 
 			cout << a.first << " : " << (system_clock::now() - *a.second).count()
-					/ 1'000'000'000 << " seconds since last communication" << endl;
+				/ 1'000'000'000 << " seconds passed since last communication" << endl;
 		else if(s == "conn") cout << idNchannel_.size() << endl;
 		else if(s == "debug") debug = !debug;
-		else if(s == "help") cout << "time, conn, debug, end, timeout [sec]" << endl;
+		else if(s == "help" || s == "?") 
+			cout << "time, conn, debug, end, timeout [sec], kill [id]" << endl;
 		else if(s == "timeout") {
 			cin >> time_out_;
 			cout << "time out set " << time_out_ << endl;
+		} else if(s == "kill") {//can cause hang if not careful
+			int k; cin >> k;
+			idNchannel_[k]->send("end");//end http server
+			delete idNchannel_[k];//end client
+			idNchannel_.erase(k);//delete map
+			cout << "id " << k << " killed." << endl;
 		}
 	}
 }
