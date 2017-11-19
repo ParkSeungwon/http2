@@ -39,6 +39,7 @@ private:
 	Packet recv();
 	void send(Packet p), sow(Packet p);
 	void garbage_collection();
+	void free(int k);
 	const int inport_;
 	int id_ = 0, time_out_ = 1500;
 	bool debug = false;

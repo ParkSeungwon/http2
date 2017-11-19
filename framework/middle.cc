@@ -65,28 +65,30 @@ void Middle::garbage_collection()
 {
 	while(1) {
 		int k = 0;
-		for(auto& a : idNchannel_) {
-			if(*a.second < system_clock::now() - seconds(time_out_)) {
-				a.second->send("end");
-				delete a.second;
-				idNchannel_.erase(a.first);
-				k++;
-			}
-		}
+		for(auto& a : idNchannel_) 
+			if(*a.second < system_clock::now() - seconds(time_out_))
+				free(a.first), k++;
 		if(k) cout << "colleced " << k << " garbages" << endl;
 		this_thread::sleep_for(60s);
 	}
 }
 
+void Middle::free(int k)
+{//free id k connection
+	idNchannel_[k]->send("end");//end http server
+	delete idNchannel_[k];//end client
+	idNchannel_.erase(k);//delete map
+}
+
 Middle::~Middle()
 {
-	for(auto& a : idNchannel_) if(a.second) delete a.second;
+	for(auto& a : idNchannel_) free(a.first);
 }
 
 void Middle::start()
 {//middle server can be managed here
 	string s;
-	cout << "starting middle server, enter 'end' to end the server." << endl;
+	cout << "starting middle server, enter '?' to see commands." << endl;
 	while(cin >> s) {
 		if(s == "end") break;
 		else if(s == "time") for(auto& a : idNchannel_) 
@@ -101,9 +103,7 @@ void Middle::start()
 			cout << "time out set " << time_out_ << endl;
 		} else if(s == "kill") {//can cause hang if not careful
 			int k; cin >> k;
-			idNchannel_[k]->send("end");//end http server
-			delete idNchannel_[k];//end client
-			idNchannel_.erase(k);//delete map
+			free(k);
 			cout << "id " << k << " killed." << endl;
 		}
 	}
