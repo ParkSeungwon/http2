@@ -11,17 +11,14 @@ struct Packet
 	std::string content;
 };
 
-class Channel : public WaitQueue<Packet>, public Client
+class Channel : public WaitQueue<Packet>, public Client, 
+				public std::chrono::system_clock::time_point
 {
 public:
 	Channel(int port, WaitQueue<Packet>& out);
-	bool operator<(const std::chrono::system_clock::time_point& r);
-
-protected:
-	WaitQueue<Packet>& out_;
-	std::chrono::system_clock::time_point time_stamp_;
 
 private:
+	WaitQueue<Packet>& out_;
 	void consumer(Packet p);
 };
 
@@ -42,7 +39,9 @@ private:
 	Packet recv();
 	void send(Packet p), sow(Packet p);
 	void garbage_collection();
+	void free(int k);
 	const int inport_;
-	int id_ = 0;
+	int id_ = 0, time_out_ = 1500;
+	bool debug = false;
 	std::thread th_;
 };
