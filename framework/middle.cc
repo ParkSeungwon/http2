@@ -1,6 +1,7 @@
 #include<iostream>
 #include<cassert>
 #include<regex>
+#include<iomanip>
 #include<unistd.h>//write
 #include"middle.h"
 using namespace std;
@@ -19,7 +20,10 @@ Packet Middle::recv()
 	client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 	assert(client_fd != -1);// cout << "accept() error" << endl;
 	string s = Tcpip::recv();
-	if(debug) cout << "receiving " << s << endl;
+	if(debug) {
+		cout << "receiving " << s << endl;
+		for(int i=0; i<s.size(); i++) cout << hex << setw(2) << setfill('0') << +static_cast<unsigned char>(s[i]) << (i%16 == 15 ? '\n' : ' ');
+	}
 	regex e{R"(Cookie:.*middleID=(\d+))"};
 	int id = 0;
 	smatch m;
