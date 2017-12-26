@@ -9,10 +9,22 @@ class AES256
 {
 public:
 	AES256(mpz_class key, mpz_class iv);
+	template<typename It> std::vector<unsigned char> encrypt(It begin, It end);
+	template<typename It> std::vector<unsigned char> decrypt(It begin, It end);
 
 protected:
 	unsigned char key_[32], iv_[16];
 	Aes enc_, dec_;
+};
+
+class SHA1
+{
+public:
+	SHA1();
+	template<typename It> std::array<unsigned char, 20> hash(It begin, It end);
+
+protected:
+	Sha sha_;
 };
 
 typedef struct __attribute__((packed)) {
@@ -39,7 +51,5 @@ protected:
 	};
 	std::map<const unsigned char*, TLS::Channel*, TLS::Less> idNchannel_;
 	int inport_;
-	gnutls_anon_server_credentials_t anoncred;
-
 };
 

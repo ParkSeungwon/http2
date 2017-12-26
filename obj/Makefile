@@ -8,7 +8,7 @@ all : $(EXE)
 test : $(TEST)
 
 ../%.x : %.x $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp -lgnutls
+	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl
 
 ../%.x : %.t $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp -lgnutls
+	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl
