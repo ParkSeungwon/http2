@@ -1,3 +1,4 @@
+#pragma once
 #include<cassert>
 #include<gmpxx.h>
 #include<wolfssl/wolfcrypt/aes.h>
@@ -6,7 +7,7 @@
 class AES
 {
 public:
-	AES(unsigned char key_size = 32) : key_size_{key_size} {}
+	AES(unsigned short bit = 256);
 	void key(const mpz_class key);
 	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
@@ -48,5 +49,16 @@ public:
 
 protected:
 	Sha sha_;
+};
+
+class DiffieHellman
+{
+public:
+	DiffieHellman();
+	mpz_class yb(mpz_class pub_key);
+	mpz_class p, g, ya, yb_;
+
+protected:
+	mpz_class q, h, K, xa;
 };
 

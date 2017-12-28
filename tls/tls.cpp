@@ -3,12 +3,16 @@
 #include"crypt.h"
 using namespace std;
 
+void show();
+template<typename... Args> void show(mpz_class a, Args... b);
 mpz_class random_prime(unsigned byte);
 
 int main(int ac, char** av)
 {//middle.x 3000 2001
 	AES aes;
-	aes.key(random_prime(32));
+	DiffieHellman d;
+	show(d.p, d.g, d.ya);
+	aes.key(d.yb(random_prime(32)));
 	aes.iv(random_prime(16));
 	unsigned char a[48] = "Hello this is monkey";
 	auto v = aes.encrypt(a, a + 48);
@@ -17,10 +21,13 @@ int main(int ac, char** av)
 	for(auto& c : aes.decrypt(v.begin(), v.end())) cout << c;
 	cout << endl;
 
-
 	SHA1 sha1;
 	for(auto& c : sha1.hash(v.begin(), v.end())) cout << hex << +c;
 	cout << endl;
+
+//	
+//	send(buffer, server_hello());
+//	send(buffer, server_certificate());
 }
 
 

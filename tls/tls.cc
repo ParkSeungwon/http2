@@ -5,40 +5,38 @@
 #include"tls.h"
 using namespace std;
 
-void TLS::client_hello()
+TLS::TLS(unsigned char* buffer)
 {
 	record_ = reinterpret_cast<TLSRecord*>(buffer);
-	assert(record_->content_type == 0x16);//handshake
-	assert(record_->encrypted_data[0] == 1);//client hello
-	memcpy(random_, record_->encrypted_data + 6, 32);//unix time + 28 random
-	if(id_length_ = record_->encrypted_data[38])
-		memcpy(session_id_, record_->encrypted_data + 38, id_length_);
-	server_hello();
 }
 
-void TLS::server_hello()
+void TLS::client_hello()
 {
+	assert(record_->content_type == 0x16);//handshake
+	assert(record_->encrypted_data[0] == 1);//client hello
+	memcpy(random_.data(), record_->encrypted_data + 6, 32);//unix time + 28 random
+	if(id_length_ = record_->encrypted_data[38])
+		memcpy(session_id_.data(), record_->encrypted_data + 38, id_length_);
+}
+
+int TLS::server_hello()
+{//return data size
 	record_->content_type = 0x16;
 	record_->version = 0x0303;
 	record_->length;
-	record_->encrypted_data[0] = 2;
+	record_->handshake_type = 2;
+//	if(id_length_) idNchannel_.find(session_id_);
+//	memcpy(record_->encrypted_data + 38
 	server_hello_done();
 }
 
-void TLS::server_hello_done()
+int TLS::server_hello_done()
 {
 	record_->content_type = 0x16;
 	record_->version = 0x0303;
 	record_->length;
-	record_->encrypted_data[0] = 14;
+	record_->handshake_type = 14;
 }
-
-
-bool TLS::Less::operator()(const unsigned char* a, const unsigned char* b) const 
-{
-	return memcmp(a, b, 32) < 0;
-}
-
 
 void TLS::start()
 {
