@@ -77,31 +77,27 @@ protected:
 };
 
 template<typename It> std::vector<unsigned char> prf(It begin, It end, 
-		const char* label, unsigned char* seed, int n) {
-	unsigned char buf[100];
+		const char* label, unsigned char* seed, int n) {//seed is always 64byte long
+	unsigned char buf[100], aseed[132], r[256];//((n-1)/32+1)*32];
 	int i = 0;
-	while(buf[i++] = *label++);//cpy until null
+	while(buf[i++] = *label++);//copy until null
 	int sz = i - 1 + 64;
-	assert(sz < 100);
-	memcpy(buf + i - 1, seed, 64);
+	assert(sz <= 100 && n <= 256);
+	memcpy(buf + i - 1, seed, 64);//buf = label + seed
 
 	HMAC h;
 	std::vector<std::array<unsigned char, 32>> A;
-	h.key(buf, buf + sz);
+	h.key(buf, buf + sz);//seed
 	A.push_back(h.hash(begin, end));//A(1)
-
-	std::vector<unsigned char> r;
-	for(int i=0; i<n; i+=32) {
-		auto a = A.back();
-		std::vector<unsigned char> v(a.begin(), a.end());
-		v.insert(v.end(), buf, buf+sz);//A(1) + seed
-		h.key(v.begin(), v.end());
-		auto ha = h.hash(begin, end);
-		r.insert(r.end(), ha.begin(), ha.end());//HMAC(secret, A(1) + seed) + ...
+	for(int j=0; j<n; j+=32) {
+		memcpy(aseed, A.back().data(), 32);
+		memcpy(aseed + 32, buf, sz);//aseed = A(i) + seed
+		h.key(aseed, aseed + 32 + sz);
+		memcpy(r + j, h.hash(begin, end).data(), 32);//HMAC(secret, A(1) + seed) + ...
 		h.key(A.back().begin(), A.back().end());//A(i) = HMAC(secret, A(i-1))
 		A.push_back(h.hash(begin, end));
 	}
-	return {r.begin(), r.begin()+n};
+	return {r, r+n};
 }
 
 class DiffieHellman
