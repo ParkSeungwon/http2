@@ -8,7 +8,8 @@ typedef struct __attribute__((packed)) {
 	uint16_t version;      // 0x0303 for TLS 1.2
 	uint16_t length;       // length of encrypted_data
 	unsigned char handshake_type;
-	unsigned char blank[5];
+	unsigned char length_[3];
+	unsigned char version_[2];//length is from here
 	unsigned char unix_time[4];
 	unsigned char random[28];
 	unsigned char session_id_length;
@@ -19,30 +20,43 @@ typedef struct __attribute__((packed)) {
 	//14 -serverhellodone
 } TLSRecord;
 
-class TLS
+class Interface
+{
+public:
+	virtual bool find_id(std::array<unsigned char, 32> id) {}
+	virtual std::array<unsigned char, 32> new_id() {}
+
+protected:
+	static Interface* hI;
+};
+
+class TLS : public Interface
 {//this class just deals with memory structure
 public:
 	TLS(unsigned char* start);
-	int client_hello(), server_hello(), server_hello_done();
+	int client_hello(), server_hello(), server_hello_done(), server_certificate(), server_key_exchange(), client_key_exchange();//16
 
 protected:
 	TLSRecord* record_;
 	std::array<unsigned char, 32> session_id_, random_;
+	int id_length_;
 };
 
-class HTTPS : public Server
+class HTTPS : public Server, Interface
 {
 public:
-	HTTPS(int outport = 3000, int inport = 2001);
-	~HTTPS();
+	HTTPS(int outport = 4000, int inport = 2001);
+	virtual ~HTTPS();
+	virtual bool find_id(std::array<unsigned char, 32> id);
+	virtual std::array<unsigned char, 32> new_id();
 	void start();
 
 protected:
-	struct Channel : public Client, public std::chrono::system_clock::time_point {
+	struct Channel : public Client, std::chrono::system_clock::time_point {
 		Channel(int port);
 		std::array<unsigned char, 32> key;
 	};
-	std::map<std::array<unsigned char, 32>, TLS::Channel*> idNchannel_;
+	std::map<std::array<unsigned char, 32>, HTTPS::Channel*> idNchannel_;
 	int inport_;
 
 private:

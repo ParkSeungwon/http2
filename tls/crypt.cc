@@ -23,7 +23,7 @@ template<typename... Args> void show(mpz_class a, Args... b)
 	std::cout <<  "0x" << std::hex << a << std::endl;
 	show(b...);
 }
-template void show<>(mpz_class, mpz_class, mpz_class);
+template void show<>(mpz_class, mpz_class, mpz_class, mpz_class, mpz_class);
 
 mpz_class nextprime(mpz_class n) 
 {//chance of composite passing will be extremely small

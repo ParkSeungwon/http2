@@ -3,6 +3,7 @@
 #include<unistd.h>
 #include<cassert>
 #include"tls.h"
+#include"crypt.h"
 using namespace std;
 
 TLS::TLS(unsigned char* buffer)
@@ -10,13 +11,14 @@ TLS::TLS(unsigned char* buffer)
 	record_ = reinterpret_cast<TLSRecord*>(buffer);
 }
 
-void TLS::client_hello()
+int TLS::client_hello()
 {
 	assert(record_->content_type == 0x16);//handshake
-	assert(record_->encrypted_data[0] == 1);//client hello
-	memcpy(random_.data(), record_->encrypted_data + 6, 32);//unix time + 28 random
-	if(id_length_ = record_->encrypted_data[38])
-		memcpy(session_id_.data(), record_->encrypted_data + 38, id_length_);
+	assert(record_->handshake_type == 1);//client hello
+	memcpy(random_.data(), record_->unix_time, 32);//unix time + 28 random
+	if(id_length_ = record_->session_id_length)
+		memcpy(session_id_.data(), record_->session_id, id_length_);
+	return 0;
 }
 
 int TLS::server_hello()
@@ -25,10 +27,19 @@ int TLS::server_hello()
 	record_->version = 0x0303;
 	record_->length;
 	record_->handshake_type = 2;
-//	if(id_length_) idNchannel_.find(session_id_);
-//	memcpy(record_->encrypted_data + 38
-	server_hello_done();
+	record_->session_id_length = 32;
+	if(id_length_ && hI->find_id(session_id_)) 
+		memcpy(record_->session_id, session_id_.data(), 32);
+	else memcpy(record_->session_id, hI->new_id().data(), 32);
+	record_->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
+	return 0;
 }
+
+int TLS::server_certificate()
+{}
+
+int TLS::server_key_exchange()
+{}
 
 int TLS::server_hello_done()
 {
@@ -38,7 +49,37 @@ int TLS::server_hello_done()
 	record_->handshake_type = 14;
 }
 
-void TLS::start()
+int TLS::client_key_exchange()//16
+{}
+
+HTTPS::HTTPS(int outport, int inport) : Server{outport}, inport_{inport}
+{
+	hI = this;
+}
+
+HTTPS::~HTTPS() {}
+
+bool HTTPS::find_id(array<uint8_t, 32> id)
+{
+	return idNchannel_.find(id) != idNchannel_.end();
+}
+
+HTTPS::Channel::Channel(int port) : Client{"localhost", port} {}
+	
+array<unsigned char, 32> HTTPS::new_id()
+{
+	array<unsigned char, 32> r;
+	do {
+		auto k = random_prime(32);
+		mpz2bnd(k, r.begin(), r.end());
+	} while(find_id(r));
+	idNchannel_[r] = new HTTPS::Channel{inport_};
+	return r;
+}
+
+Interface* Interface::hI = nullptr;
+
+void HTTPS::start()
 {
 	int cl_size = sizeof(client_addr);
 	while(1) {

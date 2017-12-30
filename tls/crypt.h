@@ -3,6 +3,13 @@
 #include<gmpxx.h>
 #include<wolfssl/wolfcrypt/aes.h>
 #include<wolfssl/wolfcrypt/sha.h>
+#include<wolfssl/wolfcrypt/hmac.h>
+
+void show();
+template<typename... Args> void show(mpz_class a, Args... b);
+mpz_class random_prime(unsigned byte);
+template<typename It> void mpz2bnd(mpz_class n, It begin, It end);
+template<typename It> mpz_class bnd2mpz(It begin, It end);
 
 class AES
 {
@@ -41,8 +48,7 @@ public:
 	SHA1();
 	template<typename It> std::array<unsigned char, 20> hash(It begin, It end) {
 		std::array<unsigned char, 20> r;
-		int sz = end - begin;
-		wc_ShaUpdate(&sha_, &*begin, sz);
+		wc_ShaUpdate(&sha_, &*begin, end - begin);
 		wc_ShaFinal(&sha_, r.data());
 		return r;
 	}
@@ -50,6 +56,53 @@ public:
 protected:
 	Sha sha_;
 };
+
+class HMAC
+{//hmac using sha256
+public:
+	template<typename It> void key(It begin, It end) {
+		if(wc_HmacSetKey(&hmac_, SHA256, &*begin, end - begin))
+			std::cerr << "set key error" << std::endl;
+	}
+		
+	template<typename It> std::array<unsigned char, 32> hash(It begin, It end) {
+		std::array<unsigned char, 32> r;
+		wc_HmacUpdate(&hmac_, &*begin, end - begin);
+		wc_HmacFinal(&hmac_, r.data());
+		return r;
+	}
+
+protected:
+	Hmac hmac_;
+};
+
+template<typename It> std::vector<unsigned char> prf(It begin, It end, 
+		const char* label, unsigned char* seed, int n) {
+	unsigned char buf[100];
+	int i = 0;
+	while(buf[i++] = *label++);//cpy until null
+	int sz = i - 1 + 64;
+	assert(sz < 100);
+	memcpy(buf + i - 1, seed, 64);
+
+	HMAC h;
+	std::vector<std::array<unsigned char, 32>> A;
+	h.key(buf, buf + sz);
+	A.push_back(h.hash(begin, end));//A(1)
+
+	std::vector<unsigned char> r;
+	for(int i=0; i<n; i+=32) {
+		auto a = A.back();
+		std::vector<unsigned char> v(a.begin(), a.end());
+		v.insert(v.end(), buf, buf+sz);//A(1) + seed
+		h.key(v.begin(), v.end());
+		auto ha = h.hash(begin, end);
+		r.insert(r.end(), ha.begin(), ha.end());//HMAC(secret, A(1) + seed) + ...
+		h.key(A.back().begin(), A.back().end());//A(i) = HMAC(secret, A(i-1))
+		A.push_back(h.hash(begin, end));
+	}
+	return {r.begin(), r.begin()+n};
+}
 
 class DiffieHellman
 {
