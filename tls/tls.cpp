@@ -11,9 +11,9 @@ int main(int ac, char** av)
 	AES aes;
 	DiffieHellman d;
 //	show(d.p, d.g, d.ya);
-	unsigned char random[64];
+	unsigned char random[64], k[64];
 	mpz2bnd(random_prime(64), random, random+64);
-	auto master_secret = prf(random, random+32, "master secret", random, 48);
+	auto master_secret = prf(k, k+32, "master secret", random, 48);
 	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", random, 120);
 
 	cout << "master secret : ";

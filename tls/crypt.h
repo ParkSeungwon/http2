@@ -78,21 +78,20 @@ protected:
 
 template<typename It> std::vector<unsigned char> prf(It begin, It end, 
 		const char* label, unsigned char* seed, int n) {//seed is always 64byte long
-	unsigned char buf[100], aseed[132], r[256];//((n-1)/32+1)*32];
+	unsigned char aseed[132], r[256];//((n-1)/32+1)*32];
 	int i = 0;
-	while(buf[i++] = *label++);//copy until null
-	int sz = i - 1 + 64;
-	assert(sz <= 100 && n <= 256);
-	memcpy(buf + i - 1, seed, 64);//buf = label + seed
+	while(aseed[32 + i++] = *label++);//copy until null
+	int sz = 32 + i - 1 + 64;
+	assert(sz <= 132 && n <= 256);
+	memcpy(aseed + 32 + i - 1, seed, 64);//buf = label + seed
 
 	HMAC h;
 	std::vector<std::array<unsigned char, 32>> A;
-	h.key(buf, buf + sz);//seed
+	h.key(aseed + 32, aseed + sz);//seed
 	A.push_back(h.hash(begin, end));//A(1)
 	for(int j=0; j<n; j+=32) {
-		memcpy(aseed, A.back().data(), 32);
-		memcpy(aseed + 32, buf, sz);//aseed = A(i) + seed
-		h.key(aseed, aseed + 32 + sz);
+		memcpy(aseed, A.back().data(), 32);//aseed = A(i) + seed
+		h.key(aseed, aseed + sz);
 		memcpy(r + j, h.hash(begin, end).data(), 32);//HMAC(secret, A(1) + seed) + ...
 		h.key(A.back().begin(), A.back().end());//A(i) = HMAC(secret, A(i-1))
 		A.push_back(h.hash(begin, end));
