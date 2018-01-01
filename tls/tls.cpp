@@ -10,7 +10,7 @@ int main(int ac, char** av)
 {//middle.x 3000 2001
 	AES aes;
 	DiffieHellman d;
-//	show(d.p, d.g, d.ya);
+	show(d.p, d.g, d.ya);
 	unsigned char random[64], tmp[32];
 	mpz2bnd(random_prime(64), random, random+64);
 	mpz2bnd(d.yb(random_prime(32)), tmp, tmp+32);
