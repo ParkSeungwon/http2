@@ -61,12 +61,13 @@ protected:
 class HMAC
 {//hmac using sha256
 public:
-	template<typename It> void key(It begin, It end) {
+	template<typename It> void key(const It begin, const It end) {
 		if(wc_HmacSetKey(&hmac_, SHA256, &*begin, end - begin))
 			std::cerr << "set key error" << std::endl;
 	}
 		
-	template<typename It> std::array<unsigned char, 32> hash(It begin, It end) {
+	template<typename It> 
+	std::array<unsigned char, 32> hash(const It begin, const It end) {
 		std::array<unsigned char, 32> r;
 		wc_HmacUpdate(&hmac_, &*begin, end - begin);
 		wc_HmacFinal(&hmac_, r.data());
@@ -88,7 +89,7 @@ void print(unsigned char* r, const char* c)
 	cout << endl;
 }
 
-template<typename It> std::vector<unsigned char> prf(It begin, It end, 
+template<typename It> std::vector<unsigned char> prf(const It begin, const It end, 
 		const char* label, unsigned char* seed, int n) {//seed is always 64byte long
 	unsigned char aseed[128]={}, r[256]={};//((n-1)/32+1)*32];
 	int i = 0;
@@ -97,8 +98,8 @@ template<typename It> std::vector<unsigned char> prf(It begin, It end,
 	assert(sz <= 128 && n <= 256);
 	memcpy(aseed + 32 + i - 1, seed, 64);//buf = label + seed
 
-	HMAC h;
 	std::vector<std::array<unsigned char, 32>> A;
+	HMAC h;
 	h.key(aseed + 32, aseed + sz);//seed
 	print(r, "before 5");//key func corrupts r?
 	A.push_back(h.hash(begin, end));//A(1)
