@@ -20,35 +20,32 @@ typedef struct __attribute__((packed)) {
 	//14 -serverhellodone
 } TLSRecord;
 
-class Interface
-{
-public:
-	virtual bool find_id(std::array<unsigned char, 32> id) {}
-	virtual std::array<unsigned char, 32> new_id() {}
-
-protected:
-	static Interface* hI;
-};
-
-class TLS : public Interface
+class TLS
 {//this class just deals with memory structure
 public:
-	TLS(unsigned char* start);
-	int client_hello(), server_hello(), server_hello_done(), server_certificate(), server_key_exchange(), client_key_exchange();//16
-
+	TLS(unsigned char* buffer);
+	int handshake();
+	std::string decode();
+	void encode(std::string s);
 protected:
+	S& service_;
 	TLSRecord* record_;
-	std::array<unsigned char, 32> session_id_, random_;
+	std::array<unsigned char, 32> session_id_, server_random_, client_random_, pre_master_secret_;
 	int id_length_;
+private:
+	std::array<unsigned char, 32> client_hello();
+	int server_hello(std::array<unsigned char, 32> id), server_certificate(),
+		server_key_exchange(), server_hello_done(), client_key_exchange(),
+		client_finished(), server_finished();
 };
 
-class HTTPS : public Server, Interface
+class HTTPS : public Server
 {
 public:
 	HTTPS(int outport = 4000, int inport = 2001);
 	virtual ~HTTPS();
-	virtual bool find_id(std::array<unsigned char, 32> id);
-	virtual std::array<unsigned char, 32> new_id();
+	bool find_id(std::array<unsigned char, 32> id);
+	std::array<unsigned char, 32> new_id();
 	void start();
 
 protected:

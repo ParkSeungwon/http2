@@ -11,17 +11,31 @@ TLS::TLS(unsigned char* buffer)
 	record_ = reinterpret_cast<TLSRecord*>(buffer);
 }
 
-int TLS::client_hello()
-{
+int TLS::handshake()
+{//for(int n; n=handshake();) if(n>0) send(); else recv();
+	static int n = 0;
+	switch(++n) {
+		case 1: return server_hello(idNchannel_.find_id(client_hello()));
+		case 2: return server_certificate();
+		case 3: return server_key_exchange();
+		case 4: return server_hello_done();
+		case 5: return -5;
+		case 6: return client_key_exchange();
+		case 7: client_finished(); n = 0; return server_finished();
+	}
+}
+
+array<unsigned char, 32> TLS::client_hello()
+{//return desired id
 	assert(record_->content_type == 0x16);//handshake
 	assert(record_->handshake_type == 1);//client hello
 	memcpy(random_.data(), record_->unix_time, 32);//unix time + 28 random
 	if(id_length_ = record_->session_id_length)
 		memcpy(session_id_.data(), record_->session_id, id_length_);
-	return 0;
+	return record_->session_id;
 }
 
-int TLS::server_hello()
+int TLS::server_hello(arran<unsigned char, 32> id)
 {//return data size
 	record_->content_type = 0x16;
 	record_->version = 0x0303;
@@ -32,14 +46,18 @@ int TLS::server_hello()
 		memcpy(record_->session_id, session_id_.data(), 32);
 	else memcpy(record_->session_id, hI->new_id().data(), 32);
 	record_->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
-	return 0;
+	return 1;
 }
 
 int TLS::server_certificate()
-{}
+{
+	return 2;
+}
 
 int TLS::server_key_exchange()
-{}
+{
+	return 3;
+}
 
 int TLS::server_hello_done()
 {
@@ -47,10 +65,23 @@ int TLS::server_hello_done()
 	record_->version = 0x0303;
 	record_->length;
 	record_->handshake_type = 14;
+	return 4;
 }
 
 int TLS::client_key_exchange()//16
-{}
+{
+	return -6;
+}
+
+int TLS::client_finished()//16
+{
+	return 7;
+}
+
+int TLS::server_finished()//16
+{
+	return 0;
+}
 
 HTTPS::HTTPS(int outport, int inport) : Server{outport}, inport_{inport}
 {
