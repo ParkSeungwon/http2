@@ -4,8 +4,6 @@
 #include"tls.h"
 using namespace std;
 
-mpz_class random_prime(unsigned byte);
-
 int main(int ac, char** av)
 {//middle.x 3000 2001
 	AES aes;

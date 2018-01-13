@@ -1,64 +1,76 @@
 #pragma once
-#include<map>
-#include<chrono>
-#include"server.h"
+#include"crypt.h"
 
-typedef struct __attribute__((packed)) {
+struct TLS_header {
 	uint8_t content_type;  // 0x17 for Application Data, 0x16 handshake
 	uint16_t version;      // 0x0303 for TLS 1.2
 	uint16_t length;       // length of encrypted_data
-	unsigned char handshake_type;
-	unsigned char length_[3];
-	unsigned char version_[2];//length is from here
-	unsigned char unix_time[4];
-	unsigned char random[28];
-	unsigned char session_id_length;
-	unsigned char session_id[32];
-	unsigned char cipher_suite[2];
-    uint8_t encrypted_data[];//01 hello - 5 - 4 unixtime- 28 random - sessionid length
-	//02 - serverhello - 5 - 4 =time - 24 random - sessionidlength 0x20 - 32 - 00,35
-	//14 -serverhellodone
-} TLSRecord;
+	uint8_t data[];
+} __attribute__((packed));
+struct Handshake_header {
+	uint8_t handshake_type;
+	uint8_t length[3];
+	uint8_t data[];
+} __attribute__((packed));
+enum HandShakeType {
+    hello_request        =   0,
+    client_hello         =   1,
+    server_hello         =   2,
+    hello_verify_request =   3,    /* DTLS addition */
+    session_ticket       =   4,
+    end_of_early_data    =   5,
+    hello_retry_request  =   6,
+    encrypted_extensions =   8,
+    certificate          =  11,
+    server_key_exchange  =  12,
+    certificate_request  =  13,
+    server_hello_done    =  14,
+    certificate_verify   =  15,
+    client_key_exchange  =  16,
+    finished             =  20,
+    certificate_status   =  22,
+    key_update           =  24,
+    change_cipher_hs     =  55,    /* simulate unique handshake type for sanity
+                                      checks.  record layer change_cipher
+                                      conflicts with handshake finished */
+    message_hash         = 254,    /* synthetic message type for TLS v1.3 */
+    no_shake             = 255     /* used to initialize the DtlsMsg record */
+};
+
+struct Hello_header {
+	uint8_t version[2];//length is from here
+	uint8_t unix_time[4];
+	uint8_t random[28];
+	uint8_t session_id_length;
+	uint8_t session_id[32];
+	uint8_t cipher_suite[2];
+	uint8_t compression;
+	uint8_t end;
+} __attribute__((packed));
 
 class TLS
-{//this class just deals with memory structure
+{//this class just deals with memory structure -> decoupled from underlying algorithm
 public:
-	TLS(unsigned char* buffer);
+	TLS(unsigned char* buf_received, unsigned char* buf_to_send = nullptr);
 	int handshake();
 	std::string decode();
-	void encode(std::string s);
-protected:
-	S& service_;
-	TLSRecord* record_;
-	std::array<unsigned char, 32> session_id_, server_random_, client_random_, pre_master_secret_;
-	int id_length_;
-private:
+	int encode(std::string s);
 	std::array<unsigned char, 32> client_hello();
 	int server_hello(std::array<unsigned char, 32> id), server_certificate(),
 		server_key_exchange(), server_hello_done(), client_key_exchange(),
 		client_finished(), server_finished();
-};
-
-class HTTPS : public Server
-{
-public:
-	HTTPS(int outport = 4000, int inport = 2001);
-	virtual ~HTTPS();
-	bool find_id(std::array<unsigned char, 32> id);
-	std::array<unsigned char, 32> new_id();
-	void start();
-
 protected:
-	struct Channel : public Client, std::chrono::system_clock::time_point {
-		Channel(int port);
-		std::array<unsigned char, 32> key;
-	};
-	std::map<std::array<unsigned char, 32>, HTTPS::Channel*> idNchannel_;
-	int inport_;
-
+	TLS_header *rec_received_, *rec_to_send_;
+	AES aes_dec_, aes_enc_;
+	HMAC hmac_;
+	DiffieHellman diffie_;
+	std::array<unsigned char, 32> session_id_, server_random_, client_random_, 
+		client_key_, server_key_;
+	std::array<unsigned char, 16> client_iv_, server_iv_;
+	int id_length_;
 private:
+	void init(int sz);
 };
-
 /*
 ya is party a's public key; ya = g ^ xa mod p
          yb is party b's public key; yb = g ^ xb mod p

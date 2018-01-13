@@ -1,80 +1,148 @@
 #include<cstring>
 #include<iostream>
 #include<unistd.h>
+#include<arpa/inet.h>//htons
 #include<cassert>
 #include"tls.h"
-#include"crypt.h"
 using namespace std;
 
-TLS::TLS(unsigned char* buffer)
-{
-	record_ = reinterpret_cast<TLSRecord*>(buffer);
-}
-
-int TLS::handshake()
-{//for(int n; n=handshake();) if(n>0) send(); else recv();
-	static int n = 0;
-	switch(++n) {
-		case 1: return server_hello(idNchannel_.find_id(client_hello()));
-		case 2: return server_certificate();
-		case 3: return server_key_exchange();
-		case 4: return server_hello_done();
-		case 5: return -5;
-		case 6: return client_key_exchange();
-		case 7: client_finished(); n = 0; return server_finished();
-	}
+TLS::TLS(unsigned char* buffer, unsigned char* buffer2)
+{//buffer = read buffer, buffer2 = write buffer
+	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
+	if(buffer2) rec_to_send_ = reinterpret_cast<TLS_header*>(buffer2);
+	else rec_to_send_ = rec_received_;
 }
 
 array<unsigned char, 32> TLS::client_hello()
 {//return desired id
-	assert(record_->content_type == 0x16);//handshake
-	assert(record_->handshake_type == 1);//client hello
-	memcpy(random_.data(), record_->unix_time, 32);//unix time + 28 random
-	if(id_length_ = record_->session_id_length)
-		memcpy(session_id_.data(), record_->session_id, id_length_);
-	return record_->session_id;
+	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	assert(rec_received_->content_type == 0x16);//handshake
+	assert(ph->handshake_type == 1);//client hello
+	Hello_header* p = (Hello_header*)ph->data;
+	memcpy(client_random_.data(), p->unix_time, 32);//unix time + 28 random
+	memcpy(server_random_.data(), p->unix_time, 4);
+	mpz2bnd(random_prime(28), server_random_.data() + 4, server_random_.end());
+	if(id_length_ = p->session_id_length) {
+		memcpy(session_id_.data(), p->session_id, id_length_);
+		return session_id_;
+	} else return {};
 }
 
-int TLS::server_hello(arran<unsigned char, 32> id)
+int TLS::server_hello(array<unsigned char, 32> id)
 {//return data size
-	record_->content_type = 0x16;
-	record_->version = 0x0303;
-	record_->length;
-	record_->handshake_type = 2;
-	record_->session_id_length = 32;
-	if(id_length_ && hI->find_id(session_id_)) 
-		memcpy(record_->session_id, session_id_.data(), 32);
-	else memcpy(record_->session_id, hI->new_id().data(), 32);
-	record_->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
-	return 1;
+	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
+	Hello_header* p = (Hello_header*)ph->data;
+	int sz = &p->end - (uint8_t*)rec_to_send_;
+	init(sz);
+
+	ph->handshake_type = 2;
+	mpz2bnd(sz - 9, ph->length, ph->length+3);
+
+	p->version[0] = 3, p->version[1] = 3;
+	memcpy(p->unix_time, server_random_.data(), 32);
+	p->session_id_length = 32;
+	session_id_ = id;
+	memcpy(p->session_id, id.data(), 32);
+	p->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
+	p->compression = 0;//no compression
+	return sz;
+}
+
+void TLS::init(int sz)
+{//initialize buffer to send
+	memset(rec_to_send_, 0, sz);
+	rec_to_send_->content_type = 0x16;
+	rec_to_send_->version = 0x0303;//no need htons 03 = 03
+	rec_to_send_->length = htons(sz - 5);
 }
 
 int TLS::server_certificate()
-{
+{//return data_size
+	rec_to_send_->handshake_type = 11;
+	
 	return 2;
 }
+/* Static x509 buffer */
+typedef struct x509_buffer {
+    int  length;                  /* actual size */
+    byte buffer[MAX_X509_SIZE];   /* max static cert size */
+} x509_buffer;
+
+
+/* wolfSSL X509_CHAIN, for no dynamic memory SESSION_CACHE */
+struct WOLFSSL_X509_CHAIN {
+    int         count;                    /* total number in chain */
+    x509_buffer certs[MAX_CHAIN_DEPTH];   /* only allow max depth 4 for now */
+};
+
 
 int TLS::server_key_exchange()
 {
+	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
+	ph->handshake_type = 12;
+	ph->length;
+	mpz2bnd(diffie_.p, ph->data, ph->data+32);
+	mpz2bnd(diffie_.g, ph->data+32, ph->data+64);
+	mpz2bnd(diffie_.ya, ph->data+64, ph->data+96);
+
 	return 3;
 }
 
 int TLS::server_hello_done()
 {
-	record_->content_type = 0x16;
-	record_->version = 0x0303;
-	record_->length;
-	record_->handshake_type = 14;
-	return 4;
+	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
+	int sz = ph->data - (uint8_t*)rec_to_send_;
+	init(sz);
+	ph->handshake_type = 14;
+	return sz;
 }
 
 int TLS::client_key_exchange()//16
 {
+	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	assert(ph->handshake_type == 16);
+
+	unsigned char rand[64], pre[32];
+	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->data, ph->data+32));
+	mpz2bnd(pre_master_secret, pre, pre+32);
+	memcpy(rand, client_random_.data(), 32);
+	memcpy(rand + 32, server_random_.data(), 32);
+	auto master_secret = prf(pre, pre+32, "master secret", rand, 48);
+	memcpy(rand + 32, client_random_.data(), 32);
+	memcpy(rand, server_random_.data(), 32);
+	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 136);
+
+	unsigned char* p = keys.data();
+	hmac_dec_.key(p); p += 28;
+	hmac_enc_.key(p); p += 28;
+	aes_dec_.key(p); p += 32;
+	aes_enc_.key(p); p += 32;
+	aes_dec_.iv(p); p += 16;
+	aes_enc_.iv(p);
 	return -6;
 }
 
-int TLS::client_finished()//16
+string TLS::decode()
 {
+	assert(rec_received_->content_type == 0x17);
+	auto v = aes_dec_.decrypt(rec_received_->data, rec_received_->data + rec_received_->length);
+	return {v.data(), v.size()};
+}
+
+int TLS::encode(string s)
+{
+	auto v = aes_enc_.encrypt(s.data(), s.data() + s.size());
+	int sz = v.size() + 5;
+	init(sz);
+	rec_to_send_->content_type = 0x17;
+	memcpy(rec_to_send_->data, v.data(), sz - 5);
+	return sz;
+}
+
+int TLS::client_finished()
+{
+	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	assert(ph->handshake_type == 20);
 	return 7;
 }
 
@@ -83,64 +151,3 @@ int TLS::server_finished()//16
 	return 0;
 }
 
-HTTPS::HTTPS(int outport, int inport) : Server{outport}, inport_{inport}
-{
-	hI = this;
-}
-
-HTTPS::~HTTPS() {}
-
-bool HTTPS::find_id(array<uint8_t, 32> id)
-{
-	return idNchannel_.find(id) != idNchannel_.end();
-}
-
-HTTPS::Channel::Channel(int port) : Client{"localhost", port} {}
-	
-array<unsigned char, 32> HTTPS::new_id()
-{
-	array<unsigned char, 32> r;
-	do {
-		auto k = random_prime(32);
-		mpz2bnd(k, r.begin(), r.end());
-	} while(find_id(r));
-	idNchannel_[r] = new HTTPS::Channel{inport_};
-	return r;
-}
-
-Interface* Interface::hI = nullptr;
-
-void HTTPS::start()
-{
-	int cl_size = sizeof(client_addr);
-	while(1) {
-		cout << "0" << endl;
-		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
-		if(client_fd == -1) cout << "accept() error" << endl;
-		else if(!fork()) {
-//			gnutls_session_t session;
-//			gnutls_datum_t session_id;
-//			gnutls_init(&session, GNUTLS_SERVER);
-//			gnutls_priority_set_direct(session, "NORMAL:+ANON-ECDH:+ANON-DH", NULL);
-//			gnutls_credentials_set(session, GNUTLS_CRD_ANON, anoncred);
-//			gnutls_session_get_id2(session, &session_id);
-//			gnutls_transport_set_int(session, client_fd);
-//			int ret;
-//			do {
-//				ret = gnutls_handshake(session);
-//			} while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
-//
-//			for(int n; (n = gnutls_record_recv(session, buffer, 40960000)) > 0;) {
-//				if(idNchannel_.find(session_id.data) == idNchannel_.end()) 
-//					idNchannel_[session_id.data] = new Channel(inport_);
-//				idNchannel_[session_id.data]->send(string{buffer, n});
-//				string s = idNchannel_[session_id.data]->recv();
-//				cout << s << endl;
-//				gnutls_record_send(session, s.data(), s.size());
-//			}
-//			gnutls_bye(session, GNUTLS_SHUT_WR);
-//			gnutls_deinit(session);
-			break;
-		}
-	}
-}

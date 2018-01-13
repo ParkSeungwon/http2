@@ -28,6 +28,11 @@ void Tcpip::send(const string s)
 	write(client_fd, s.data(), s.size());
 }
 
+void Tcpip::send(int n)
+{
+	write(client_fd, buffer, n);
+}
+
 string Tcpip::recv()
 {
 	int i = read(client_fd, buffer, 4095999);//error
