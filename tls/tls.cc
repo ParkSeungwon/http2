@@ -110,33 +110,39 @@ int TLS::client_key_exchange()//16
 	auto master_secret = prf(pre, pre+32, "master secret", rand, 48);
 	memcpy(rand + 32, client_random_.data(), 32);
 	memcpy(rand, server_random_.data(), 32);
-	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 136);
+	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 128);
 
 	unsigned char* p = keys.data();
-	hmac_dec_.key(p); p += 28;
-	hmac_enc_.key(p); p += 28;
-	aes_dec_.key(p); p += 32;
-	aes_enc_.key(p); p += 32;
-	aes_dec_.iv(p); p += 16;
-	aes_enc_.iv(p);
+	client_mac_.key(p, p+32); p += 32;
+	server_mac_.key(p, p+32); p += 32;
+	client_aes_.key(p); p += 32;
+	server_aes_.key(p);
 	return -6;
 }
 
 string TLS::decode()
 {
 	assert(rec_received_->content_type == 0x17);
-	auto v = aes_dec_.decrypt(rec_received_->data, rec_received_->data + rec_received_->length);
-	return {v.data(), v.size()};
+	client_aes_.iv(rec_received_->data);
+	auto v = client_aes_.decrypt(rec_received_->data + 16, 
+			rec_received_->data + rec_received_->length);
+	return {v.data(), v.size() - 32 - v.back()};//v.back() == padding length
 }
 
 int TLS::encode(string s)
 {
-	auto v = aes_enc_.encrypt(s.data(), s.data() + s.size());
-	int sz = v.size() + 5;
-	init(sz);
 	rec_to_send_->content_type = 0x17;
-	memcpy(rec_to_send_->data, v.data(), sz - 5);
-	return sz;
+	rec_to_send_->version = 0x0303;
+	mpz2bnd(random_prime(16), rec_to_send_->data, rec_to_send_->data+16);
+	server_aes_.iv(rec_to_send_->data);
+	int padding_length = 16 - s.size() % 16;
+	s = string{0x01} + string{rec_to_send_, rec_to_send_+5} + s;
+	auto verify = server_mac_.hash(s.data(), s.data() + s.size());
+	s += verify + string{padding_length, padding_length};
+	auto v = server_aes_.encrypt(s.data()+6, s.data() + s.size());
+	memcpy(rec_to_send_->data+16, v.data(), v.size());
+	rec_to_send_->length = v.size() + 16;
+	return v.size() + 16 + 5;
 }
 
 int TLS::client_finished()

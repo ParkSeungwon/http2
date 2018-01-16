@@ -61,8 +61,8 @@ public:
 		client_finished(), server_finished();
 protected:
 	TLS_header *rec_received_, *rec_to_send_;
-	AES aes_dec_, aes_enc_;
-	HMAC hmac_;
+	AES server_aes_, client_aes_;
+	HMAC server_mac_, client_mac_;
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_, 
 		client_key_, server_key_;
