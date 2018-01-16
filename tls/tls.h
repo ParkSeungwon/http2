@@ -57,16 +57,15 @@ public:
 	int encode(std::string s);
 	std::array<unsigned char, 32> client_hello();
 	int server_hello(std::array<unsigned char, 32> id), server_certificate(),
-		server_key_exchange(), server_hello_done(), client_key_exchange(),
-		client_finished(), server_finished();
+		server_key_exchange(), server_hello_done();
+	std::array<unsigned char, 64> client_key_exchange();
+	int	client_finished(), server_finished();
 protected:
 	TLS_header *rec_received_, *rec_to_send_;
 	AES server_aes_, client_aes_;
-	HMAC server_mac_, client_mac_;
+	SHA1 server_mac_, client_mac_;
 	DiffieHellman diffie_;
-	std::array<unsigned char, 32> session_id_, server_random_, client_random_, 
-		client_key_, server_key_;
-	std::array<unsigned char, 16> client_iv_, server_iv_;
+	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	int id_length_;
 private:
 	void init(int sz);

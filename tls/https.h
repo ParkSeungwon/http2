@@ -15,7 +15,7 @@ public:
 protected:
 	struct Channel : public Client, std::chrono::system_clock::time_point {
 		Channel(int port);
-		std::array<unsigned char, 32> key;
+		std::array<unsigned char, 64> keys;
 	};
 	std::map<std::array<unsigned char, 32>, HTTPS::Channel*> idNchannel_;
 	int inport_;

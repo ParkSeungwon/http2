@@ -49,17 +49,24 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//multi thread function
 	const int sz = 4096000;
-	unsigned char buffer[sz];
+	unsigned char buffer[sz];//for multithread
 	TLS t{buffer};//handshake
 	read(client_fd, buffer, sz); auto id = t.client_hello();
-	if(id == array<unsigned char, 32>{} || !find_id(id)) id = new_id();
-	write(client_fd, buffer, t.server_hello(id));
-	write(client_fd, buffer, t.server_certificate());
-	write(client_fd, buffer, t.server_key_exchange());
-	write(client_fd, buffer, t.server_hello_done());
-	read(client_fd, buffer, sz); t.client_key_exchange();
-	read(client_fd, buffer, sz); t.client_finished();
-	write(client_fd, buffer, t.server_hello_done());
+	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection
+		id = new_id();
+		write(client_fd, buffer, t.server_hello(id));
+		write(client_fd, buffer, t.server_certificate());
+		write(client_fd, buffer, t.server_key_exchange());
+		write(client_fd, buffer, t.server_hello_done());
+		read(client_fd, buffer, sz); idNchannel_[id]->keys = t.client_key_exchange();
+		read(client_fd, buffer, sz); t.client_finished();
+		write(client_fd, buffer, t.server_finished());
+	} else {//resume connection
+		t.use_key(idNchannel_[id]->keys);
+		write(client_fd, buffer, t.server_hello(id));
+		write(client_fd, buffer, t.server_finished());
+		read(client_fd, buffer, sz); t.client_finished();
+	}
 
 	while(1) {//data communication
 		read(client_fd, buffer, sz);

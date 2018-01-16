@@ -97,7 +97,14 @@ int TLS::server_hello_done()
 	return sz;
 }
 
-int TLS::client_key_exchange()//16
+int TLS::use_key(array<unsigned char, 64> keys)
+{
+	client_aes_.key(keys.data());
+	server_aes_.key(keys.data() + 32);
+	return -6;
+}
+
+array<unsigned char, 64> TLS::client_key_exchange()//16
 {
 	Handshake_header* ph = (Handshake_header*)rec_received_->data;
 	assert(ph->handshake_type == 16);
@@ -110,14 +117,10 @@ int TLS::client_key_exchange()//16
 	auto master_secret = prf(pre, pre+32, "master secret", rand, 48);
 	memcpy(rand + 32, client_random_.data(), 32);
 	memcpy(rand, server_random_.data(), 32);
-	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 128);
+	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 64);
 
-	unsigned char* p = keys.data();
-	client_mac_.key(p, p+32); p += 32;
-	server_mac_.key(p, p+32); p += 32;
-	client_aes_.key(p); p += 32;
-	server_aes_.key(p);
-	return -6;
+	use_key(keys);
+	return keys;
 }
 
 string TLS::decode()
@@ -126,20 +129,23 @@ string TLS::decode()
 	client_aes_.iv(rec_received_->data);
 	auto v = client_aes_.decrypt(rec_received_->data + 16, 
 			rec_received_->data + rec_received_->length);
-	return {v.data(), v.size() - 32 - v.back()};//v.back() == padding length
+	return {v.data(), v.size() - 20 - v.back()};//v.back() == padding length
 }
 
 int TLS::encode(string s)
-{
+{//encrypt source s according to tls -> prepare rec_to_send_ buffer, return buffer size
 	rec_to_send_->content_type = 0x17;
 	rec_to_send_->version = 0x0303;
 	mpz2bnd(random_prime(16), rec_to_send_->data, rec_to_send_->data+16);
 	server_aes_.iv(rec_to_send_->data);
-	int padding_length = 16 - s.size() % 16;
+	int padding_length = 16 - (s.size() + 20) % 16;//20 = sha1 digest size, 16 block sz
+
 	s = string{0x01} + string{rec_to_send_, rec_to_send_+5} + s;
 	auto verify = server_mac_.hash(s.data(), s.data() + s.size());
+	
 	s += verify + string{padding_length, padding_length};
 	auto v = server_aes_.encrypt(s.data()+6, s.data() + s.size());
+	
 	memcpy(rec_to_send_->data+16, v.data(), v.size());
 	rec_to_send_->length = v.size() + 16;
 	return v.size() + 16 + 5;
