@@ -58,8 +58,9 @@ public:
 	std::array<unsigned char, 32> client_hello();
 	int server_hello(std::array<unsigned char, 32> id), server_certificate(),
 		server_key_exchange(), server_hello_done();
-	std::array<unsigned char, 64> client_key_exchange();
+	auto client_key_exchange();
 	int	client_finished(), server_finished();
+	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
 protected:
 	TLS_header *rec_received_, *rec_to_send_;
 	AES server_aes_, client_aes_;
@@ -69,6 +70,7 @@ protected:
 	int id_length_;
 private:
 	void init(int sz);
+	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
 };
 /*
 ya is party a's public key; ya = g ^ xa mod p

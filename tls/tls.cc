@@ -58,23 +58,23 @@ void TLS::init(int sz)
 
 int TLS::server_certificate()
 {//return data_size
-	rec_to_send_->handshake_type = 11;
+	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
+	ph->handshake_type = 11;
 	
 	return 2;
 }
-/* Static x509 buffer */
+/* 
 typedef struct x509_buffer {
-    int  length;                  /* actual size */
-    byte buffer[MAX_X509_SIZE];   /* max static cert size */
+    int  length;                  
+    byte buffer[MAX_X509_SIZE];  
 } x509_buffer;
 
 
-/* wolfSSL X509_CHAIN, for no dynamic memory SESSION_CACHE */
 struct WOLFSSL_X509_CHAIN {
-    int         count;                    /* total number in chain */
-    x509_buffer certs[MAX_CHAIN_DEPTH];   /* only allow max depth 4 for now */
+    int         count;          
+    x509_buffer certs[MAX_CHAIN_DEPTH];   
 };
-
+*/
 
 int TLS::server_key_exchange()
 {
@@ -97,14 +97,20 @@ int TLS::server_hello_done()
 	return sz;
 }
 
-int TLS::use_key(array<unsigned char, 64> keys)
+array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
 {
 	client_aes_.key(keys.data());
 	server_aes_.key(keys.data() + 32);
-	return -6;
+	return keys;
+}
+array<unsigned char, 64> TLS::use_key(vector<unsigned char> keys)
+{
+	array<unsigned char, 64> r;
+	for(int i=0; i<64; i++) r[i] = keys[i];
+	return use_key(r);
 }
 
-array<unsigned char, 64> TLS::client_key_exchange()//16
+auto TLS::client_key_exchange()//16
 {
 	Handshake_header* ph = (Handshake_header*)rec_received_->data;
 	assert(ph->handshake_type == 16);
@@ -117,10 +123,7 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	auto master_secret = prf(pre, pre+32, "master secret", rand, 48);
 	memcpy(rand + 32, client_random_.data(), 32);
 	memcpy(rand, server_random_.data(), 32);
-	auto keys = prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 64);
-
-	use_key(keys);
-	return keys;
+	return use_key(prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 64));
 }
 
 string TLS::decode()
@@ -129,7 +132,7 @@ string TLS::decode()
 	client_aes_.iv(rec_received_->data);
 	auto v = client_aes_.decrypt(rec_received_->data + 16, 
 			rec_received_->data + rec_received_->length);
-	return {v.data(), v.size() - 20 - v.back()};//v.back() == padding length
+	return {v.data(), v.data() + v.size() - 20 - v.back()};//v.back() == padding length
 }
 
 int TLS::encode(string s)
@@ -140,11 +143,11 @@ int TLS::encode(string s)
 	server_aes_.iv(rec_to_send_->data);
 	int padding_length = 16 - (s.size() + 20) % 16;//20 = sha1 digest size, 16 block sz
 
-	s = string{0x01} + string{rec_to_send_, rec_to_send_+5} + s;
-	auto verify = server_mac_.hash(s.data(), s.data() + s.size());
+	s = string{0x01} + string{(char*)rec_to_send_, (char*)rec_to_send_+5} + s;
+	auto verify = server_mac_.hash((uint8_t*)s.data(), (uint8_t*)s.data() + s.size());
 	
-	s += verify + string{padding_length, padding_length};
-	auto v = server_aes_.encrypt(s.data()+6, s.data() + s.size());
+	s += string{verify.begin(), verify.end()} + string{padding_length, padding_length};
+	auto v = server_aes_.encrypt((uint8_t*)s.data()+6, (uint8_t*)s.data() + s.size());
 	
 	memcpy(rec_to_send_->data+16, v.data(), v.size());
 	rec_to_send_->length = v.size() + 16;
@@ -162,4 +165,3 @@ int TLS::server_finished()//16
 {
 	return 0;
 }
-
