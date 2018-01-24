@@ -8,8 +8,6 @@ class HTTPS : public Server
 public:
 	HTTPS(int outport = 4000, int inport = 2001);
 	virtual ~HTTPS();
-	bool find_id(std::array<unsigned char, 32> id);
-	std::array<unsigned char, 32> new_id();
 	void start();
 
 protected:
@@ -22,6 +20,8 @@ protected:
 
 private:
 	void connected(int client_fd);
+	bool find_id(std::array<unsigned char, 32> id);
+	std::array<unsigned char, 32> new_id();
 };
 
 

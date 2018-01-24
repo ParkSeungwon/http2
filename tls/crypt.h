@@ -5,8 +5,11 @@
 #include<wolfssl/wolfcrypt/sha.h>
 #include<wolfssl/wolfcrypt/hmac.h>
 
+std::string base64_encode(std::vector<unsigned char> v);
+std::vector<unsigned char> base64_decode(std::string s);
 template<typename... Args> void show(mpz_class a, Args... b);
 mpz_class random_prime(unsigned byte);
+mpz_class nextprime(mpz_class n);
 mpz_class powm(mpz_class base, mpz_class exp, mpz_class mod);
 template<typename It> void mpz2bnd(mpz_class n, It begin, It end);
 template<typename It> mpz_class bnd2mpz(It begin, It end);
@@ -22,8 +25,10 @@ public:
 	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
 	void iv(const unsigned char* iv);
-	template<typename It> std::vector<unsigned char> encrypt(const It begin, const It end);
-	template<typename It> std::vector<unsigned char> decrypt(const It begin, const It end);
+	template<typename It>
+		std::vector<unsigned char> encrypt(const It begin, const It end);
+	template<typename It>
+		std::vector<unsigned char> decrypt(const It begin, const It end);
 protected:
 	unsigned char key_[32], iv_[16];
 	Aes aes_;
@@ -56,5 +61,15 @@ public:
 	mpz_class p, g, ya, yb_;
 protected:
 	mpz_class q, h, K, xa;
+};
+
+class RSA
+{
+public:
+	RSA(int key_size);
+	mpz_class sign(mpz_class m), decode(mpz_class m), encode(mpz_class m);
+	mpz_class K, e;
+protected:
+	mpz_class p, q, d, phi;
 };
 

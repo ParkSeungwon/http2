@@ -1,3 +1,4 @@
+#include<fstream>
 #include<cstring>
 #include<iostream>
 #include<unistd.h>
@@ -6,11 +7,21 @@
 #include"tls.h"
 using namespace std;
 
+vector<unsigned char> init_certificate()
+{
+	ifstream f("server-cert.pem"); 
+	vector<unsigned char> v; unsigned char c;
+	while(f >> noskipws >> c) v.push_back(c);
+	return v;
+}
+vector<unsigned char> TLS::certificate_ = init_certificate();
+
 TLS::TLS(unsigned char* buffer, unsigned char* buffer2)
 {//buffer = read buffer, buffer2 = write buffer
 	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
 	if(buffer2) rec_to_send_ = reinterpret_cast<TLS_header*>(buffer2);
-	else rec_to_send_ = rec_received_;
+	else rec_to_send_ = rec_received_;//use same buffer for read and write
+
 }
 
 array<unsigned char, 32> TLS::client_hello()
@@ -58,23 +69,13 @@ void TLS::init(int sz)
 
 int TLS::server_certificate()
 {//return data_size
+	int sz = certificate_.size();
+	init(9 + sz);
 	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
 	ph->handshake_type = 11;
-	
-	return 2;
+	for(int i=0; i<sz; i++) ph->data[i] = certificate_[i];
+	return sz + 9;
 }
-/* 
-typedef struct x509_buffer {
-    int  length;                  
-    byte buffer[MAX_X509_SIZE];  
-} x509_buffer;
-
-
-struct WOLFSSL_X509_CHAIN {
-    int         count;          
-    x509_buffer certs[MAX_CHAIN_DEPTH];   
-};
-*/
 
 int TLS::server_key_exchange()
 {
@@ -110,8 +111,8 @@ array<unsigned char, 64> TLS::use_key(vector<unsigned char> keys)
 	return use_key(r);
 }
 
-auto TLS::client_key_exchange()//16
-{
+array<unsigned char, 64> TLS::client_key_exchange()//16
+{//return client_aes_key + server_aes_key
 	Handshake_header* ph = (Handshake_header*)rec_received_->data;
 	assert(ph->handshake_type == 16);
 
@@ -143,10 +144,10 @@ int TLS::encode(string s)
 	server_aes_.iv(rec_to_send_->data);
 	int padding_length = 16 - (s.size() + 20) % 16;//20 = sha1 digest size, 16 block sz
 
-	s = string{0x01} + string{(char*)rec_to_send_, (char*)rec_to_send_+5} + s;
+	s = string{0x01} + string{(char*)rec_to_send_, 5} + s;
 	auto verify = server_mac_.hash((uint8_t*)s.data(), (uint8_t*)s.data() + s.size());
 	
-	s += string{verify.begin(), verify.end()} + string{padding_length, padding_length};
+	s += string{verify.begin(), verify.end()} + string(padding_length, padding_length);
 	auto v = server_aes_.encrypt((uint8_t*)s.data()+6, (uint8_t*)s.data() + s.size());
 	
 	memcpy(rec_to_send_->data+16, v.data(), v.size());
