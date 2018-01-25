@@ -20,7 +20,6 @@ struct Hello_header {
 	uint8_t session_id[32];
 	uint8_t cipher_suite[2];
 	uint8_t compression;
-	uint8_t end;
 } __attribute__((packed));
 
 class TLS
@@ -43,7 +42,8 @@ protected:
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	int id_length_;
 private:
-	void init(int sz);
+	unsigned char* init(int handshake_type, int sz);
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
 	static std::vector<unsigned char> certificate_;
+	static RSA rsa_;
 };

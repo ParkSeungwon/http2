@@ -11,6 +11,13 @@ RSA::RSA(int key_size)
 	mpz_invert(d.get_mpz_t(), e.get_mpz_t(), phi.get_mpz_t());//modular inverse
 }
 
+RSA::RSA(mpz_class e, mpz_class d, mpz_class K)
+{
+	this->e = e;
+	this->d = d;
+	this->K = K;
+}	
+
 mpz_class RSA::encode(mpz_class m)
 {
 	return powm(m, e, K);

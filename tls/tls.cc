@@ -7,21 +7,23 @@
 #include"tls.h"
 using namespace std;
 
-vector<unsigned char> init_certificate()
+static mpz_class ze, zd, zK;//used in TLS constructor
+static vector<unsigned char> init_certificate()
 {
 	ifstream f("server-cert.pem"); 
 	vector<unsigned char> v; unsigned char c;
 	while(f >> noskipws >> c) v.push_back(c);
+//	ze = get keys from files
 	return v;
 }
 vector<unsigned char> TLS::certificate_ = init_certificate();
+RSA TLS::rsa_{ze, zd, zK};
 
 TLS::TLS(unsigned char* buffer, unsigned char* buffer2)
 {//buffer = read buffer, buffer2 = write buffer
 	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
 	if(buffer2) rec_to_send_ = reinterpret_cast<TLS_header*>(buffer2);
 	else rec_to_send_ = rec_received_;//use same buffer for read and write
-
 }
 
 array<unsigned char, 32> TLS::client_hello()
@@ -41,13 +43,8 @@ array<unsigned char, 32> TLS::client_hello()
 
 int TLS::server_hello(array<unsigned char, 32> id)
 {//return data size
-	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
-	Hello_header* p = (Hello_header*)ph->data;
-	int sz = &p->end - (uint8_t*)rec_to_send_;
-	init(sz);
-
-	ph->handshake_type = 2;
-	mpz2bnd(sz - 9, ph->length, ph->length+3);
+	int sz = sizeof(Hello_header);
+	Hello_header* p = (Hello_header*)init(2, sz);
 
 	p->version[0] = 3, p->version[1] = 3;
 	memcpy(p->unix_time, server_random_.data(), 32);
@@ -56,46 +53,50 @@ int TLS::server_hello(array<unsigned char, 32> id)
 	memcpy(p->session_id, id.data(), 32);
 	p->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
 	p->compression = 0;//no compression
-	return sz;
+	return sz + 10;
 }
 
-void TLS::init(int sz)
-{//initialize buffer to send
-	memset(rec_to_send_, 0, sz);
+unsigned char* TLS::init(int handshake_type, int sz)
+{//initialize buffer to send, sz = body size 
+	memset(rec_to_send_, 0, sz + 6 + 4);
 	rec_to_send_->content_type = 0x16;
 	rec_to_send_->version = 0x0303;//no need htons 03 = 03
-	rec_to_send_->length = htons(sz - 5);
+	rec_to_send_->length = htons(sz + 4);
+	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
+	ph->handshake_type = handshake_type;
+	mpz2bnd(sz, ph->length, ph->length+3);
+	return ph->data;
 }
 
 int TLS::server_certificate()
 {//return data_size
 	int sz = certificate_.size();
-	init(9 + sz);
-	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
-	ph->handshake_type = 11;
-	for(int i=0; i<sz; i++) ph->data[i] = certificate_[i];
-	return sz + 9;
+	unsigned char* p = init(11, sz);
+	for(int i=0; i<sz; i++) p[i] = certificate_[i];
+	return sz + 10;
 }
 
 int TLS::server_key_exchange()
 {
-	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
-	ph->handshake_type = 12;
-	ph->length;
-	mpz2bnd(diffie_.p, ph->data, ph->data+32);
-	mpz2bnd(diffie_.g, ph->data+32, ph->data+64);
-	mpz2bnd(diffie_.ya, ph->data+64, ph->data+96);
+	unsigned char* p = init(12, 96 + 256);
+	mpz2bnd(diffie_.p, p, p+32);
+	mpz2bnd(diffie_.g, p+32, p+64);
+	mpz2bnd(diffie_.ya, p+64, p+96);
 
-	return 3;
+	unsigned char a[160];
+	memcpy(a, client_random_.data(), 32);
+	memcpy(a + 32, server_random_.data(), 32);
+	memcpy(a + 64, p, 96);
+	auto b = server_mac_.hash(a, a + 160);
+	auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));
+	mpz2bnd(z, p + 96, p + 256 + 96);
+	return 10 + 96 + 256;
 }
 
 int TLS::server_hello_done()
 {
-	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
-	int sz = ph->data - (uint8_t*)rec_to_send_;
-	init(sz);
-	ph->handshake_type = 14;
-	return sz;
+	init(14, 0);
+	return 10;
 }
 
 array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
@@ -164,5 +165,6 @@ int TLS::client_finished()
 
 int TLS::server_finished()//16
 {
-	return 0;
+	init(16, 0);
+	return 10;
 }

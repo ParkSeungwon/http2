@@ -8,7 +8,7 @@ int main()
 	int k = 0;
 	Json::Value jv;
 	jv[0]["email"] = "z@d.d";
-	cout << jv;
+	cout << jv << endl;
 	jv.clear();
-	cout << jv;
+	cout << jv << endl;
 }
