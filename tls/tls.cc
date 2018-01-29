@@ -58,7 +58,7 @@ int TLS::server_hello(array<unsigned char, 32> id)
 
 unsigned char* TLS::init(int handshake_type, int sz)
 {//initialize buffer to send, sz = body size 
-	memset(rec_to_send_, 0, sz + 6 + 4);
+	memset(rec_to_send_, 0, sz + 5 + 4);
 	rec_to_send_->content_type = 0x16;
 	rec_to_send_->version = 0x0303;//no need htons 03 = 03
 	rec_to_send_->length = htons(sz + 4);
