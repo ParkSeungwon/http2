@@ -92,7 +92,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 static Json::Value read_constructed(istream& is, int length) 
 {
 	Json::Value jv;
-	for(int i=0, l; length > 0; i++, length -= l+1) {
+	for(int i=0, l, start_pos=is.tellg(); (int)is.tellg()-start_pos < length; i++) {
 		auto type = read_type(is);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
@@ -105,12 +105,10 @@ Json::Value der2json(istream& is)
 {
 	Json::Value jv;
 	struct ber::Type type;
-	for(int i=0, l=10000, pos=is.tellg();
-			is.tellg()-pos <= l+2; i++) {//&& (type = read_type(is)).tag != ber::EOC ; i++) {
-		type = read_type(is);
+	for(int i=0, l; (type = read_type(is)).tag != ber::EOC; i++) {
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
-			type_change(type.tag, read_value(is, l)) : der2json(is);
+			type_change(type.tag, read_value(is, l)) : read_constructed(is, l);
 	}
 	return jv;
 }
