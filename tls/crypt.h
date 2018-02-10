@@ -4,7 +4,9 @@
 #include<wolfssl/wolfcrypt/aes.h>
 #include<wolfssl/wolfcrypt/sha.h>
 #include<wolfssl/wolfcrypt/hmac.h>
+#include<json/json.h>
 
+Json::Value der2json(std::istream& is);
 std::string base64_encode(std::vector<unsigned char> v);
 std::vector<unsigned char> base64_decode(std::string s);
 template<typename... Args> void show(mpz_class a, Args... b);

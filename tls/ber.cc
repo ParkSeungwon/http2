@@ -1,5 +1,6 @@
 #include<iostream>
 #include<sstream>
+#include<istream>
 #include"ber.h"
 #include"crypt.h"
 using namespace std;
@@ -49,7 +50,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 	switch(tag) {
 		case ber::EOC:
 		case ber::BOOLEAN: return v[0] ? true : false;
-		case ber::INTEGER: return *(int*)v.data();
+		case ber::INTEGER: return (int)bnd2mpz(v.begin(), v.end()).get_si();
 		case ber::BIT_STRING:
 		case ber::OCTET_STRING:
 		case ber::NUMERIC_STRING:
@@ -91,7 +92,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 static Json::Value read_constructed(istream& is, int length) 
 {
 	Json::Value jv;
-	for(int i=0, l; length > 0; i++, length -= l) {
+	for(int i=0, l; length > 0; i++, length -= l+1) {
 		auto type = read_type(is);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
@@ -104,7 +105,9 @@ Json::Value der2json(istream& is)
 {
 	Json::Value jv;
 	struct ber::Type type;
-	for(int i=0, l; (type = read_type(is)).tag != ber::EOC; i++) {
+	for(int i=0, l=10000, pos=is.tellg();
+			is.tellg()-pos <= l+2; i++) {//&& (type = read_type(is)).tag != ber::EOC ; i++) {
+		type = read_type(is);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
 			type_change(type.tag, read_value(is, l)) : der2json(is);
