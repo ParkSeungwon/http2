@@ -1,4 +1,3 @@
-#include<iostream>
 #include<sstream>
 #include<istream>
 #include"ber.h"
@@ -68,18 +67,8 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 		case ber::EMBEDDED_PDV:
 		case ber::RELATIVE_OID:
 
-		case ber::UTF8STRING:
-		case ber::PRINTABLE_STRING:
-		case ber::T61_STRING:
-		case ber::VIDEOTEX_STRING:
-		case ber::IA5_STRING:
-		case ber::GRAPHIC_STRING:
-		case ber::VISIBLE_STRING:
-		case ber::GENERAL_STRING:
-		case ber::UNIVERSAL_STRING:
-		case ber::CHARACTER_STRING:
-		case ber::BMP_STRING:
-		{
+		default:
+		{//strings
 			stringstream ss;
 			for(auto a : v) ss << a;
 			return ss.str();
@@ -92,7 +81,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 static Json::Value read_constructed(istream& is, int length) 
 {
 	Json::Value jv;
-	for(int i=0, l, start_pos=is.tellg(); (int)is.tellg()-start_pos < length; i++) {
+	for(int i=0,l,start_pos=is.tellg(); is && (int)is.tellg()-start_pos<length; i++) {
 		auto type = read_type(is);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
