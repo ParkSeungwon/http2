@@ -1,0 +1,12 @@
+PKIX1 { }
+
+DEFINITIONS IMPLICIT TAGS ::=
+
+BEGIN
+
+Dss-Sig-Value ::= SEQUENCE {
+	t UTF8String
+}
+
+END
+
