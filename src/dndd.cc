@@ -27,6 +27,16 @@ void DnDD::process()
 	else if(requested_document_ == "follow") content_ = follow();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "close") content_ = close();
+	else if(requested_document_ == "googleapi") google();
+}
+
+void DnDD::google() 
+{
+	Json::Value jv; 
+	Json::Reader reader;
+	reader.parse(nameNvalue_["json"].data(), jv);
+	cout << jv;
+	content_ = "ok";
 }
 
 string DnDD::close()

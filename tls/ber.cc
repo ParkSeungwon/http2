@@ -16,7 +16,7 @@ static ber::Type read_type(unsigned char c)
 static int read_length(istream& is)
 {
 	unsigned char c;
-	if(!(is >> c)) throw "reached eof in read_length";
+	if(!(is >> noskipws >> c)) throw "reached eof in read_length";
 	if(c & 0b10000000) {
 		vector<unsigned char> v;
 		for(int i = 0, j = c & 0b01111111; i < j; i++) {
@@ -31,7 +31,7 @@ static vector<unsigned char> read_value(istream& is, int len)
 {
 	unsigned char c; vector<unsigned char> v;
 	for(int i=0; i<len; i++) {
-		if(!(is >> c)) throw "reached eof in read_value";
+		if(!(is >> noskipws >> c)) throw "reached eof in read_value";
 		v.push_back(c);
 	}
 	return v;
@@ -74,7 +74,7 @@ static Json::Value read_constructed(istream& is, int length)
 	Json::Value jv;
 	int start_pos = is.tellg();
 	unsigned char c;
-	for(int i=0, l; (int)is.tellg()-start_pos < length && is >> c; i++) {
+	for(int i=0, l; (int)is.tellg()-start_pos < length && is >> noskipws >> c; i++) {
 		auto type = read_type(c);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
@@ -87,7 +87,7 @@ Json::Value der2json(istream& is)
 {
 	Json::Value jv;
 	unsigned char c;
-	for(int i=0, l; is >> c; i++) {
+	for(int i=0, l; is >> noskipws >> c; i++) {
 		auto type = read_type(c);
 		l = read_length(is);
 		jv[i] = type.pc == ber::PRIMITIVE ? 
