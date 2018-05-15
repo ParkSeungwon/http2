@@ -11,20 +11,16 @@ var componentForm = {
 	postal_code: 'short_name'
 };
 
-//initialize
-$(function() {
+
+function initialize() {
 	var pyrmont = new google.maps.LatLng(-33.8665433,151.1956316);
+
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: pyrmont,
 		zoom: 15
 	});
+}
 
-	autocomplete = new google.maps.places.Autocomplete(
-			(document.getElementById('autocomplete')), {types: ['geocode']});
-	autocomplete.addListener('place_changed', fillInAddress);
-})
-
-//to search with text query
 function myclick() {
 	var request = { bounds: map.getBounds(), query: $('#name').val() };
 	service = new google.maps.places.PlacesService(map);
@@ -45,7 +41,11 @@ function callback(results, status) {
 	}
 } 
 
-//to get address with autocomplete
+function initAutocomplete() {
+	autocomplete = new google.maps.places.Autocomplete(
+			(document.getElementById('autocomplete')), {types: ['geocode']});
+	autocomplete.addListener('place_changed', fillInAddress);
+}
 function fillInAddress() {
 	// Get the place details from the autocomplete object.
 	var place = autocomplete.getPlace();
@@ -83,7 +83,6 @@ function geolocate() {
 	}
 }
 
-//to insert travel positions
 var origin, destination;
 var ways = [];
 function start() {
@@ -99,55 +98,47 @@ function waypoint() {
 	ways.push({location:center, stopover:true });
 	new google.maps.Marker({position:center, map:map, label:'w'});
 }
-
-//to draw transit with waypoints
-var directionsService = new google.maps.DirectionsService();
 function find() {
+	var	directionsDisplay = new google.maps.DirectionsRenderer();
+	var directionsService = new google.maps.DirectionsService();
+	directionsDisplay.setMap(map);
+
 	var request = { origin: origin, destination: destination, waypoints: ways,
 		travelMode: 'DRIVING', optimizeWaypoints: true };
-	directionsService.route(request, optimize); 
-}
-
-function optimize(result, status) {
-	var jv = result.routes[0].legs;
-	var w1=origin, w2;
-	for(var i=0; i<jv.length; i++) {
-		var dist = 10000;
-		if(i == jv.length-1) w2 = destination;
-		else for(var k=0; k<ways.length; k++) {
-			var d = getDistance(jv[i].end_location, ways[k].location);
-			if(d < dist) {
-				dist = d;
-				w2 = ways[k].location;
+	directionsService.route(request, function(result, status) {
+		if (status == 'OK') {
+			var jv = result.routes[0].legs;
+			for(var i=0; i<jv.length; i++) {
+				var x = jv[i].end_location.lat;
+				var y = jv[i].end_location.lng;
+				var dist = 10000;
+				var w1=start, w2, w;
+				if(i == jv.length-1) w2 = end;
+				else {
+					for(var ww in ways) {
+						w = ww.location;
+						console.log(x);
+						console.log(y);
+						console.log(w);
+						var d = (x - w.lat) * (x - w.lat) + (y - w.lng) * (y - w.lng);
+						if(d < dist) {
+							dist = d;
+							w2 = w;
+						}
+					}
+				}
+				directionsService.route({origin: w1, destination:w2, travelMode:'TRANSIT'},
+						function(r, status) { directionsDisplay.setDirections(r); } );
+				w1 = w2;
 			}
+			
+			$.post('googleapi', {'json':JSON.stringify(result), 'direction':'1'}, function(data, status){});
 		}
-		directionsService.route({origin:w1,destination:w2, travelMode:'TRANSIT'}, display);
-		w1 = w2;
-	}
+	});
 }
 
-var rad = function(x) { return x * Math.PI / 180; };
-var getDistance = function(p1, p2) {
-  var R = 6378137; // Earth’s mean radius in meter
-  var dLat = rad(p2.lat() - p1.lat());
-  var dLong = rad(p2.lng() - p1.lng());
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(rad(p1.lat())) * Math.cos(rad(p2.lat())) *
-    Math.sin(dLong / 2) * Math.sin(dLong / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  var d = R * c;
-  return d; // returns the distance in meter
-};
-
-function display(result, status) {
-	var	directionsDisplay = new google.maps.DirectionsRenderer();
-	directionsDisplay.setMap(map);
-	directionsDisplay.setDirections(result); 
-	$.post('googleapi', {'json':JSON.stringify(result), 'direction':'1'},
-			function(data, status){});
-}
-
-function save() {
-	html2canvas(document.querySelector("#map")).then(function(canvas) {document.body.appendChild(canvas)});
-}
+$(function() {
+	initialize();
+	initAutocomplete();
+})
 

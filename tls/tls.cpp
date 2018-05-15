@@ -1,5 +1,6 @@
 #include<iostream>
 #include"server.h"
+#include<fstream>
 #include"crypt.h"
 #include"tls.h"
 using namespace std;
@@ -37,7 +38,8 @@ int main(int ac, char** av)
 
 	SHA1 sha1;
 	for(auto& c : sha1.hash(v.begin(), v.end())) cout << hex << +c; cout << endl;
-
+	ifstream f("cert.der");
+	cout << der2json(f) << endl;
 }
 
 

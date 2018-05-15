@@ -45,10 +45,10 @@ void HTTPS::start()
 }
 
 void HTTPS::connected(int client_fd)
-{//multi thread function
+{//will be used in parallel
 	const int sz = 4096000;
-	unsigned char buffer[sz];//for multithread
-	TLS t{buffer};//handshake
+	unsigned char buffer[sz];//using local buffer for multithread not class buffer
+	TLS t{buffer};//TLS is decoupled from file descriptor
 	read(client_fd, buffer, sz); auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		id = new_id();

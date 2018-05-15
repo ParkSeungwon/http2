@@ -42,13 +42,13 @@ void Server::start(function<string(string)> f)
 		if(client_fd == -1) cout << "accept() error" << endl;
 		else if(!fork()) {
 			for(string s; (s = recv()) != end_string; send(f(s)));
-			break;
+			break;//forked process ends here
 		}
 	}
 }
 
 void Server::nokeep_start(function<string(string)> f)
-{
+{//does not keep connection
 	int cl_size = sizeof(client_addr);
 	while(true) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);

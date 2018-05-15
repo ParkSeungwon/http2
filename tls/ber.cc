@@ -1,3 +1,4 @@
+#include<iomanip>
 #include<sstream>
 #include<istream>
 #include"ber.h"
@@ -42,7 +43,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 	switch(tag) {
 		case ber::EOC:
 		case ber::BOOLEAN: return v[0] ? true : false;
-		case ber::INTEGER: return (int)bnd2mpz(v.begin(), v.end()).get_si();
+		case ber::INTEGER: //return (int)bnd2mpz(v.begin(), v.end()).get_si();
 		case ber::BIT_STRING:
 		case ber::OCTET_STRING:
 		case ber::NUMERIC_STRING:
@@ -50,7 +51,7 @@ static Json::Value type_change(ber::Tag tag, vector<unsigned char> v)
 		case ber::OBJECT_DESCRIPTOR:
 		{
 			stringstream ss;
-			for(auto a : v) ss << hex << +a;
+			for(auto a : v) ss << hex << setw(2) << setfill('0') << +a << ':';
 			return ss.str();
 		}
 		case ber::NULL_TYPE: return "null";

@@ -35,8 +35,16 @@ void DnDD::google()
 	Json::Value jv; 
 	Json::Reader reader;
 	reader.parse(nameNvalue_["json"].data(), jv);
-	cout << jv;
+	ofstream f("/tmp/jv", ofstream::app|ofstream::out);
+	f << jv;
 	content_ = "ok";
+	if(nameNvalue_["direction"] != "") {
+		auto j = jv["routes"][0]["legs"];
+		int sum = 0;
+		for(int i=0; i<j.size(); i++) sum += j[i]["duration"]["value"].asInt();
+		cout << "total " << sum << "sec" << endl;
+		cout << jv["route"][0]["waypoint_order"] << endl;
+	}
 }
 
 string DnDD::close()

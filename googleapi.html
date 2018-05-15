@@ -2,6 +2,7 @@
 	<head>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0g_kK9ELz9b2IRDSeEXsdlEqaN0YXynw&libraries=places"></script>
+		<script src='html2canvas.js'> </script>
 		<script src='googleapi.js'> </script>
 	</head>
 	<body>
@@ -11,10 +12,11 @@
 		<div id='map' style="width:800px;height:600px"></div>
 
 		<input id="autocomplete" placeholder="Enter your address" onFocus="geolocate()" type="text"></input>
-		<button id='start' onclick='start()'>start</button>
-		<button id='end' onclick='end()'>end</button>
-		<button id='waypoint' onclick='waypoint()'>waypoint</button>
-		<button id='find' onclick='find()'>find</button>
+		<button onclick='start()'>start</button>
+		<button onclick='end()'>end</button>
+		<button onclick='waypoint()'>waypoint</button>
+		<button onclick='find()'>find</button>
+		<button onclick='save()'>save</button>
 
 		<table id="address">
 			<tr>
