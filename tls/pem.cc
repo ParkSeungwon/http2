@@ -57,15 +57,3 @@ mpz_class get_prvkey(istream& is)
 	return str2mpz(jv[0][3].asString());
 }
 
-int main(int ac, char** av)
-{//extract RSA keys from pem files and test it
-	ifstream f("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-	auto ar = get_pubkeys(f);
-	for(auto a : ar) cout << "0x" << hex << a << endl;
-	ifstream f2("p.pem");//generated with openssl genrsa 2048 > p.pem
-	auto prv = get_prvkey(f2);
-	cout << "0x" << prv << endl;
-	mpz_class m = 125;
-	auto c = powm(m, ar[1], ar[0]);//encrypt
-	assert(m == powm(c, prv, ar[0]));//decrypt and compare with original
-}
