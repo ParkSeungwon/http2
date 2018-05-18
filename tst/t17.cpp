@@ -1,11 +1,14 @@
 #include<algorithm>
 #include<cassert>
+#include<iostream>
+#include<fstream>
+#include<json/json.h>
 using namespace std;
 
-int main()
+Json::Value pem2json(istream&);
+int main(int ac, char** av)
 {
-	int a[] = {3,2,1,4,5,6,3,4};
-	sort(a, a+8);
-	for(int i=0; i<7; i++) assert(a[i] <= a[i+1]);
+	ifstream f(av[1]);
+	cout << pem2json(f);
 }
 

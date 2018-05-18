@@ -7,21 +7,20 @@
 #include"tls.h"
 using namespace std;
 
-array<mpz_class, 3> get_pubkeys(istream& is);
+array<mpz_class, 3> get_keys(istream& is);
 mpz_class get_prvkey(istream& is);
 
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {
-	ifstream f("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-	ifstream f2("p.pem");//generated with openssl genrsa 2048 > p.pem
-	auto [ze, zK, z] = get_pubkeys(f);
-	zd = get_prvkey(f2);
+	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
+//	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+	auto [zK, ze, zd] = get_keys(f);
 
 	mpz_class msg = 125;
 	auto crypt = powm(msg, ze, zK);//encrypt
 	assert(msg == powm(crypt, zd, zK));//decrypt and compare with original
-	
+	cout << re << endl;
 	f.seekg(0, ios_base::beg);
 	vector<unsigned char> v; unsigned char c;
 	while(f >> noskipws >> c) v.push_back(c);

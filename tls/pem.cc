@@ -51,9 +51,9 @@ array<mpz_class, 3> get_pubkeys(istream& is)
 	return {a, b, c};
 }
 
-mpz_class get_prvkey(istream& is)
+array<mpz_class, 3> get_keys(istream& is)
 {
 	auto jv = pem2json(is);
-	return str2mpz(jv[0][3].asString());
+	return {str2mpz(jv[0][1].asString()), str2mpz(jv[0][2].asString()), str2mpz(jv[0][3].asString())};
 }
 
