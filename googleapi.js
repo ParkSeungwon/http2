@@ -86,15 +86,15 @@ function geolocate() {
 //to insert travel positions
 var origin, destination;
 var ways = [];
-function start() {
+function start() {//start button click
 	origin = map.getCenter();
 	new google.maps.Marker({position:origin, map:map, label:'S'});
 }
-function end() {
+function end() {//end button click
 	destination = map.getCenter();
 	new google.maps.Marker({position:destination, map:map, label:'E'});
 }
-function waypoint() {
+function waypoint() {//waypoint button click
 	var center = map.getCenter();
 	ways.push({location:center, stopover:true });
 	new google.maps.Marker({position:center, map:map, label:'w'});
@@ -121,7 +121,7 @@ function optimize(result, status) {
 				w2 = ways[k].location;
 			}
 		}
-		directionsService.route({origin:w1,destination:w2, travelMode:'TRANSIT'}, display);
+		directionsService.route({origin:w1,destination:w2, travelMode:'BICYCLING'}, display);
 		w1 = w2;
 	}
 }

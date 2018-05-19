@@ -10,10 +10,10 @@ using namespace std;
 vector<unsigned char> base64_decode(string);
 string get_certificate_core(istream& is) {
 	string s, r;
-	while(s.substr(0, 10) != "-----BEGIN") getline(is, s);
-	while(getline(is, s)) 
-		if(s.substr(0, 8) != "-----END") r += s;
-		else return r;
+	while(s != "-----BEGIN") is >> s;
+	getline(is, s);
+	for(is >> s; s != "-----END"; is >> s) r += s;
+	return r;
 }
 
 mpz_class str2mpz(string s) {

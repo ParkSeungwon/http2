@@ -3,13 +3,10 @@ all :
 	make -C framework/
 	make -C database/
 	make -C tls/
+	make -C tst/
 	make -C obj/
-
-PHONY : clean test
+	./catch.x
 
 clean :
 	rm obj/*.? *.x
 
-test : 
-	make -C tst/
-	make -C obj/ test

@@ -20,7 +20,6 @@ static vector<unsigned char> init_certificate()
 	mpz_class msg = 125;
 	auto crypt = powm(msg, ze, zK);//encrypt
 	assert(msg == powm(crypt, zd, zK));//decrypt and compare with original
-	cout << re << endl;
 	f.seekg(0, ios_base::beg);
 	vector<unsigned char> v; unsigned char c;
 	while(f >> noskipws >> c) v.push_back(c);
