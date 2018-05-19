@@ -14,6 +14,18 @@ using namespace std;
 //	cout << "'>";
 //}
 
+TEST_CASE("pem key acquire test") {
+	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
+//	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+	auto [zK, ze, zd] = get_keys(f);
+	f.seekg(0, ios_base::beg);
+	try { cout << pem2json(f); }
+	catch(const exception& e) { cerr << "error message " << e.what() << endl; }
+	mpz_class msg = 125;
+	auto crypt = powm(msg, ze, zK);//encrypt
+	REQUIRE(msg == powm(crypt, zd, zK));//decrypt and compare with original
+}
+
 TEST_CASE("www.dndd.com.???") {
 	const char* file[] = {"www.dndd.com.key", "www.dndd.com.pub", 
 						  "www.dndd.com.cert", "www.dndd.com.mod"};

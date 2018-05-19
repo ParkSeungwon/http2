@@ -1,13 +1,10 @@
-#include<cassert>
-#include<iomanip>
 #include<iostream>
+#include<iomanip>
 #include<sstream>
 #include<fstream>
 #include"crypt.h"
-#include"tls.h"
 using namespace std;
 
-vector<unsigned char> base64_decode(string);
 string get_certificate_core(istream& is) {
 	string s, r;
 	while(s != "-----BEGIN") is >> s;
@@ -52,7 +49,7 @@ array<mpz_class, 3> get_pubkeys(istream& is)
 }
 
 array<mpz_class, 3> get_keys(istream& is)
-{
+{//RSA mod, exp, prv key
 	auto jv = pem2json(is);
 	return {str2mpz(jv[0][1].asString()), str2mpz(jv[0][2].asString()), str2mpz(jv[0][3].asString())};
 }

@@ -13,17 +13,12 @@ mpz_class get_prvkey(istream& is);
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {
-	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
-//	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+	ifstream f("pu.pem");//generated with openssl genrsa 2048 > p.pem
+	//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
 	auto [zK, ze, zd] = get_keys(f);
-
-	mpz_class msg = 125;
-	auto crypt = powm(msg, ze, zK);//encrypt
-	assert(msg == powm(crypt, zd, zK));//decrypt and compare with original
 	f.seekg(0, ios_base::beg);
 	vector<unsigned char> v; unsigned char c;
 	while(f >> noskipws >> c) v.push_back(c);
-//	ze = get keys from files
 	return v;
 }
 vector<unsigned char> TLS::certificate_ = init_certificate();
@@ -61,7 +56,7 @@ int TLS::server_hello(array<unsigned char, 32> id)
 	p->session_id_length = 32;
 	session_id_ = id;
 	memcpy(p->session_id, id.data(), 32);
-	p->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
+	p->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1, forward secrecy
 	p->compression = 0;//no compression
 	return sz + 10;
 }
@@ -79,7 +74,7 @@ unsigned char* TLS::init(int handshake_type, int sz)
 }
 
 int TLS::server_certificate()
-{//return data_size
+{//return data_size, DHE_RSA : rsa -> certificate, dh -> server_key_exchange
 	int sz = certificate_.size();
 	unsigned char* p = init(11, sz);
 	for(int i=0; i<sz; i++) p[i] = certificate_[i];
@@ -87,7 +82,7 @@ int TLS::server_certificate()
 }
 
 int TLS::server_key_exchange()
-{
+{//DH instance parameter
 	unsigned char* p = init(12, 96 + 256);
 	mpz2bnd(diffie_.p, p, p+32);
 	mpz2bnd(diffie_.g, p+32, p+64);
@@ -128,7 +123,7 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	assert(ph->handshake_type == 16);
 
 	unsigned char rand[64], pre[32];
-	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->data, ph->data+32));
+	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->data, ph->data+32));//dh paramete
 	mpz2bnd(pre_master_secret, pre, pre+32);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
