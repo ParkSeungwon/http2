@@ -1,10 +1,10 @@
 //tcpip.cc class 구현부
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>//close
-#include <cstring>//memset
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<unistd.h>//close
+#include<cstring>//memset
 #include<iostream>
-#include "tcpip.h"
+#include"tcpip.h"
 using namespace std;
 
 Tcpip::Tcpip(int port)
@@ -23,7 +23,7 @@ Tcpip::~Tcpip()
 	close(server_fd);
 	cout << "destroying Tcpip" << endl;
 }
-void Tcpip::send(const string s) 
+void Tcpip::send(const string& s) 
 {
 	write(client_fd, s.data(), s.size());
 }

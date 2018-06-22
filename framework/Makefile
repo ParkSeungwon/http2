@@ -1,4 +1,4 @@
-CFLAG = -g -c -std=c++14 -fmax-errors=1 -pthread
+CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread
 INCLUDE = -I../ -I../src/ -I../database/ -I/usr/include/p11-kit-1
 CC = g++
 OBJ = $(patsubst %.cc, ../obj/%.o, $(wildcard *.cc))

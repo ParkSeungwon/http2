@@ -38,7 +38,7 @@ void HTTPS::start()
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 		if(client_fd == -1) cout << "accept() error" << endl;
 		else {
-			v.push_back(thread{&HTTPS::connected, this, client_fd});
+			v.emplace_back(thread{&HTTPS::connected, this, client_fd});
 			v.back().detach();
 		}
 	}
@@ -46,11 +46,12 @@ void HTTPS::start()
 
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
-	const int sz = 4096000;
+	const int sz = 409600;
 	unsigned char buffer[sz];//using local buffer for multithread not class buffer
 	TLS t{buffer};//TLS is decoupled from file descriptor
 	read(client_fd, buffer, sz); auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
+		try {
 		id = new_id();
 		write(client_fd, buffer, t.server_hello(id));
 		write(client_fd, buffer, t.server_certificate());
@@ -59,6 +60,9 @@ void HTTPS::connected(int client_fd)
 		read(client_fd, buffer, sz); idNchannel_[id]->keys = t.client_key_exchange();
 		read(client_fd, buffer, sz); t.client_finished();
 		write(client_fd, buffer, t.server_finished());
+		} catch(const char* e) { cerr << e << endl; 
+		} catch(const exception& e) { cerr << e.what() << endl;
+		}
 	} else {//resume connection
 		t.use_key(idNchannel_[id]->keys);
 		write(client_fd, buffer, t.server_hello(id));
