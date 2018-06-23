@@ -15,23 +15,25 @@ void print(unsigned char* r, const char* c)
 }
 
 template<typename It> vector<unsigned char> prf(const It begin, const It end, 
-		const char* label, unsigned char* seed, int n) {//seed is always 64byte long
+		const char* label, unsigned char* seed, int n)
+{//seed is always 64byte long, expand to n byte
 	unsigned char aseed[128]={}, r[256]={};//((n-1)/32+1)*32];
 	int i = 0;
-	while(aseed[32 + i++] = *label++);//copy until null
-	int sz = 32 + i - 1 + 64;
+	const int hash_sz = 20;
+	while(aseed[hash_sz + i++] = *label++);//copy until null
+	int sz = hash_sz + i - 1 + 64;
 	assert(sz <= 128 && n <= 256);
-	memcpy(aseed + 32 + i - 1, seed, 64);//buf = label + seed
+	memcpy(aseed + hash_sz + i - 1, seed, 64);//buf = label + seed
 
-	vector<array<unsigned char, 32>> A;
+	vector<array<unsigned char, hash_sz>> A;
 	HMAC h;
-	h.key(aseed + 32, aseed + sz);//seed
+	h.key(aseed + hash_sz, aseed + sz);//seed
 	A.push_back(h.hash(begin, end));//A(1)
-	for(int j=0; j<n; j+=32) {
-		memcpy(aseed, A.back().data(), 32);//aseed = A(i) + seed
+	for(int j=0; j<n; j+=hash_sz) {
+		memcpy(aseed, A.back().data(), hash_sz);//aseed = A(i) + seed
 		h.key(aseed, aseed + sz);
 		auto t = h.hash(begin, end);
-		memcpy(r + j, t.data(), 32);//HMAC(secret, A(1) + seed) + ...
+		memcpy(r + j, t.data(), hash_sz);//HMAC(secret, A(1) + seed) + ...
 		h.key(A.back().begin(), A.back().end());//A(i) = HMAC(secret, A(i-1))
 		A.push_back(h.hash(begin, end));
 	}

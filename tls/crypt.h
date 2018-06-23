@@ -47,12 +47,14 @@ protected:
 };
 
 class HMAC
-{//hmac using sha256
+{//hmac using sha1
 public:
 	template<typename It> void key(const It begin, const It end);
-	template<typename It> std::array<unsigned char, 32> hash(const It begin, const It end);
+	template<typename It> std::array<unsigned char, 20> hash(const It begin, const It end);
 protected:
-	Hmac hmac_;
+	const int block_size_ = 64;
+	SHA1 sha_;
+	std::array<unsigned char, 64> o_key_pad_, i_key_pad_;
 };
 
 class DiffieHellman

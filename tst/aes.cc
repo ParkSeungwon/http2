@@ -48,5 +48,21 @@ TEST_CASE("rsa") {
 
 TEST_CASE("hmac") {
 	HMAC hmac;
-//	hmac.key(c, c+32); //error
+	hmac.key(c, c);
+	auto a = hmac.hash(c, c);
+	mpz_class z{"0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d"};
+	REQUIRE(z == bnd2mpz(a.begin(), a.end()));
 }
+/********************
+Here are some empty HMAC values:
+
+HMAC_MD5("", "")    = 74e6f7298a9c2d168935f58c001bad88
+HMAC_SHA1("", "")   = fbdb1d1b18aa6c08324b7d64b71fb76370690e1d
+HMAC_SHA256("", "") = b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad
+
+Here are some non-empty HMAC values, assuming 8-bit ASCII or UTF-8 encoding:
+
+HMAC_MD5("key", "The quick brown fox jumps over the lazy dog")    = 80070713463e7749b90c2dc24911e275
+HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog")   = de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog") = f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
+****************************/
