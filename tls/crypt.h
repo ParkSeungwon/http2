@@ -46,6 +46,16 @@ protected:
 	Sha sha_;
 };
 
+class SHA256
+{
+public:
+	SHA256();
+	template<typename It> std::array<unsigned char, 32> hash(const It begin, const It end);
+protected:
+	Sha256 sha_;
+};
+
+
 class HMAC
 {//hmac using sha1
 public:

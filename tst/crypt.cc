@@ -26,11 +26,17 @@ TEST_CASE("Diffie hellman test") {
 
 TEST_CASE("sha1") {
 	SHA1 sha;
-	unsigned char c[] = "hello this is a test case";
-	array<unsigned char, 20> ar = sha.hash(c, c+10);
-	REQUIRE(ar == sha.hash(c, c+10));
-	c[1] = '0';
-	REQUIRE(ar != sha.hash(c, c+10));
+	unsigned char c[] = "The quick brown fox jumps over the lazy dog";
+	int i = 0;
+	for(auto* p = c; *p; p++) i++;//find null position
+	array<unsigned char, 20> ar = sha.hash(c, c+i);
+	vector<unsigned char> v{ar.begin(), ar.end()};
+	REQUIRE(base64_encode(v) == "L9ThxnotKPzthJ7hu3bnORuT6xI=");
+	/************************
+	SHA1("The quick brown fox jumps over the lazy dog")
+	gives hexadecimal: 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
+	gives Base64 binary to ASCII text encoding: L9ThxnotKPzthJ7hu3bnORuT6xI=
+	**************/
 }
 
 TEST_CASE("rsa") {
@@ -66,3 +72,15 @@ HMAC_MD5("key", "The quick brown fox jumps over the lazy dog")    = 80070713463e
 HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog")   = de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
 HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog") = f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
 ****************************/
+
+TEST_CASE("base64") {
+	vector<unsigned char> v{c, c+20};
+	string s = base64_encode(v);
+	auto v2 = base64_decode(s);
+	REQUIRE(v == v2);
+}
+
+TEST_CASE("prf") {
+	auto v = prf(c, c+20, "slithy toves", c, 80);
+}
+

@@ -16,7 +16,8 @@ template<typename It> void HMAC::key(const It begin, const It end)
 		
 	auto o_key_pad = key ^ out_xor;
 	auto i_key_pad = key ^ in_xor;
-	for(int i=0; i<64; i++) o_key_pad_[i] = o_key_pad[i], i_key_pad_[i] = i_key_pad[i];
+	for(int i=0; i<64; i++)
+		o_key_pad_[i] = o_key_pad[i], i_key_pad_[i] = i_key_pad[i];
 }
 
 template<typename It> array<unsigned char,20> HMAC::hash(const It begin, const It end) 
@@ -36,24 +37,25 @@ template void HMAC::key(vector<unsigned char>::iterator a, vector<unsigned char>
 template void HMAC::key(unsigned char* a, unsigned char* b);
 template array<unsigned char,20> HMAC::hash(vector<unsigned char>::iterator a, vector<unsigned char>::iterator b);
 template array<unsigned char,20> HMAC::hash(unsigned char* a, unsigned char* b);
-//Function hmac
-//   Inputs:
-//      key:        Bytes     array of bytes
-//      message:    Bytes     array of bytes to be hashed
-//      hash:       Function  the hash function to use (e.g. SHA-1)
-//      blockSize:  Integer   the block size of the underlying hash function (e.g. 64 bytes for SHA-1)
-//      outputSize: Integer   the output size of the underlying hash function (e.g. 20 bytes for SHA-1)
-// 
-//   Keys longer than blockSize are shortened by hashing them
-//   if (length(key) > blockSize) then
-//      key ← hash(key) //Key becomes outputSize bytes long
-//   
-//   Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
-//   if (length(key) < blockSize) then
-//      key ← Pad(key, blockSize)  //pad key with zeros to make it blockSize bytes long
-//    
-//   o_key_pad = key xor [0x5c * blockSize]   //Outer padded key
-//   i_key_pad = key xor [0x36 * blockSize]   //Inner padded key
-//    
-//   return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) //Where ∥ is concatenation
-//
+/***********************************
+Function hmac
+   Inputs:
+      key:        Bytes     array of bytes
+      message:    Bytes     array of bytes to be hashed
+      hash:       Function  the hash function to use (e.g. SHA-1)
+      blockSize:  Integer   the block size of the underlying hash function (e.g. 64 bytes for SHA-1)
+      outputSize: Integer   the output size of the underlying hash function (e.g. 20 bytes for SHA-1)
+ 
+   Keys longer than blockSize are shortened by hashing them
+   if (length(key) > blockSize) then
+      key ← hash(key) //Key becomes outputSize bytes long
+   
+   Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
+   if (length(key) < blockSize) then
+      key ← Pad(key, blockSize)  //pad key with zeros to make it blockSize bytes long
+    
+   o_key_pad = key xor [0x5c * blockSize]   //Outer padded key
+   i_key_pad = key xor [0x36 * blockSize]   //Inner padded key
+    
+   return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) //Where ∥ is concatenation
+*************************************/
