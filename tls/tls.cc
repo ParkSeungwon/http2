@@ -126,10 +126,17 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	mpz2bnd(pre_master_secret, pre, pre+32);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	auto master_secret = prf(pre, pre+32, "master secret", rand, 48);
+	PRF<SHA2> prf;
+	prf.secret(pre, pre+32);
+	prf.seed(rand, rand + 64);
+	prf.label("master secret");
+	auto master_secret = prf.get_n_byte(48);
 	memcpy(rand + 32, client_random_.data(), 32);
 	memcpy(rand, server_random_.data(), 32);
-	return use_key(prf(master_secret.begin(), master_secret.end(), "key expansion", rand, 64));
+	prf.secret(master_secret.begin(), master_secret.end());
+	prf.label("key expansion");
+	prf.seed(rand, rand+64);
+	return use_key(prf.get_n_byte(64));
 }
 
 string TLS::decode()

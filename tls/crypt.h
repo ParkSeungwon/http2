@@ -18,8 +18,6 @@ mpz_class powm(mpz_class base, mpz_class exp, mpz_class mod);
 template<typename It> void mpz2bnd(mpz_class n, It begin, It end);
 template<typename It> mpz_class bnd2mpz(It begin, It end);
 void print(unsigned char* r, const char* c);
-template<typename It> std::vector<unsigned char> prf(const It begin, const It end, 
-		const char* label, unsigned char* seed, int n); //seed is always 64byte long
 
 class AES
 {
@@ -82,17 +80,17 @@ public:
 	template<typename It> void key(const It begin, const It end)
 	{//if less than block size(sha1 16? 64?) pad 0, more than block size hash -> 20
 		int length = end - begin;
-		std::valarray<unsigned char> key((int)0x0, sha_.block_size),
-			out_xor(0x5c, sha_.block_size), in_xor(0x36, sha_.block_size);
-		if(length > sha_.block_size) {
+		std::valarray<unsigned char> key((int)0x0, H::block_size),
+			out_xor(0x5c, H::block_size), in_xor(0x36, H::block_size);
+		if(length > H::block_size) {
 			auto h = sha_.hash(begin, end);
-			for(int i=0; i<sha_.output_size; i++) key[i] = h[i];
-		} else if(int i=0; length < sha_.block_size)
+			for(int i=0; i<H::output_size; i++) key[i] = h[i];
+		} else if(int i=0; length < H::block_size)
 			for(auto it = begin; it != end; it++) key[i++] = *it;
 
 		auto o_key_pad = key ^ out_xor;
 		auto i_key_pad = key ^ in_xor;
-		for(int i=0; i<sha_.block_size; i++)
+		for(int i=0; i<H::block_size; i++)
 			o_key_pad_[i] = o_key_pad[i], i_key_pad_[i] = i_key_pad[i];
 	}
 	template<typename It> auto hash(const It begin, const It end)
@@ -107,10 +105,9 @@ public:
 		return sha_.hash(v.begin(), v.end());
 	}
 protected:
-	static H sha_;
-	std::array<unsigned char, sha_.block_size> o_key_pad_, i_key_pad_;
+	H sha_;
+	std::array<unsigned char, H::block_size> o_key_pad_, i_key_pad_;
 };
-template<class H> H HMAC<H>::sha_;
 /***********************************
 Function hmac
    Inputs:
@@ -133,6 +130,73 @@ Function hmac
     
    return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) //Where ∥ is concatenation
 *************************************/
+
+template<class H> class PRF
+{//H is hash function usually sha256
+public:
+	template<class It> void secret(const It begin, const It end) {
+		for(It it = begin; it != end; it++) secret_.push_back(*it);
+	}
+	void label(const char* p) {
+		while(*p) label_.push_back(*p++);
+	}
+	template<class It> void seed(const It begin, const It end) {
+		for(It it = begin; it != end; it++) seed_.push_back(*it);
+	}
+	std::vector<unsigned char> get_n_byte(int n) {
+		lseed_ = label_;
+		lseed_.insert(lseed_.end(), seed_.begin(), seed_.end());
+		std::vector<unsigned char> r, v;
+		for(int i=1; r.size() < n; i++) {
+			auto a = A(i);
+			v.clear();
+			v.insert(v.end(), a.begin(), a.end());
+			v.insert(v.end(), lseed_.begin(), lseed_.end());
+			hmac_.key(v.begin(), v.end());
+			auto h = hmac_.hash(secret_.begin(), secret_.end());
+			r.insert(r.end(), h.begin(), h.end());
+		}
+		while(r.size() != n) r.pop_back();
+		return r;
+	}
+
+protected:
+	HMAC<H> hmac_;
+	std::vector<unsigned char> secret_, label_, seed_, lseed_;//lseed = label + seed_
+
+private:
+	std::array<unsigned char, H::output_size> A(int n) {
+		if(n == 1) hmac_.key(lseed_.begin(), lseed_.end());
+		else {
+			std::array<unsigned char, H::output_size> a = A(n-1);
+			hmac_.key(a.begin(), a.end());
+		}
+		return hmac_.hash(secret_.begin(), secret_.end());
+	}
+};
+
+/*******************************
+P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
+					   HMAC_hash(secret, A(2) + seed) +
+					   HMAC_hash(secret, A(3) + seed) + ...
+where + indicates concatenation.
+A() is defined as:
+A(0) = seed
+A(i) = HMAC_hash(secret, A(i-1))
+P_hash can be iterated as many times as necessary to produce the
+required quantity of data. For example, if P_SHA256 is being used to
+create 80 bytes of data, it will have to be iterated three times
+(through A(3)), creating 96 bytes of output data; the last 16 bytes
+of the final iteration will then be discarded, leaving 80 bytes of
+output data.
+TLS’s PRF is created by applying P_hash to the secret as:
+PRF(secret, label, seed) = P_<hash>(secret, label + seed)
+The label is an ASCII string. It should be included in the exact
+form it is given without a length byte or trailing null character.
+For example, the label "slithy toves" would be processed by hashing
+the following bytes:
+73 6C 69 74 68 79 20 74 6F 76 65 73
+*******************************/
 
 class DiffieHellman
 {

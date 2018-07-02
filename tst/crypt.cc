@@ -94,7 +94,11 @@ TEST_CASE("prf") {
 							  0xb1, 0x76, 0x52, 0x84, 0x9a, 0x71, 0xdb, 0x35};
 	unsigned char seed[] = {0xa0, 0xba, 0x9f, 0x93, 0x6c, 0xda, 0x31, 0x18,
 							0x27, 0xa6, 0xf7, 0x96, 0xff, 0xd5, 0x19, 0x8c};
-	auto v = prf(secret, secret+16, "test label", seed, 100);
+	PRF<SHA2> prf;
+	prf.label("test label");
+	prf.seed(seed, seed + 16);
+	prf.secret(secret, secret + 16);
+	auto v = prf.get_n_byte(100);
 	for(auto a : v) cout << hex << +a << ' ';
 }
 /***********************
@@ -126,4 +130,13 @@ Output (100 bytes):
 0058    a7 2e 5a 51 10 ff f7 01    ..ZQ....
 0060    87 34 7b 66                .4.f
 
+
+
+
+[TLS-12-PRF(HMAC(SHA-256))]
+
+Secret = 9bbe436ba940f017b17652849a71db35
+Salt = a0ba9f936cda311827a6f796ffd5198c
+Label = 74657374206c6162656c
+Output = e3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66
 ***************************/
