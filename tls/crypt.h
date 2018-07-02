@@ -85,7 +85,7 @@ public:
 		if(length > H::block_size) {
 			auto h = sha_.hash(begin, end);
 			for(int i=0; i<H::output_size; i++) key[i] = h[i];
-		} else if(int i=0; length < H::block_size)
+		} else if(int i = 0; length < H::block_size)
 			for(auto it = begin; it != end; it++) key[i++] = *it;
 
 		auto o_key_pad = key ^ out_xor;
@@ -144,17 +144,21 @@ public:
 		for(It it = begin; it != end; it++) seed_.push_back(*it);
 	}
 	std::vector<unsigned char> get_n_byte(int n) {
-		lseed_ = label_;
+		auto lseed_ = label_;//lseed = label + seed_
 		lseed_.insert(lseed_.end(), seed_.begin(), seed_.end());
 		std::vector<unsigned char> r, v;
+		std::vector<std::array<unsigned char, H::output_size>> vA;
+		hmac_.key(lseed_.begin(), lseed_.end());
+		vA.push_back(hmac_.hash(secret_.begin(), secret_.end()));//A(1)
 		for(int i=1; r.size() < n; i++) {
-			auto a = A(i);
 			v.clear();
-			v.insert(v.end(), a.begin(), a.end());
+			v.insert(v.end(), vA.back().begin(), vA.back().end());
 			v.insert(v.end(), lseed_.begin(), lseed_.end());
 			hmac_.key(v.begin(), v.end());
 			auto h = hmac_.hash(secret_.begin(), secret_.end());
 			r.insert(r.end(), h.begin(), h.end());
+			hmac_.key(vA.back().begin(), vA.back().end());
+			vA.push_back(hmac_.hash(secret_.begin(), secret_.end()));//A(i+1)
 		}
 		while(r.size() != n) r.pop_back();
 		return r;
@@ -162,17 +166,7 @@ public:
 
 protected:
 	HMAC<H> hmac_;
-	std::vector<unsigned char> secret_, label_, seed_, lseed_;//lseed = label + seed_
-
-private:
-	std::array<unsigned char, H::output_size> A(int n) {
-		if(n == 1) hmac_.key(lseed_.begin(), lseed_.end());
-		else {
-			std::array<unsigned char, H::output_size> a = A(n-1);
-			hmac_.key(a.begin(), a.end());
-		}
-		return hmac_.hash(secret_.begin(), secret_.end());
-	}
+	std::vector<unsigned char> secret_, label_, seed_;
 };
 
 /*******************************
