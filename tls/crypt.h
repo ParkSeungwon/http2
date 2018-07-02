@@ -1,9 +1,11 @@
 #pragma once
+#include<valarray>
 #include<array>
+#include<iostream>
 #include<gmpxx.h>
 #include<wolfssl/wolfcrypt/aes.h>
 #include<wolfssl/wolfcrypt/sha.h>
-#include<wolfssl/wolfcrypt/hmac.h>
+#include<wolfssl/wolfcrypt/sha256.h>
 #include<json/json.h>
 
 Json::Value der2json(std::istream& is);
@@ -40,32 +42,97 @@ protected:
 class SHA1
 {
 public:
-	SHA1();
-	template<typename It> std::array<unsigned char, 20> hash(const It begin, const It end);
+	SHA1() {
+		if(wc_InitSha(&sha_)) std::cerr << "wc_init_sha_failed" << std::endl;
+	}
+	template<typename It> std::array<unsigned char, 20> hash(const It begin, const It end) {
+		std::array<unsigned char, 20> r;
+		wc_ShaUpdate(&sha_, &*begin, end - begin);
+		wc_ShaFinal(&sha_, r.data());
+		return r;
+	}
+	static const int block_size = 64;
+	static const int output_size = 20;
 protected:
 	Sha sha_;
 };
 
-class SHA256
-{
+class SHA2
+{//sha256, sha2 due to some naming reason
 public:
-	SHA256();
-	template<typename It> std::array<unsigned char, 32> hash(const It begin, const It end);
+	SHA2() {
+		if(wc_InitSha256(&sha_)) std::cerr << "wc_init_sha256_failed" << std::endl;
+	}
+	template<typename It> std::array<unsigned char, 32> hash(const It begin, const It end) {
+		std::array<unsigned char, 32> r;
+		wc_Sha256Update(&sha_, &*begin, end - begin);
+		wc_Sha256Final(&sha_, r.data());
+		return r;
+	}
+	static const int block_size = 64;
+	static const int output_size = 32;
 protected:
 	Sha256 sha_;
 };
 
 
-class HMAC
+template<class H> class HMAC
 {//hmac using sha1
 public:
-	template<typename It> void key(const It begin, const It end);
-	template<typename It> std::array<unsigned char, 20> hash(const It begin, const It end);
+	template<typename It> void key(const It begin, const It end)
+	{//if less than block size(sha1 16? 64?) pad 0, more than block size hash -> 20
+		int length = end - begin;
+		std::valarray<unsigned char> key((int)0x0, sha_.block_size),
+			out_xor(0x5c, sha_.block_size), in_xor(0x36, sha_.block_size);
+		if(length > sha_.block_size) {
+			auto h = sha_.hash(begin, end);
+			for(int i=0; i<sha_.output_size; i++) key[i] = h[i];
+		} else if(int i=0; length < sha_.block_size)
+			for(auto it = begin; it != end; it++) key[i++] = *it;
+
+		auto o_key_pad = key ^ out_xor;
+		auto i_key_pad = key ^ in_xor;
+		for(int i=0; i<sha_.block_size; i++)
+			o_key_pad_[i] = o_key_pad[i], i_key_pad_[i] = i_key_pad[i];
+	}
+	template<typename It> auto hash(const It begin, const It end)
+	{
+		std::vector<unsigned char> v;
+		v.insert(v.begin(), i_key_pad_.begin(), i_key_pad_.end());
+		v.insert(v.end(), begin, end);
+		auto h = sha_.hash(v.begin(), v.end());
+		v.clear();
+		v.insert(v.begin(), o_key_pad_.begin(), o_key_pad_.end());
+		v.insert(v.end(), h.begin(), h.end());
+		return sha_.hash(v.begin(), v.end());
+	}
 protected:
-	const int block_size_ = 64;
-	SHA1 sha_;
-	std::array<unsigned char, 64> o_key_pad_, i_key_pad_;
+	static H sha_;
+	std::array<unsigned char, sha_.block_size> o_key_pad_, i_key_pad_;
 };
+template<class H> H HMAC<H>::sha_;
+/***********************************
+Function hmac
+   Inputs:
+      key:        Bytes     array of bytes
+      message:    Bytes     array of bytes to be hashed
+      hash:       Function  the hash function to use (e.g. SHA-1)
+      blockSize:  Integer   the block size of the underlying hash function (e.g. 64 bytes for SHA-1)
+      outputSize: Integer   the output size of the underlying hash function (e.g. 20 bytes for SHA-1)
+ 
+   Keys longer than blockSize are shortened by hashing them
+   if (length(key) > blockSize) then
+      key ← hash(key) //Key becomes outputSize bytes long
+   
+   Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
+   if (length(key) < blockSize) then
+      key ← Pad(key, blockSize)  //pad key with zeros to make it blockSize bytes long
+    
+   o_key_pad = key xor [0x5c * blockSize]   //Outer padded key
+   i_key_pad = key xor [0x36 * blockSize]   //Inner padded key
+    
+   return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) //Where ∥ is concatenation
+*************************************/
 
 class DiffieHellman
 {

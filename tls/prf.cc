@@ -19,14 +19,14 @@ template<typename It> vector<unsigned char> prf(const It begin, const It end,
 {//seed is always 64byte long, expand seed to n byte pseudo random 
 	unsigned char aseed[128]={}, r[256]={};//((n-1)/32+1)*32];
 	int i = 0;
-	const int hash_sz = 20;//sha1
+	const int hash_sz = 32;//sha256
 	while(aseed[hash_sz + i++] = *label++);//copy until null
 	int sz = hash_sz + i - 1 + 64;//hash + label + seed length
 	assert(sz <= 128 && n <= 256);
 	memcpy(aseed + hash_sz + i - 1, seed, 64);//aseed = hash_placehold + label + seed
 
 	vector<array<unsigned char, hash_sz>> A;
-	HMAC h;
+	HMAC<SHA2> h;
 	h.key(aseed + hash_sz, aseed + sz);//seed
 	A.push_back(h.hash(begin, end));//A(1)
 	for(int j=0; j<n; j+=hash_sz) {
@@ -45,8 +45,8 @@ template vector<unsigned char> prf(unsigned char* a, unsigned char* b,
 		const char*, unsigned char*, int);
 /*******************************
 P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
-HMAC_hash(secret, A(2) + seed) +
-HMAC_hash(secret, A(3) + seed) + ...
+					   HMAC_hash(secret, A(2) + seed) +
+					   HMAC_hash(secret, A(3) + seed) + ...
 where + indicates concatenation.
 A() is defined as:
 A(0) = seed
