@@ -136,6 +136,7 @@ template<class H> class PRF
 public:
 	template<class It> void secret(const It begin, const It end) {
 		for(It it = begin; it != end; it++) secret_.push_back(*it);
+		hmac_.key(secret_.begin(), secret_.end());
 	}
 	void label(const char* p) {
 		while(*p) label_.push_back(*p++);
@@ -148,17 +149,14 @@ public:
 		seed.insert(seed.end(), seed_.begin(), seed_.end());
 		std::vector<unsigned char> r, v;
 		std::vector<std::array<unsigned char, H::output_size>> vA;
-		hmac_.key(seed.begin(), seed.end());
-		vA.push_back(hmac_.hash(secret_.begin(), secret_.end()));//A(1)
+		vA.push_back(hmac_.hash(seed.begin(), seed.end()));//A(1)
 		while(r.size() < n) {
 			v.clear();
 			v.insert(v.end(), vA.back().begin(), vA.back().end());
 			v.insert(v.end(), seed.begin(), seed.end());
-			hmac_.key(v.begin(), v.end());
-			auto h = hmac_.hash(secret_.begin(), secret_.end());
+			auto h = hmac_.hash(v.begin(), v.end());
 			r.insert(r.end(), h.begin(), h.end());
-			hmac_.key(vA.back().begin(), vA.back().end());
-			vA.push_back(hmac_.hash(secret_.begin(), secret_.end()));//A(i+1)
+			vA.push_back(hmac_.hash(vA.back().begin(), vA.back().end()));//A(i+1)
 		}
 		while(r.size() != n) r.pop_back();
 		return r;

@@ -118,7 +118,8 @@ TEST_CASE("prf") {
 	prf.seed(seed, seed + 16);
 	prf.secret(secret, secret + 16);
 	auto v = prf.get_n_byte(100);
-	for(auto a : v) cout << hex << +a << ' ';
+	mpz_class z{"0xe3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66"};
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == z);
 }
 /***********************
 # Generating 100 bytes of pseudo-randomness using TLS1.2PRF-SHA256
