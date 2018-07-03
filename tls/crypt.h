@@ -77,9 +77,11 @@ protected:
 template<class H> class HMAC
 {//hmac using sha1
 public:
+	HMAC() : o_key_pad_(H::block_size), i_key_pad_(H::block_size)
+	{ }
 	template<typename It> void key(const It begin, const It end)
 	{//if less than block size(sha1 16? 64?) pad 0, more than block size hash -> 20
-		int length = end - begin;
+		int length = end - begin;//below (int)0x0 : compiler confuse with null ptr
 		std::valarray<unsigned char> key((int)0x0, H::block_size),
 			out_xor(0x5c, H::block_size), in_xor(0x36, H::block_size);
 		if(length > H::block_size) {
@@ -88,47 +90,45 @@ public:
 		} else if(int i = 0; length < H::block_size)
 			for(auto it = begin; it != end; it++) key[i++] = *it;
 
-		auto o_key_pad = key ^ out_xor;
-		auto i_key_pad = key ^ in_xor;
-		for(int i=0; i<H::block_size; i++)
-			o_key_pad_[i] = o_key_pad[i], i_key_pad_[i] = i_key_pad[i];
+		o_key_pad_ = key ^ out_xor;
+		i_key_pad_ = key ^ in_xor;
 	}
 	template<typename It> auto hash(const It begin, const It end)
 	{
 		std::vector<unsigned char> v;
-		v.insert(v.begin(), i_key_pad_.begin(), i_key_pad_.end());
+		v.insert(v.begin(), std::begin(i_key_pad_), std::end(i_key_pad_));
 		v.insert(v.end(), begin, end);
 		auto h = sha_.hash(v.begin(), v.end());
 		v.clear();
-		v.insert(v.begin(), o_key_pad_.begin(), o_key_pad_.end());
+		v.insert(v.begin(), std::begin(o_key_pad_), std::end(o_key_pad_));
 		v.insert(v.end(), h.begin(), h.end());
 		return sha_.hash(v.begin(), v.end());
 	}
 protected:
 	H sha_;
-	std::array<unsigned char, H::block_size> o_key_pad_, i_key_pad_;
+	std::valarray<unsigned char> o_key_pad_, i_key_pad_;
 };
 /***********************************
 Function hmac
    Inputs:
-      key:        Bytes     array of bytes
-      message:    Bytes     array of bytes to be hashed
-      hash:       Function  the hash function to use (e.g. SHA-1)
-      blockSize:  Integer   the block size of the underlying hash function (e.g. 64 bytes for SHA-1)
-      outputSize: Integer   the output size of the underlying hash function (e.g. 20 bytes for SHA-1)
+	  key:        Bytes     array of bytes
+	  message:    Bytes     array of bytes to be hashed
+	  hash:       Function  the hash function to use (e.g. SHA-1)
+	  blockSize:  Integer   the block size of the underlying hash function (e.g. 64 bytes for SHA-1)
+	  outputSize: Integer   the output size of the underlying hash function (e.g. 20 bytes for SHA-1)
  
    Keys longer than blockSize are shortened by hashing them
    if (length(key) > blockSize) then
-      key ← hash(key) //Key becomes outputSize bytes long
+	  key ← hash(key) //Key becomes outputSize bytes long
    
    Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
    if (length(key) < blockSize) then
-      key ← Pad(key, blockSize)  //pad key with zeros to make it blockSize bytes long
-    
+	  key ← Pad(key, blockSize)  //pad key with zeros to make it blockSize bytes long
+	
    o_key_pad = key xor [0x5c * blockSize]   //Outer padded key
    i_key_pad = key xor [0x36 * blockSize]   //Inner padded key
-    
-   return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) //Where ∥ is concatenation
+	
+   return hash(o_key_pad + hash(i_key_pad +message)) //Where +is concatenation
 *************************************/
 
 template<class H> class PRF
@@ -144,16 +144,16 @@ public:
 		for(It it = begin; it != end; it++) seed_.push_back(*it);
 	}
 	std::vector<unsigned char> get_n_byte(int n) {
-		auto lseed_ = label_;//lseed = label + seed_
-		lseed_.insert(lseed_.end(), seed_.begin(), seed_.end());
+		auto seed = label_;//seed = label + seed_
+		seed.insert(seed.end(), seed_.begin(), seed_.end());
 		std::vector<unsigned char> r, v;
 		std::vector<std::array<unsigned char, H::output_size>> vA;
-		hmac_.key(lseed_.begin(), lseed_.end());
+		hmac_.key(seed.begin(), seed.end());
 		vA.push_back(hmac_.hash(secret_.begin(), secret_.end()));//A(1)
-		for(int i=1; r.size() < n; i++) {
+		while(r.size() < n) {
 			v.clear();
 			v.insert(v.end(), vA.back().begin(), vA.back().end());
-			v.insert(v.end(), lseed_.begin(), lseed_.end());
+			v.insert(v.end(), seed.begin(), seed.end());
 			hmac_.key(v.begin(), v.end());
 			auto h = hmac_.hash(secret_.begin(), secret_.end());
 			r.insert(r.end(), h.begin(), h.end());

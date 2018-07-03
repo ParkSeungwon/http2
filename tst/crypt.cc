@@ -82,6 +82,25 @@ HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog")   = de7c9b85b8b7
 HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog") = f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
 ****************************/
 
+TEST_CASE("hmac-sha256-2") {
+	unsigned char key[] = "Jefe";
+	unsigned char data[] = "what do ya want for nothing?";
+	mpz_class z{"0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"};
+	HMAC<SHA2> hmac;
+	hmac.key(key, key+4);
+	auto ar = hmac.hash(data, data+28);
+	REQUIRE(bnd2mpz(ar.begin(), ar.end()) == z);
+}
+/***********************
+Key =          4a656665                          ("Jefe")
+
+   Data =         7768617420646f2079612077616e7420  ("what do ya want ")
+                  666f72206e6f7468696e673f          ("for nothing?")
+
+   PRF-HMAC-SHA-256 = 5bdcc146bf60754e6a042426089575c7
+                      5a003f089d2739839dec58b964ec3843
+**********************/
+
 TEST_CASE("base64") {
 	vector<unsigned char> v{c, c+20};
 	string s = base64_encode(v);
