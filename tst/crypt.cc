@@ -10,14 +10,39 @@ unsigned char c[] = "hello this is a test case this is a test case this is a tes
 
 TEST_CASE("AES TEST") {
 	AES aes;
-	mpz_class key = random_prime(32);
-	mpz_class iv = random_prime(16);
+	unsigned char iv[16], key[32], text[32];
+	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
+	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
+	for(int i=0; i<16; i++) iv[i] = i;
+
 	aes.key(key);
 	aes.iv(iv);
-	auto v = aes.encrypt(c, c+16);//should be multiple of 16
-	auto v2 = aes.decrypt(v.begin(), v.end());
-	for(int i=0; i<16; i++) REQUIRE(c[i] == v2[i]);
+	auto v = aes.encrypt(text, text+16);//should be multiple of 16
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
+	v = aes.decrypt(v.begin(), v.end());
+	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
+
+	AES aes2{256};
+	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
+	aes2.key(key);
+	aes2.iv(iv);
+	v = aes2.encrypt(text, text+16);
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
+	v = aes2.decrypt(v.begin(), v.end());
+	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 }
+/***********
+AES CBC 128-bit encryption mode
+ Encryption key: 2b7e151628aed2a6abf7158809cf4f3c
+Initialization vector 				Test vector Cipher 					text 
+000102030405060708090A0B0C0D0E0F 	6bc1bee22e409f96e93d7e117393172a 	7649abac8119b246cee98e9b12e9197d
+Encryption key: 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+256 : f58c4c04d6e5f1ba779eabfb5f7bfbd6
+7649ABAC8119B246CEE98E9B12E9197D 	ae2d8a571e03ac9c9eb76fac45af8e51 	5086cb9b507219ee95db113a917678b2
+5086CB9B507219EE95DB113A917678B2 	30c81c46a35ce411e5fbc1191a0a52ef 	73bed6b8e3c1743b7116e69e22229516
+73BED6B8E3C1743B7116E69E22229516 	f69f2445df4f9b17ad2b417be66c3710 	3ff1caa1681fac09120eca307586e1a7
+
+******************/
 
 TEST_CASE("Diffie hellman test") {
 	DiffieHellman dh;//send dh.ya, dh.p, dh.g and get yb
@@ -56,16 +81,15 @@ TEST_CASE("hmac-sha1") {
 	HMAC<SHA1> hmac;
 	hmac.key(c, c);
 	auto a = hmac.hash(c, c);
-	mpz_class z{"0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d"};
-	REQUIRE(z == bnd2mpz(a.begin(), a.end()));
+	REQUIRE(bnd2mpz(a.begin(), a.end()) == mpz_class{"0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d"});
+
 }
 
 TEST_CASE("hmac_sha256") {
 	HMAC<SHA2> hmac;
 	hmac.key(c, c);
 	auto a  = hmac.hash(c, c);
-	mpz_class z{"0xb613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad"};
-	REQUIRE(z == bnd2mpz(a.begin(), a.end()));
+	REQUIRE(bnd2mpz(a.begin(), a.end()) == mpz_class{"0xb613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad"});
 }
 
 /********************
@@ -85,11 +109,10 @@ HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog") = f7bc83f43053
 TEST_CASE("hmac-sha256-2") {
 	unsigned char key[] = "Jefe";
 	unsigned char data[] = "what do ya want for nothing?";
-	mpz_class z{"0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"};
 	HMAC<SHA2> hmac;
 	hmac.key(key, key+4);
 	auto ar = hmac.hash(data, data+28);
-	REQUIRE(bnd2mpz(ar.begin(), ar.end()) == z);
+	REQUIRE(bnd2mpz(ar.begin(), ar.end()) == mpz_class{"0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"});
 }
 /***********************
 Key =          4a656665                          ("Jefe")
@@ -118,8 +141,7 @@ TEST_CASE("prf") {
 	prf.seed(seed, seed + 16);
 	prf.secret(secret, secret + 16);
 	auto v = prf.get_n_byte(100);
-	mpz_class z{"0xe3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66"};
-	REQUIRE(bnd2mpz(v.begin(), v.end()) == z);
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xe3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66"});
 }
 /***********************
 # Generating 100 bytes of pseudo-randomness using TLS1.2PRF-SHA256

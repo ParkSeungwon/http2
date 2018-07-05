@@ -22,7 +22,7 @@ void print(unsigned char* r, const char* c);
 class AES
 {
 public:
-	AES(unsigned short bit = 256);
+	AES(unsigned short bit = 128);
 	void key(const mpz_class key);
 	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
@@ -40,17 +40,18 @@ protected:
 class SHA1
 {
 public:
+	static const int block_size = 64;
+	static const int output_size = 20;
 	SHA1() {
 		if(wc_InitSha(&sha_)) std::cerr << "wc_init_sha_failed" << std::endl;
 	}
-	template<typename It> std::array<unsigned char, 20> hash(const It begin, const It end) {
-		std::array<unsigned char, 20> r;
+	template<typename It>
+	std::array<unsigned char, output_size> hash(const It begin, const It end) {
+		std::array<unsigned char, output_size> r;
 		wc_ShaUpdate(&sha_, &*begin, end - begin);
 		wc_ShaFinal(&sha_, r.data());
 		return r;
 	}
-	static const int block_size = 64;
-	static const int output_size = 20;
 protected:
 	Sha sha_;
 };
@@ -58,17 +59,18 @@ protected:
 class SHA2
 {//sha256, sha2 due to some naming reason
 public:
+	static const int block_size = 64;
+	static const int output_size = 32;
 	SHA2() {
 		if(wc_InitSha256(&sha_)) std::cerr << "wc_init_sha256_failed" << std::endl;
 	}
-	template<typename It> std::array<unsigned char, 32> hash(const It begin, const It end) {
-		std::array<unsigned char, 32> r;
+	template<typename It>
+	std::array<unsigned char, output_size> hash(const It begin, const It end) {
+		std::array<unsigned char, output_size> r;
 		wc_Sha256Update(&sha_, &*begin, end - begin);
 		wc_Sha256Final(&sha_, r.data());
 		return r;
 	}
-	static const int block_size = 64;
-	static const int output_size = 32;
 protected:
 	Sha256 sha_;
 };

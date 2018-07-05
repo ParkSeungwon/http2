@@ -9,12 +9,12 @@ AES::AES(unsigned short bit) : key_size_{bit / 8}
 
 void AES::key(const mpz_class key)
 {
-	mpz2bnd(key, key_, key_+32);
+	mpz2bnd(key, key_, key_+ key_size_);
 }
 
 void AES::key(const unsigned char* key)
 {
-	memcpy(key_, key, 32);
+	memcpy(key_, key, key_size_);
 }
 
 void AES::iv(const mpz_class iv)

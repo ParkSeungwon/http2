@@ -1,3 +1,4 @@
+//http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session
 #include<fstream>
 #include<cstring>
 #include<iostream>
@@ -9,15 +10,25 @@ using namespace std;
 
 array<mpz_class, 3> get_keys(istream& is);
 mpz_class get_prvkey(istream& is);
+string get_certificate_core(istream& is);
 
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {
-	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
-	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-	auto [zK, ze, zd] = get_keys(f);
-	vector<unsigned char> v; unsigned char c;
-	while(f2 >> noskipws >> c) v.push_back(c);
+//	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
+//	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+//	auto [zK, ze, zd] = get_keys(f);
+//	vector<unsigned char> v; unsigned char c;
+//	while(f2 >> noskipws >> c) v.push_back(c);
+	ifstream f("server-cert.pem");
+	vector<unsigned char> v;
+	for(int i=0; i<4; i++) v.push_back(0x0b);//certificate type
+//	for(string s; (s = get_certificate_core(f)) != ""; s = "") {
+//		for(int i=0; i<3; i++) v.push_back(0);
+//		mpz2bnd(s.size(), v.end() - 3, v.end());
+//		v.insert(v.end(), s.begin(), s.end());
+//	}
+	mpz2bnd(v.size() - 4, v.begin() + 1, v.begin() + 4);
 	return v;
 }
 vector<unsigned char> TLS::certificate_ = init_certificate();
@@ -44,6 +55,62 @@ array<unsigned char, 32> TLS::client_hello()
 		return session_id_;
 	} else return {};
 }
+/*****************
+ClientHello: This message typically begins a TLS handshake negotiation. It is sent with a list of client-supported cipher suites, for the server to pick the best suiting one (preferably the strongest), a list of compression methods, and a list of extensions. It gives also the possibility to the client of restarting a previous session, through the inclusion of a SessionId field.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+------+----+----------+--------+-----------+----------+
+     |  1 |    |    |    |    |    |32-bit|    |max 32-bit| Cipher |Compression|Extensions|
+     |0x01|    |    |    |  3 |  1 |random|    |session Id| Suites |  methods  |          |
+- ---+----+----+----+----+----+----+------+----+----------+--------+-----------+----------+
+  /  |  \    \---------\    \----\             \       \
+ /       \        \            \                \   SessionId
+record    \     length        SSL/TLS            \
+length     \                  version         SessionId
+            type: 1       (TLS 1.0 here)       length
+
+
+
+CipherSuites
+
++----+----+----+----+----+----+
+|    |    |    |    |    |    |
+|    |    |    |    |    |    |
++----+----+----+----+----+----+
+  \-----\   \-----\    \----\
+     \         \          \
+      length    cipher Id  cipherId
+
+
+Compression methods (no practical implementation uses compression)
+
++----+----+----+
+|    |    |    |
+|  0 |  1 |  0 |
++----+----+----+
+  \-----\    \
+     \        \
+ length: 1    cmp Id: 0
+
+
+Extensions
+
++----+----+----+----+----+----+----- - -
+|    |    |    |    |    |    |
+|    |    |    |    |    |    |...extension data
++----+----+----+----+----+----+----- - -
+  \-----\   \-----\    \----\
+     \         \          \
+    length    Extension  Extension data
+                 Id          length
+
+***************************/
+
 
 int TLS::server_hello(array<unsigned char, 32> id)
 {//return data size
@@ -55,13 +122,38 @@ int TLS::server_hello(array<unsigned char, 32> id)
 	p->session_id_length = 32;
 	session_id_ = id;
 	memcpy(p->session_id, id.data(), 32);
-	p->cipher_suite[1] = 0x35;//0035 DHE RSA SHA1
+	p->cipher_suite[1] = 0x33;//0033 DHE RSA SHA1
 	p->compression = 0;//no compression
 	return sz + 10;
 }
+/**************
+(00,33)DHE-RSA-AES128-SHA : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
+(00,67)DHE-RSA-AES128-SHA256 : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
+(00,39)DHE-RSA-AES256-SHA : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
+(00,6b)DHE-RSA-AES256-SHA256 : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
+
+ServerHello: The ServerHello message is very similar to the ClientHello message, with the exception that it only includes one CipherSuite and one Compression method. If it includes a SessionId (i.e. SessionId Length is > 0), it signals the client to attempt to reuse it in the future.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----------+----+----------+----+----+----+----------+
+     |  2 |    |    |    |    |    |  32byte  |    |max 32byte|    |    |    |Extensions|
+     |0x02|    |    |    |  3 |  1 |  random  |    |session Id|    |    |    |          |
+- ---+----+----+----+----+----+----+----------+----+----------+--------------+----------+
+  /  |  \    \---------\    \----\               \       \       \----\    \
+ /       \        \            \                  \   SessionId      \  Compression
+record    \     length        SSL/TLS              \ (if length > 0)  \   method
+length     \                  version           SessionId              \
+            type: 2       (TLS 1.0 here)         length            CipherSuite
+****************/
+
 
 unsigned char* TLS::init(int handshake_type, int sz)
-{//initialize buffer to send, sz = body size 
+{//initialize head of buffer to send, sz = body size 
 	memset(rec_to_send_, 0, sz + 5 + 4);
 	rec_to_send_->content_type = 0x16;
 	rec_to_send_->version = 0x0303;//no need htons 03 = 03
@@ -79,6 +171,25 @@ int TLS::server_certificate()
 	for(int i=0; i<sz; i++) p[i] = certificate_[i];
 	return sz + 10;
 }
+/************************
+Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+     | 11 |    |    |    |    |    |    |    |    |    |           |
+     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+  /  |  \    \---------\    \---------\    \---------\
+ /       \        \              \              \
+record    \     length      Certificate    Certificate
+length     \                   chain         length
+            type: 11           length
+***************************/
 
 int TLS::server_key_exchange()
 {
@@ -96,12 +207,70 @@ int TLS::server_key_exchange()
 	mpz2bnd(z, p + 96, p + 256 + 96);
 	return 10 + 96 + 256;
 }
+/************************
+ServerKeyExchange: This message carries the keys exchange algorithm parameters that the client needs from the server in order to get the symmetric encryption working thereafter. It is optional, since not all key exchanges require the server explicitly sending this message. Actually, in most cases, the Certificate message is enough for the client to securely communicate a premaster key with the server. The format of those parameters depends exclusively on the selected CipherSuite, which has been previously set by the server via the ServerHello message.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------------+
+     | 12 |    |    |    |   algorithm    |
+     |0x0c|    |    |    |   parameters   |
+- ---+----+----+----+----+----------------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 12
+***********************/
+/************************
+CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
+     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+  /  |  \    \---------\    \    \                \----\   \-----\
+ /       \        \          \ Certificate           \        \
+record    \     length        \ Type 1 Id        Certificate   \
+length     \             Certificate         Authorities length \
+            type: 13     Types length                         Certificate Authority
+                                                                      length
+*********************/
 
 int TLS::server_hello_done()
 {
 	init(14, 0);
 	return 10;
 }
+/*****************************
+ServerHelloDone: This message finishes the server part of the handshake negotiation. It does not carry any additional information.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+
+     | 14 |    |    |    |
+   4 |0x0e|  0 |  0 |  0 |
+- ---+----+----+----+----+
+  /  |  \    \---------\
+ /       \        \
+record    \     length: 0
+length     \
+            type: 14
+*********************/
 
 array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
 {
@@ -126,7 +295,7 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	mpz2bnd(pre_master_secret, pre, pre+32);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	PRF<SHA2> prf;
+	PRF<SHA1> prf;
 	prf.secret(pre, pre+32);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
@@ -138,6 +307,25 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	prf.seed(rand, rand+64);
 	return use_key(prf.get_n_byte(64));
 }
+/*****************************
+ClientKeyExchange: It provides the server with the necessary data to generate the keys for the symmetric encryption. The message format is very similar to ServerKeyExchange, since it depends mostly on the key exchange algorithm picked by the server.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------------+
+     | 16 |    |    |    |   algorithm    |
+     |0x10|    |    |    |   parameters   |
+- ---+----+----+----+----+----------------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 16
+**********************/
 
 string TLS::decode()
 {
@@ -147,6 +335,28 @@ string TLS::decode()
 			rec_received_->data + rec_received_->length);
 	return {v.data(), v.data() + v.size() - 20 - v.back()};//v.back() == padding length
 }
+/***********************
+ApplicationData Protocol format
+
+The mission of this protocol is to properly encapsulate the data coming from the Application Layer of the network stack, so it can seamlessly be handled by the underlying protocol (TCP) without forcing changes in any of those layers. The format of the messages in this protocols follows the same structure as the previous ones.
+
+                           |
+                           |
+                           |
+         Record Layer      |  ApplicationData Layer (encrypted)
+                           |
+                           |
+  +----+----+----+----+----+----+----+--- - - - - - - --+---------+
+  | 23 |    |    |    |       length-delimited data     |         |
+  |0x17|    |    |    |    |    |    |                  |   MAC   |
+  +----+----+----+----+----+----+----+--- - - - - - - --+---------+
+    /               /      |
+   /               /       |
+  type: 23        /        |
+                 /
+                /
+           length: arbitrary (up to 16k)
+******************/
 
 int TLS::encode(string s)
 {//encrypt source s according to tls -> prepare rec_to_send_ buffer, return buffer size
@@ -173,6 +383,25 @@ int TLS::client_finished()
 	assert(ph->handshake_type == 20);
 	return 7;
 }
+/***********************
+Finished: This message signals that the TLS negotiation is complete and the CipherSuite is activated. It should be sent already encrypted, since the negotiation is successfully done, so a ChangeCipherSpec protocol message must be sent before this one to activate the encryption. The Finished message contains a hash of all previous handshake messages combined, followed by a special number identifying server/client role, the master secret and padding. The resulting hash is different from the CertificateVerify hash, since there have been more handshake messages.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------+
+     | 20 |    |    |    |  signed  |
+     |0x14|    |    |    |   hash   |
+- ---+----+----+----+----+----------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 20
+*********************/
 
 int TLS::server_finished()//16
 {
