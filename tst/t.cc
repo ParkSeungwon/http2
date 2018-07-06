@@ -37,6 +37,11 @@ TEST_CASE("mpz2bnd") {
 	REQUIRE(c[1] == 1);
 	REQUIRE(c[2] == 0);
 }
+TEST_CASE("c++17 []") {
+	array<int, 3> ar;
+	auto [a, b, c] = ar;
+	cout << a << b << c << endl;
+}
 //TEST_CASE("www.dndd.com.???") {
 //	const char* file[] = {"www.dndd.com.key", "www.dndd.com.pub", 
 //						  "www.dndd.com.cert", "www.dndd.com.mod"};

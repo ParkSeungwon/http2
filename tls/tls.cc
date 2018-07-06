@@ -15,12 +15,10 @@ string get_certificate_core(istream& is);
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {
-//	ifstream f2("p.pem");//generated with openssl genrsa 2048 > p.pem
-	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-	auto [zK, ze, zd] = get_keys(f2);
-//	vector<unsigned char> v; unsigned char c;
-//	while(f2 >> noskipws >> c) v.push_back(c);
-	ifstream f("server-cert.pem");
+	ifstream f2("p.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+	ifstream f("pu.pem"); //generated with openssl genrsa 2048 > p.pem
+	auto [K, e, d] = get_keys(f2);
+	zK = K; ze = e; zd = d;
 	vector<unsigned char> v;
 	for(int i=0; i<4; i++) v.push_back(0x0b);//certificate type + 3 byte size placehold
 	for(string s; (s = get_certificate_core(f)) != "";) {
