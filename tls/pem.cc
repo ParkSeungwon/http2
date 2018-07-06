@@ -8,9 +8,9 @@
 using namespace std;
 
 vector<unsigned char> base64_decode(string);
-string get_certificate_core(istream& is) {
+string get_certificate_core(istream& is) {//if certificate has no -----END hang..
 	string s, r;
-	while(s != "-----BEGIN") is >> s;
+	while(s != "-----BEGIN") if(!(is >> s)) return r;//no more certificate
 	getline(is, s);
 	for(is >> s; s != "-----END"; is >> s) r += s;
 	return r;

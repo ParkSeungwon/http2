@@ -29,6 +29,14 @@ TEST_CASE("pem test") {
 	cout << pem2json(f) << endl;//first
 	cout << pem2json(f) << endl;//second that sponsor first
 }
+
+TEST_CASE("mpz2bnd") {
+	unsigned char c[] = {3, 3, 3};
+	mpz2bnd(0x100, c, c+3);
+	REQUIRE(c[0] == 0);
+	REQUIRE(c[1] == 1);
+	REQUIRE(c[2] == 0);
+}
 //TEST_CASE("www.dndd.com.???") {
 //	const char* file[] = {"www.dndd.com.key", "www.dndd.com.pub", 
 //						  "www.dndd.com.cert", "www.dndd.com.mod"};

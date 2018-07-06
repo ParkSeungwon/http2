@@ -15,19 +15,19 @@ string get_certificate_core(istream& is);
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {
-//	ifstream f("p.pem");//generated with openssl genrsa 2048 > p.pem
-//	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-//	auto [zK, ze, zd] = get_keys(f);
+//	ifstream f2("p.pem");//generated with openssl genrsa 2048 > p.pem
+	ifstream f2("pu.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
+	auto [zK, ze, zd] = get_keys(f2);
 //	vector<unsigned char> v; unsigned char c;
 //	while(f2 >> noskipws >> c) v.push_back(c);
 	ifstream f("server-cert.pem");
 	vector<unsigned char> v;
-	for(int i=0; i<4; i++) v.push_back(0x0b);//certificate type
-//	for(string s; (s = get_certificate_core(f)) != ""; s = "") {
-//		for(int i=0; i<3; i++) v.push_back(0);
-//		mpz2bnd(s.size(), v.end() - 3, v.end());
-//		v.insert(v.end(), s.begin(), s.end());
-//	}
+	for(int i=0; i<4; i++) v.push_back(0x0b);//certificate type + 3 byte size placehold
+	for(string s; (s = get_certificate_core(f)) != "";) {
+		for(int i=0; i<3; i++) v.push_back(0);
+		mpz2bnd(s.size(), v.end() - 3, v.end());
+		v.insert(v.end(), s.begin(), s.end());
+	}
 	mpz2bnd(v.size() - 4, v.begin() + 1, v.begin() + 4);
 	return v;
 }
@@ -203,7 +203,7 @@ int TLS::server_key_exchange()
 	memcpy(a + 32, server_random_.data(), 32);
 	memcpy(a + 64, p, 96);
 	auto b = server_mac_.hash(a, a + 160);
-	auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));
+	auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
 	mpz2bnd(z, p + 96, p + 256 + 96);
 	return 10 + 96 + 256;
 }
@@ -225,7 +225,34 @@ ServerKeyExchange: This message carries the keys exchange algorithm parameters t
 record    \     length
 length     \
             type: 12
-***********************/
+
+struct {
+select (KeyExchangeAlgorithm) {
+	case dh_anon:
+		ServerDHParams params;
+	case dhe_dss:
+	case dhe_rsa:
+		ServerDHParams params;
+		digitally-signed struct {
+			opaque client_random[32];
+			opaque server_random[32];
+			ServerDHParams params;
+		} signed_params;
+	case rsa:
+	case dh_dss:
+	case dh_rsa:
+	struct {} ;
+		 message is omitted for rsa, dh_dss, and dh_rsa 
+		 may be extended, e.g., for ECDH -- see [TLSECC] 
+};
+} ServerKeyExchange;
+params
+The server’s key exchange parameters.
+signed_params
+For non-anonymous key exchanges, a signature over the server’s
+key exchange parameters.
+*********************/
+
 /************************
 CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
 

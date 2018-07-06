@@ -157,7 +157,7 @@ public:
 protected:
 	TLS_header *rec_received_, *rec_to_send_;
 	AES server_aes_, client_aes_;
-	SHA1 server_mac_, client_mac_;
+	HMAC<SHA1> server_mac_, client_mac_;
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	int id_length_;

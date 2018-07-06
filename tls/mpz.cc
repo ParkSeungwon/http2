@@ -1,3 +1,4 @@
+#include<cassert>
 #include<random>
 #include<iostream>
 #include<iomanip>
@@ -43,6 +44,7 @@ mpz_class random_prime(unsigned byte)
 mpz_class powm(mpz_class base, mpz_class exp, mpz_class mod) 
 {
 	mpz_class r;
+	assert(mod);
 	mpz_powm(r.get_mpz_t(), base.get_mpz_t(), exp.get_mpz_t(), mod.get_mpz_t());
 	return r;
 }
