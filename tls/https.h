@@ -3,7 +3,7 @@
 #include<chrono>
 #include"server.h"
 
-class HTTPS : public Server
+class HTTPS : public Server<Http>
 {//use thread for multiple connection, should overload read func-> return exact one req
 public:
 	HTTPS(int outport = 3000, int inport = 2001);

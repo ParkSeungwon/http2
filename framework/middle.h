@@ -23,7 +23,7 @@ private:
 };
 
 
-class Middle : public Server
+class Middle : public Server<Http>
 {//middle server that will connect to html server, provide state to html server
 public:
 	Middle(int outport = 3000, int inport = 2001);
