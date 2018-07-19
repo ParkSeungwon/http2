@@ -10,27 +10,34 @@
 #include"asyncqueue.h"
 using namespace std;
 
-Http::Http(int port) : Tcpip{port}
+Vrecv::Vrecv(int port) : Tcpip{port}
 { }
 
-string Http::recv()
+string Vrecv::recv()
 {
 	string s = Tcpip::recv();
 	s = trailing_string_ + s;
 	trailing_string_ = "";
-	regex e{R"(Content-Length:\s*(\d+))"};
-	smatch m;
-	if(regex_search(s, m, e)) {//content length defined
-		int len = stoi(m[1].str()) + s.find("\r\n\r\n") + 4;
-		if(len < s.size()) {//two packet once
-			trailing_string_ = s.substr(len + 1);
-			s = s.substr(0, len);
-		} else if(len > s.size()) {//more to come
-			for(int n; s.size() < len; s += string(buffer, n))
-				n = read(client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
-		}
-	} 
+	int len = get_full_length(s);
+	if(len < s.size()) {//two packet once
+		trailing_string_ = s.substr(len + 1);
+		s = s.substr(0, len);
+	} else if(len > s.size()) {//more to come
+		for(int n; s.size() < len; s += string(buffer, n))
+			n = read(client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
+	}
 	return s;
+}
+
+Http::Http(int port) : Vrecv{port}
+{ }
+
+int Http::get_full_length(const string &s)
+{//get full length of one request. assume that s is a first received string
+	smatch m;
+	if(regex_search(s, m, regex{R"(Content-Length:\s*(\d+))"})) 
+		return stoi(m[1].str()) + s.find("\r\n\r\n") + 4;
+	else return s.size();
 }
 
 Client::Client(string ip, int port) : Http(port)

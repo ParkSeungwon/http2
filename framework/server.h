@@ -2,14 +2,23 @@
 #include<functional>
 #include"tcpip.h"
 
-class Http : public Tcpip
+class Vrecv : public Tcpip
+{
+public:
+	Vrecv(int port);
+	std::string recv();//check content length header and get one full request
+protected:
+	std::string trailing_string_;
+	virtual int get_full_length(const std::string& s) { return 0; }
+};
+
+class Http : public Vrecv
 {
 public:
 	Http(int port);
-	std::string recv();//check content length header and get one full request
 
 protected:
-	std::string trailing_string_;
+	int get_full_length(const std::string& s);
 };
 
 class Client : public Http
