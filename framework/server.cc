@@ -27,7 +27,7 @@ string Http::recv()
 			s = s.substr(0, len);
 		} else if(len > s.size()) {//more to come
 			for(int n; s.size() < len; s += string(buffer, n))
-				n = read(client_fd, buffer, min(4096, (int)(len - s.size())));
+				n = read(client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
 		}
 	} 
 	return s;

@@ -6,7 +6,7 @@ class Http : public Tcpip
 {
 public:
 	Http(int port);
-	std::string recv();
+	std::string recv();//check content length header and get one full request
 
 protected:
 	std::string trailing_string_;

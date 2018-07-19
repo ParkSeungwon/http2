@@ -35,7 +35,7 @@ void Tcpip::send(const string& s)
 
 string Tcpip::recv()
 {
-	int i = read(client_fd, buffer, 4096);//error
+	int i = read(client_fd, buffer, BUF_SIZE);//error
 	return string(buffer, i);
 }
 
