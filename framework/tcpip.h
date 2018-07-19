@@ -9,7 +9,7 @@ public:
 	Tcpip(int port = 2001);
 	virtual ~Tcpip();
 	void send(const std::string& s);
-	void send(int n);
+//	void send(int n);
 	std::string recv();
 
 protected:

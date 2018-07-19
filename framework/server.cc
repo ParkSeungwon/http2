@@ -42,7 +42,7 @@ HttpServer::HttpServer(int port, unsigned t, int queue, string e)
 
 string HttpServer::recv() 
 {
-	string s = Server::recv();
+	string s = Tcpip::recv();
 	s = trailing_string_ + s;
 	trailing_string_ = "";
 	regex e{R"(Content-Length:\s*(\d+))"};

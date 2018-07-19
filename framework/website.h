@@ -3,10 +3,10 @@
 #include<string>
 using namespace std;
 
-class HTMLServer 
+class WebSite 
 {//specific server will derive this class
 public:
-	HTMLServer();
+	WebSite();
 	std::string operator()(std::string s);
 
 protected:

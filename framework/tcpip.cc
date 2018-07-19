@@ -28,10 +28,10 @@ void Tcpip::send(const string& s)
 	write(client_fd, s.data(), s.size());
 }
 
-void Tcpip::send(int n)
-{
-	write(client_fd, buffer, n);
-}
+//void Tcpip::send(int n)
+//{
+//	write(client_fd, buffer, n);
+//}
 
 string Tcpip::recv()
 {

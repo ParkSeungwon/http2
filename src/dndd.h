@@ -1,7 +1,7 @@
 #include"mysqldata.h"
 #include"bootstrap.h"
 
-class DnDD : public BootStrapServer
+class DnDD : public BootStrapSite
 {
 public:
 	DnDD();

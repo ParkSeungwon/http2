@@ -4,11 +4,11 @@
 #include<iostream>
 #include"util.h"
 #include"server.h"
-#include"htmlserver.h"
+#include"website.h"
 using namespace std;
 
-map<string, string> HTMLServer::fileNhtml_;
-HTMLServer::HTMLServer()
+map<string, string> WebSite::fileNhtml_;
+WebSite::WebSite()
 {
 	const char *load[] = {"html", "js", "css", "jpg", "png", "jpeg"};
 	for(auto& a : getdir(".")) {//read html files in the current directory
@@ -28,21 +28,21 @@ HTMLServer::HTMLServer()
 	}
 }
 
-bool HTMLServer::swap(string b, string a)
+bool WebSite::swap(string b, string a)
 {//child classes will use this to change content_
 	if(content_.find(b) == string::npos) return false;
 	content_.replace(content_.find(b), b.size(), a);
 	return true;	
 }
 
-bool HTMLServer::append(string a, string b)
+bool WebSite::append(string a, string b)
 {
 	if(content_.find(a) == string::npos) return false;
 	content_.insert(content_.find(a) + a.size(), b);
 	return true;	
 }
 
-std::string HTMLServer::operator()(string s) 
+std::string WebSite::operator()(string s) 
 {//will set requested_document and nameNvalue (= parameter of post or get)
 	nameNvalue_.clear();
 //	cout << s << flush;
