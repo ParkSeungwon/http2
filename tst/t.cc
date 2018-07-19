@@ -38,9 +38,9 @@ TEST_CASE("mpz2bnd") {
 	REQUIRE(c[2] == 0);
 }
 TEST_CASE("c++17 []") {
-	array<int, 3> ar;
+	array<int, 3> ar{0,1,2};
 	auto [a, b, c] = ar;
-	cout << a << b << c << endl;
+	REQUIRE((a == 0 && b == 1 && c == 2));
 }
 //TEST_CASE("www.dndd.com.???") {
 //	const char* file[] = {"www.dndd.com.key", "www.dndd.com.pub", 
@@ -61,3 +61,10 @@ TEST_CASE("c++17 []") {
 //	cout << powm(z[2], z[1], z[3]) << endl;
 //}
 
+array<mpz_class, 3> get_pubkeys(istream& is);
+TEST_CASE("get_pubkey") {
+	ifstream f("pu.pem");
+	auto [a,b,c] = get_pubkeys(f);
+	cout << "pubkey : "  << hex << a << endl << b << endl << c << endl;
+	cout << hex << powm(c, b, a);
+}

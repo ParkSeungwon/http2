@@ -12,6 +12,7 @@ array<mpz_class, 3> get_keys(istream& is);
 mpz_class get_prvkey(istream& is);
 string get_certificate_core(istream& is);
 
+//static member initialization
 static mpz_class ze, zd, zK;//used in TLS constructor
 static vector<unsigned char> init_certificate()
 {

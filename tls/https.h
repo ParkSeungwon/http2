@@ -4,7 +4,7 @@
 #include"server.h"
 
 class HTTPS : public Server
-{//use thread for multiple connection
+{//use thread for multiple connection, should overload read func-> return exact one req
 public:
 	HTTPS(int outport = 3000, int inport = 2001);
 	virtual ~HTTPS();

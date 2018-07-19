@@ -25,7 +25,7 @@ array<unsigned char, 32> HTTPS::new_id()
 {
 	array<unsigned char, 32> r;
 	do mpz2bnd(random_prime(32), r.begin(), r.end());
-	while(find_id(r));
+	while(find_id(r));//check if new
 	idNchannel_[r] = new HTTPS::Channel{inport_};
 	return r;
 }
@@ -52,16 +52,27 @@ void HTTPS::connected(int client_fd)
 	read(client_fd, buffer, sz); auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		try {
-		id = new_id();
-		write(client_fd, buffer, t.server_hello(id));
-		write(client_fd, buffer, t.server_certificate());
-		write(client_fd, buffer, t.server_key_exchange());
-		write(client_fd, buffer, t.server_hello_done());
-		read(client_fd, buffer, sz); idNchannel_[id]->keys = t.client_key_exchange();
-		read(client_fd, buffer, sz); t.client_finished();
-		write(client_fd, buffer, t.server_finished());
-		} catch(const char* e) { cerr << e << endl; 
-		} catch(const exception& e) { cerr << e.what() << endl;
+			id = new_id();
+			write(client_fd, buffer, t.server_hello(id));
+			cout << "server hello done" << endl;
+			write(client_fd, buffer, t.server_certificate());
+			cout << "server certificate " << endl;
+			write(client_fd, buffer, t.server_key_exchange());
+			cout << "server key exchange" << endl;
+			write(client_fd, buffer, t.server_hello_done());
+			cout << "server hello done" << endl;
+			read(client_fd, buffer, sz); idNchannel_[id]->keys=t.client_key_exchange();
+			cout << "client key exchange" << endl;
+			read(client_fd, buffer, sz); t.client_finished();
+			cout << "client finished" << endl;
+			write(client_fd, buffer, t.server_finished());
+			cout << "server finished" << endl;
+		} catch(const char* e) {
+			cerr << e << endl; 
+		} catch(const exception& e) {
+			cerr << e.what() << endl;
+		} catch(...) {
+			cerr << "error found" << endl;
 		}
 	} else {//resume connection
 		t.use_key(idNchannel_[id]->keys);
