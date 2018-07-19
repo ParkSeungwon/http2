@@ -1,8 +1,10 @@
+#include<utility>
 #include<iostream>
 #include<thread>
 #include<chrono>
 #include<unistd.h>
 #include<netdb.h>//gethostbyname
+#include<regex>
 #include<sys/wait.h>
 #include"server.h"
 #include"asyncqueue.h"
@@ -33,6 +35,32 @@ Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port)
 	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
 	else cout << "listening" << endl;
 }
+
+HttpServer::HttpServer(int port, unsigned t, int queue, string e)
+	: Server{port, t, queue, e}
+{ }
+
+string HttpServer::recv() 
+{
+	string s = Server::recv();
+	s = trailing_string_ + s;
+	trailing_string_ = "";
+	regex e{R"(Content-Length:\s*(\d+))"};
+	smatch m;
+	if(regex_search(s, m, e)) {//content length defined
+		int len = stoi(m[1].str()) + s.find("\r\n\r\n") + 4;
+		if(len < s.size()) {//two packet once
+			trailing_string_ = s.substr(len + 1);
+			s = s.substr(0, len);
+		} else if(len > s.size()) {//more to come
+			for(int n; s.size() < len; s += string(buffer, n))
+				n = read(client_fd, buffer, min(4096, (int)(len - s.size())));
+		}
+	} 
+	return s;
+}
+	
+	
 
 void Server::start(function<string(string)> f)
 {

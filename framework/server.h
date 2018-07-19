@@ -22,3 +22,13 @@ protected:
 	std::string end_string;
 	int time_out;
 };
+
+class HttpServer : public Server
+{
+public:
+	HttpServer(int port = 2001, unsigned time_out = 600, int queue_limit = 10, std::string end_string = "end");
+	std::string recv();
+
+protected:
+	std::string trailing_string_;
+};

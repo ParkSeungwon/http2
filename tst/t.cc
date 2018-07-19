@@ -1,9 +1,11 @@
 #include<catch.hpp>
 #include<fstream>
 #include<iostream>
+#include<regex>
 #include<iomanip>
 #include<gmpxx.h>
 #include"crypt.h"
+#include"server.h"
 using namespace std;
 
 string get_certificate_core(istream& is);
@@ -67,4 +69,23 @@ TEST_CASE("get_pubkey") {
 	auto [a,b,c] = get_pubkeys(f);
 	cout << "pubkey : "  << hex << a << endl << b << endl << c << endl;
 	cout << hex << powm(c, b, a);
+}
+
+TEST_CASE("regex") {
+	string s = "Last-Modified: Sat, 23 Sep 2017 01:42:37 GMT\n"
+				"Content-Type: text/html\n"
+				"Content-Length: 30\n"
+				"Date: Thu, 12 Oct 2017 17:42:56 GMT\r\n\r\n"
+				"123456789012345678901234567890";
+
+	smatch m;
+	regex_search(s, m, 	regex{R"(Content-Length:\s*(\d+))"});
+	REQUIRE(m[1].str() == "30");
+	REQUIRE(s.find("\r\n\r\n") != string::npos);
+	REQUIRE(stoi(m[1].str()) + s.find("\r\n\r\n") + 4 == s.size());
+	REQUIRE(s.substr(0, s.size()) == s);
+}
+	
+TEST_CASE("http recv") {
+	HttpServer sv;
 }

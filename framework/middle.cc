@@ -8,7 +8,7 @@ using namespace std;
 using namespace std::chrono;
 
 Middle::Middle(int outport, int inport)
-	: Server{outport}, inport_{inport}, 
+	: HttpServer{outport}, inport_{inport}, 
 	  influx_{bind(&Middle::recv, this), bind(&Middle::sow, this, placeholders::_1)},
 	  outflux_{bind(&Middle::send, this, placeholders::_1)},
 	  th_{&Middle::garbage_collection, this}
@@ -19,7 +19,7 @@ Packet Middle::recv()
 	int cl_size = sizeof(client_addr);
 	client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 	assert(client_fd != -1);// cout << "accept() error" << endl;
-	string s = Tcpip::recv();
+	string s = HttpServer::recv();
 	if(debug) {
 		cout << "receiving " << s << endl;
 		for(int i=0; i<s.size(); i++) cout << hex << setw(2) << setfill('0') << +static_cast<unsigned char>(s[i]) << (i%16 == 15 ? '\n' : ' ');
