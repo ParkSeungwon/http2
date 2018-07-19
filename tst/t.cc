@@ -87,5 +87,5 @@ TEST_CASE("regex") {
 }
 	
 TEST_CASE("http recv") {
-	HttpServer sv;
+	Server sv;
 }

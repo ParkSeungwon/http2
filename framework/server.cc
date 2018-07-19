@@ -10,37 +10,10 @@
 #include"asyncqueue.h"
 using namespace std;
 
-Client::Client(string ip, int port) : Tcpip(port)
-{
-	server_addr.sin_addr.s_addr = inet_addr(get_addr(ip).c_str());
-	if(-1 == connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)))
-		cout << "connect() error" << endl;
-	else cout << "connecting to " << ip << ':' << port  <<endl;
-}
-
-string Client::get_addr(string host)
-{///get ip from dns
-	auto* a = gethostbyname(host.data());
-	return inet_ntoa(*(struct in_addr*)a->h_addr);
-}
-
-Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port) 
-{
-	end_string = e;
-	time_out = t;
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	if(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1)
-		cout << "bind() error" << endl;
-	else cout << "binding" << endl;
-	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
-	else cout << "listening" << endl;
-}
-
-HttpServer::HttpServer(int port, unsigned t, int queue, string e)
-	: Server{port, t, queue, e}
+Http::Http(int port) : Tcpip{port}
 { }
 
-string HttpServer::recv() 
+string Http::recv()
 {
 	string s = Tcpip::recv();
 	s = trailing_string_ + s;
@@ -59,8 +32,32 @@ string HttpServer::recv()
 	} 
 	return s;
 }
-	
-	
+
+Client::Client(string ip, int port) : Http(port)
+{
+	server_addr.sin_addr.s_addr = inet_addr(get_addr(ip).c_str());
+	if(-1 == connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)))
+		cout << "connect() error" << endl;
+	else cout << "connecting to " << ip << ':' << port  <<endl;
+}
+
+string Client::get_addr(string host)
+{///get ip from dns
+	auto* a = gethostbyname(host.data());
+	return inet_ntoa(*(struct in_addr*)a->h_addr);
+}
+
+Server::Server(int port, unsigned int t, int queue, string e) : Http(port) 
+{
+	end_string = e;
+	time_out = t;
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1)
+		cout << "bind() error" << endl;
+	else cout << "binding" << endl;
+	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
+	else cout << "listening" << endl;
+}
 
 void Server::start(function<string(string)> f)
 {
