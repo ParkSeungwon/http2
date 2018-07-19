@@ -29,6 +29,11 @@ string Vrecv::recv()
 	return s;
 }
 
+int Vrecv::get_full_length(const string& s) 
+{//this should be replaced with inherent class function
+	return 0;
+}
+
 Http::Http(int port) : Vrecv{port}
 { }
 
@@ -38,6 +43,14 @@ int Http::get_full_length(const string &s)
 	if(regex_search(s, m, regex{R"(Content-Length:\s*(\d+))"})) 
 		return stoi(m[1].str()) + s.find("\r\n\r\n") + 4;
 	else return s.size();
+}
+
+TlsLayer::TlsLayer(int port) : Vrecv{port}
+{ }
+
+int TlsLayer::get_full_length(const string& s)
+{
+	return s[3] * 0x16 + s[4];
 }
 
 Client::Client(string ip, int port) : Http(port)

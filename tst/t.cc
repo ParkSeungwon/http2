@@ -87,5 +87,8 @@ TEST_CASE("regex") {
 }
 	
 TEST_CASE("http recv") {
-	Server sv;
+	string s;
+	char c = 1;
+	s += c;
+	cout << "string " << s << endl;
 }

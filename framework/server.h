@@ -3,19 +3,28 @@
 #include"tcpip.h"
 
 class Vrecv : public Tcpip
-{
+{//virtual class that provide interface to get recv that works just as expected
 public:
 	Vrecv(int port);
 	std::string recv();//check content length header and get one full request
 protected:
 	std::string trailing_string_;
-	virtual int get_full_length(const std::string& s) { return 0; }
+	virtual int get_full_length(const std::string& s);
 };
 
 class Http : public Vrecv
 {
 public:
 	Http(int port);
+
+protected:
+	int get_full_length(const std::string& s);
+};
+
+class TlsLayer : public Vrecv
+{
+public:
+	TlsLayer(int port);
 
 protected:
 	int get_full_length(const std::string& s);
