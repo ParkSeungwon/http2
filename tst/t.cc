@@ -92,3 +92,10 @@ TEST_CASE("http recv") {
 	s += c;
 	cout << "string " << s << endl;
 }
+TEST_CASE("array init") {
+	array<int, 10> a{};
+	array<int, 10> b;
+	for(int i=0; i<10; i++) REQUIRE(a[i] == 0);
+	for(auto c : array<int, 10>{}) REQUIRE(c == 0);
+//	for(int i=0; i<10; i++) REQUIRE(b[i] == 0);//this is not true
+}

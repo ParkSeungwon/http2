@@ -8,8 +8,17 @@
 #include"crypt.h"
 using namespace std;
 
-HTTPS::HTTPS(int outport, int inport) : Server{outport}, inport_{inport}
+HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
+	: TlsLayer{outport}, inport_{inport}
 {//hI = this; 
+	end_string = end;
+	time_out = t;
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1)
+		cout << "bind() error" << endl;
+	else cout << "binding" << endl;
+	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
+	else cout << "listening" << endl;
 } 
 	
 HTTPS::~HTTPS() {}
@@ -19,7 +28,8 @@ bool HTTPS::find_id(array<uint8_t, 32> id)
 	return idNchannel_.find(id) != idNchannel_.end();
 }
 
-HTTPS::Channel::Channel(int port) : Client{"localhost", port} {}
+HTTPS::Channel::Channel(int port) : Client{"localhost", port}
+{ }
 	
 array<unsigned char, 32> HTTPS::new_id()
 {
@@ -46,10 +56,11 @@ void HTTPS::start()
 
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
-	const int sz = 409600;
-	unsigned char buffer[sz];//using local buffer for multithread not class buffer
-	TLS t{buffer};//TLS is decoupled from file descriptor
-	read(client_fd, buffer, sz); auto id = t.client_hello();
+	unsigned char buf[10000];
+	TLS t{nullptr, buf};//TLS is decoupled from file descriptor
+	string s = recv();
+	t.set_buf(s.data());
+	auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		try {
 			id = new_id();
@@ -61,9 +72,13 @@ void HTTPS::connected(int client_fd)
 			cout << "server key exchange" << endl;
 			write(client_fd, buffer, t.server_hello_done());
 			cout << "server hello done" << endl;
-			read(client_fd, buffer, sz); idNchannel_[id]->keys=t.client_key_exchange();
+			s = recv();
+			t.set_buf(s.data());
+			idNchannel_[id]->keys=t.client_key_exchange();
 			cout << "client key exchange" << endl;
-			read(client_fd, buffer, sz); t.client_finished();
+			s = recv();
+			t.set_buf(s.data());
+			t.client_finished();
 			cout << "client finished" << endl;
 			write(client_fd, buffer, t.server_finished());
 			cout << "server finished" << endl;
@@ -78,11 +93,15 @@ void HTTPS::connected(int client_fd)
 		t.use_key(idNchannel_[id]->keys);
 		write(client_fd, buffer, t.server_hello(id));
 		write(client_fd, buffer, t.server_finished());
-		read(client_fd, buffer, sz); t.client_finished();
+		s = recv();
+		t.set_buf(s.data());
+		t.client_finished();
 	}
 
 	using clock = std::chrono::system_clock;
-	while(read(client_fd, buffer, sz) > 0) {//data communication
+	while(idNchannel_.find(id) != idNchannel_.end()) {//data communication
+		s = recv();
+		t.set_buf(s.data());
 		idNchannel_[id]->send(t.decode());
 		write(client_fd, buffer, t.encode(idNchannel_[id]->recv()));
 		idNchannel_[id]->clock::time_point::operator=(clock::now());

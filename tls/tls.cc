@@ -40,6 +40,11 @@ TLS::TLS(unsigned char* buffer, unsigned char* buffer2)
 	else rec_to_send_ = rec_received_;//use same buffer for read and write
 }
 
+void TLS::set_buf(void* p)
+{
+	rec_received_ = (TLS_header*)p;
+}
+
 array<unsigned char, 32> TLS::client_hello()
 {//return desired id
 	Handshake_header* ph = (Handshake_header*)rec_received_->data;

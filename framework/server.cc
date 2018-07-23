@@ -31,7 +31,7 @@ string Vrecv::recv()
 
 int Vrecv::get_full_length(const string& s) 
 {//this should be replaced with inherent class function
-	return 0;
+	return s.size();
 }
 
 Http::Http(int port) : Vrecv{port}
@@ -50,7 +50,7 @@ TlsLayer::TlsLayer(int port) : Vrecv{port}
 
 int TlsLayer::get_full_length(const string& s)
 {
-	return s[3] * 0x16 + s[4];
+	return s[3] * 0x100 + s[4] + 5;
 }
 
 Client::Client(string ip, int port) : Http(port)

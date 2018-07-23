@@ -154,6 +154,7 @@ public:
 	std::array<unsigned char, 64> client_key_exchange();
 	int	client_finished(), server_finished();
 	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
+	void set_buf(void* p);
 protected:
 	TLS_header *rec_received_, *rec_to_send_;
 	AES server_aes_, client_aes_;
