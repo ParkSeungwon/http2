@@ -33,11 +33,9 @@ static vector<unsigned char> init_certificate()
 vector<unsigned char> TLS::certificate_ = init_certificate();
 RSA TLS::rsa_{ze, zd, zK};
 
-TLS::TLS(unsigned char* buffer, unsigned char* buffer2)
+TLS::TLS(unsigned char* buffer)
 {//buffer = read buffer, buffer2 = write buffer
 	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
-	if(buffer2) rec_to_send_ = reinterpret_cast<TLS_header*>(buffer2);
-	else rec_to_send_ = rec_received_;//use same buffer for read and write
 }
 
 void TLS::set_buf(void* p)
@@ -47,10 +45,10 @@ void TLS::set_buf(void* p)
 
 array<unsigned char, 32> TLS::client_hello()
 {//return desired id
-	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
 	assert(rec_received_->content_type == 0x16);//handshake
 	assert(ph->handshake_type == 1);//client hello
-	Hello_header* p = (Hello_header*)ph->data;
+	Hello_header* p = (Hello_header*)(ph + 1);
 	memcpy(client_random_.data(), p->unix_time, 32);//unix time + 28 random
 	memcpy(server_random_.data(), p->unix_time, 4);
 	mpz2bnd(random_prime(28), server_random_.data() + 4, server_random_.end());
@@ -116,63 +114,12 @@ Extensions
 ***************************/
 
 
-int TLS::server_hello(array<unsigned char, 32> id)
-{//return data size
-	int sz = sizeof(Hello_header);
-	Hello_header* p = (Hello_header*)init(2, sz);
-
-	p->version[0] = 3, p->version[1] = 3;
-	memcpy(p->unix_time, server_random_.data(), 32);
-	p->session_id_length = 32;
-	session_id_ = id;
-	memcpy(p->session_id, id.data(), 32);
-	p->cipher_suite[1] = 0x33;//0033 DHE RSA SHA1
-	p->compression = 0;//no compression
-	return sz + 10;
-}
-/**************
-(00,33)DHE-RSA-AES128-SHA : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
-(00,67)DHE-RSA-AES128-SHA256 : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
-(00,39)DHE-RSA-AES256-SHA : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
-(00,6b)DHE-RSA-AES256-SHA256 : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
-
-ServerHello: The ServerHello message is very similar to the ClientHello message, with the exception that it only includes one CipherSuite and one Compression method. If it includes a SessionId (i.e. SessionId Length is > 0), it signals the client to attempt to reuse it in the future.
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----+----+----------+----+----------+----+----+----+----------+
-     |  2 |    |    |    |    |    |  32byte  |    |max 32byte|    |    |    |Extensions|
-     |0x02|    |    |    |  3 |  1 |  random  |    |session Id|    |    |    |          |
-- ---+----+----+----+----+----+----+----------+----+----------+--------------+----------+
-  /  |  \    \---------\    \----\               \       \       \----\    \
- /       \        \            \                  \   SessionId      \  Compression
-record    \     length        SSL/TLS              \ (if length > 0)  \   method
-length     \                  version           SessionId              \
-            type: 2       (TLS 1.0 here)         length            CipherSuite
-****************/
-
-
-unsigned char* TLS::init(int handshake_type, int sz)
-{//initialize head of buffer to send, sz = body size 
-	memset(rec_to_send_, 0, sz + 5 + 4);
-	rec_to_send_->content_type = 0x16;
-	rec_to_send_->version = 0x0303;//no need htons 03 = 03
-	rec_to_send_->length = htons(sz + 4);
-	Handshake_header* ph = (Handshake_header*)rec_to_send_->data;
-	ph->handshake_type = handshake_type;
-	mpz2bnd(sz, ph->length, ph->length+3);
-	return ph->data;
-}
 
 int TLS::server_certificate()
 {//return data_size
 	int sz = certificate_.size();
-	unsigned char* p = init(11, sz);
-	for(int i=0; i<sz; i++) p[i] = certificate_[i];
+//	unsigned char* p = init(11, sz);
+//	for(int i=0; i<sz; i++) p[i] = certificate_[i];
 	return sz + 10;
 }
 /************************
@@ -195,67 +142,6 @@ length     \                   chain         length
             type: 11           length
 ***************************/
 
-int TLS::server_key_exchange()
-{
-	unsigned char* p = init(12, 96 + 256);
-	mpz2bnd(diffie_.p, p, p+32);
-	mpz2bnd(diffie_.g, p+32, p+64);
-	mpz2bnd(diffie_.ya, p+64, p+96);
-
-	unsigned char a[160];
-	memcpy(a, client_random_.data(), 32);
-	memcpy(a + 32, server_random_.data(), 32);
-	memcpy(a + 64, p, 96);
-	auto b = server_mac_.hash(a, a + 160);
-	auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
-	mpz2bnd(z, p + 96, p + 256 + 96);
-	return 10 + 96 + 256;
-}
-/************************
-ServerKeyExchange: This message carries the keys exchange algorithm parameters that the client needs from the server in order to get the symmetric encryption working thereafter. It is optional, since not all key exchanges require the server explicitly sending this message. Actually, in most cases, the Certificate message is enough for the client to securely communicate a premaster key with the server. The format of those parameters depends exclusively on the selected CipherSuite, which has been previously set by the server via the ServerHello message.
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----------------+
-     | 12 |    |    |    |   algorithm    |
-     |0x0c|    |    |    |   parameters   |
-- ---+----+----+----+----+----------------+
-  /  |  \    \---------\
- /       \        \
-record    \     length
-length     \
-            type: 12
-
-struct {
-select (KeyExchangeAlgorithm) {
-	case dh_anon:
-		ServerDHParams params;
-	case dhe_dss:
-	case dhe_rsa:
-		ServerDHParams params;
-		digitally-signed struct {
-			opaque client_random[32];
-			opaque server_random[32];
-			ServerDHParams params;
-		} signed_params;
-	case rsa:
-	case dh_dss:
-	case dh_rsa:
-	struct {} ;
-		 message is omitted for rsa, dh_dss, and dh_rsa 
-		 may be extended, e.g., for ECDH -- see [TLSECC] 
-};
-} ServerKeyExchange;
-params
-The server’s key exchange parameters.
-signed_params
-For non-anonymous key exchanges, a signature over the server’s
-key exchange parameters.
-*********************/
 
 /************************
 CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
@@ -278,31 +164,6 @@ length     \             Certificate         Authorities length \
                                                                       length
 *********************/
 
-int TLS::server_hello_done()
-{
-	init(14, 0);
-	return 10;
-}
-/*****************************
-ServerHelloDone: This message finishes the server part of the handshake negotiation. It does not carry any additional information.
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+
-     | 14 |    |    |    |
-   4 |0x0e|  0 |  0 |  0 |
-- ---+----+----+----+----+
-  /  |  \    \---------\
- /       \        \
-record    \     length: 0
-length     \
-            type: 14
-*********************/
-
 array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
 {
 	client_aes_.key(keys.data());
@@ -318,11 +179,11 @@ array<unsigned char, 64> TLS::use_key(vector<unsigned char> keys)
 
 array<unsigned char, 64> TLS::client_key_exchange()//16
 {//return client_aes_key + server_aes_key
-	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	Handshake_header* ph = (Handshake_header*)(rec_received_+1);
 	assert(ph->handshake_type == 16);
 
 	unsigned char rand[64], pre[32];
-	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->data, ph->data+32));
+	auto pre_master_secret = diffie_.yb(bnd2mpz((unsigned char*)ph+1, (unsigned char*)(ph+1)+32));
 	mpz2bnd(pre_master_secret, pre, pre+32);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
@@ -361,9 +222,9 @@ length     \
 string TLS::decode()
 {
 	assert(rec_received_->content_type == 0x17);
-	client_aes_.iv(rec_received_->data);
-	auto v = client_aes_.decrypt(rec_received_->data + 16, 
-			rec_received_->data + rec_received_->length);
+	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
+	client_aes_.iv(p);
+	auto v = client_aes_.decrypt(p + 16, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
 	return {v.data(), v.data() + v.size() - 20 - v.back()};//v.back() == padding length
 }
 /***********************
@@ -389,28 +250,56 @@ The mission of this protocol is to properly encapsulate the data coming from the
            length: arbitrary (up to 16k)
 ******************/
 
-int TLS::encode(string s)
-{//encrypt source s according to tls -> prepare rec_to_send_ buffer, return buffer size
-	rec_to_send_->content_type = 0x17;
-	rec_to_send_->version = 0x0303;
-	mpz2bnd(random_prime(16), rec_to_send_->data, rec_to_send_->data+16);
-	server_aes_.iv(rec_to_send_->data);
-	int padding_length = 16 - (s.size() + 20) % 16;//20 = sha1 digest size, 16 block sz
+vector<string> TLS::encode(string s) {
+	struct {
+		TLS_header h1;
+		uint8_t random[16];
+	}__attribute__((packed)) r;
+	r.h1.content_type = 0x17;
+	vector<string> vs;
 
-	s = string{0x01} + string{(char*)rec_to_send_, 5} + s;
-	auto verify = server_mac_.hash((uint8_t*)s.data(), (uint8_t*)s.data() + s.size());
-	
-	s += string{verify.begin(), verify.end()} + string(padding_length, padding_length);
-	auto v = server_aes_.encrypt((uint8_t*)s.data()+6, (uint8_t*)s.data() + s.size());
-	
-	memcpy(rec_to_send_->data+16, v.data(), v.size());
-	rec_to_send_->length = v.size() + 16;
-	return v.size() + 16 + 5;
+	const int chunk_size = (2 << 14) - 1024 - 20;//cut string into 2^14
+	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
+		auto z = random_prime(16);
+		mpz2bnd(z, r.random, r.random + 16);
+		server_aes_.iv(z);
+
+		int len = sq * chunk_size > s.size() ? s.size() % chunk_size : chunk_size;
+		int padding_length = 16 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
+		mpz2bnd(len + 20 + 16 + 1, r.h1.length, r.h1.length + 2);
+		std::string s2 = string{sq} + string{(const char*)&r.h1, 5} + 
+			s.substr((sq-1) * chunk_size, min((int)s.size(), sq*chunk_size));
+		auto verify = server_mac_.hash((uint8_t*)s2.data(),
+				(uint8_t*)s2.data() + s.size());
+		s2 += string{verify.begin(), verify.end()};
+		s2 += string(padding_length, padding_length);
+		auto v = server_aes_.encrypt((uint8_t*)s2.data()+6,//exclude first 6 bytes
+				(uint8_t*)s2.data() + s2.size());
+		string s3 = s2.substr(0, 6) + string{(const char*)r.random, 16} +
+			string{v.begin(), v.end()};
+		vs.push_back(s3);
+	}
+	return vs;
 }
+/***************
+The MAC is generated as:
+MAC(MAC_write_key, seq_num + TLSCompressed.type + TLSCompressed.version +
+	TLSCompressed.length + TLSCompressed.fragment);
+where "+" denotes concatenation.
 
+struct {
+	opaque IV[SecurityParameters.record_iv_length];//16
+	block-ciphered struct {
+		opaque content[TLSCompressed.length];//len
+		opaque MAC[SecurityParameters.mac_length];//20
+		uint8 padding[GenericBlockCipher.padding_length];//pad
+		uint8 padding_length;//1
+	};
+} GenericBlockCipher;
+*********************/
 int TLS::client_finished()
 {
-	Handshake_header* ph = (Handshake_header*)rec_received_->data;
+	Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
 	assert(ph->handshake_type == 20);
 	return 7;
 }
@@ -434,8 +323,3 @@ length     \
             type: 20
 *********************/
 
-int TLS::server_finished()//16
-{
-	init(16, 0);
-	return 10;
-}

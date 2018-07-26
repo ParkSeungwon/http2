@@ -56,31 +56,35 @@ void HTTPS::start()
 
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
-	unsigned char buf[10000];
-	TLS t{nullptr, buf};//TLS is decoupled from file descriptor
+	TLS t;//TLS is decoupled from file descriptor
 	string s = recv();
 	t.set_buf(s.data());
 	auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		try {
 			id = new_id();
-			write(client_fd, buffer, t.server_hello(id));
+			auto a = t.server_hello(id);
+			write(client_fd, &a, sizeof(a));
 			cout << "server hello done" << endl;
-			write(client_fd, buffer, t.server_certificate());
+			auto b = t.server_certificate();
+			write(client_fd, &b, sizeof(b));
 			cout << "server certificate " << endl;
-			write(client_fd, buffer, t.server_key_exchange());
+			auto c = t.server_key_exchange();
+			write(client_fd, &c, sizeof(c));
 			cout << "server key exchange" << endl;
-			write(client_fd, buffer, t.server_hello_done());
+			auto d = t.server_hello_done();
+			write(client_fd, &d, sizeof(d));
 			cout << "server hello done" << endl;
 			s = recv();
 			t.set_buf(s.data());
-			idNchannel_[id]->keys=t.client_key_exchange();
+			idNchannel_[id]->keys = t.client_key_exchange();
 			cout << "client key exchange" << endl;
 			s = recv();
 			t.set_buf(s.data());
 			t.client_finished();
 			cout << "client finished" << endl;
-			write(client_fd, buffer, t.server_finished());
+			auto e = t.server_finished();
+			write(client_fd, &e, sizeof(e));
 			cout << "server finished" << endl;
 		} catch(const char* e) {
 			cerr << e << endl; 
@@ -91,19 +95,23 @@ void HTTPS::connected(int client_fd)
 		}
 	} else {//resume connection
 		t.use_key(idNchannel_[id]->keys);
-		write(client_fd, buffer, t.server_hello(id));
-		write(client_fd, buffer, t.server_finished());
+		auto a = t.server_hello(id);
+		write(client_fd, &a, sizeof(a));
+		auto e = t.server_finished();
+		write(client_fd, &e, sizeof(e));
 		s = recv();
 		t.set_buf(s.data());
 		t.client_finished();
 	}
 
 	using clock = std::chrono::system_clock;
-	while(idNchannel_.find(id) != idNchannel_.end()) {//data communication
+	while(idNchannel_.find(id) != idNchannel_.end())
+	{//data communication until garbage collection 
 		s = recv();
 		t.set_buf(s.data());
 		idNchannel_[id]->send(t.decode());
-		write(client_fd, buffer, t.encode(idNchannel_[id]->recv()));
+		auto v = t.encode(idNchannel_[id]->recv());
+		for(const auto& a : v) send(a);
 		idNchannel_[id]->clock::time_point::operator=(clock::now());
 	}
 	close(client_fd);

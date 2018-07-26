@@ -46,10 +46,9 @@ Application Data Protocol: It takes arbitrary data (application-layer data gener
 *******************/
 
 struct TLS_header {
-	uint8_t content_type;  // 0x17 for Application Data, 0x16 handshake
-	uint16_t version;      // 0x0303 for TLS 1.2
-	uint16_t length;       // length of encrypted_data
-	uint8_t data[];
+	uint8_t content_type = 0x16;  // 0x17 for Application Data, 0x16 handshake
+	uint8_t version[2] = {0x03, 0x03};      // 0x0303 for TLS 1.2
+	uint8_t length[2] = {0, 0};       // length of encrypted_data
 } __attribute__((packed));
 /*********************************
 Record Protocol format
@@ -92,8 +91,7 @@ The TLS Record header comprises three fields, necessary to allow the higher laye
 
 struct Handshake_header {
 	uint8_t handshake_type;
-	uint8_t length[3];
-	uint8_t data[];
+	uint8_t length[3] = {0,0,0};
 } __attribute__((packed));
 /***********************
 Handshake Protocol format
@@ -134,36 +132,185 @@ This is the most complex subprotocol within TLS. The specification focuses prima
 
 
 struct Hello_header {
-	uint8_t version[2];//length is from here
+	uint8_t version[2] = {0x03, 0x03};//length is from here
 	uint8_t unix_time[4];
 	uint8_t random[28];
-	uint8_t session_id_length;
+	uint8_t session_id_length = 32;
 	uint8_t session_id[32];
-	uint8_t cipher_suite[2];
-	uint8_t compression;
+	uint8_t cipher_suite[2] = {0x00, 0x33};
+	uint8_t compression = 0;
 } __attribute__((packed));
+
+
 class TLS
 {//this class just deals with memory structure -> decoupled from underlying algorithm
 public:
-	TLS(unsigned char* buf_received, unsigned char* buf_to_send = nullptr);
+	TLS(unsigned char* buf_received = nullptr);
 	std::string decode();
-	int encode(std::string s);
+	std::vector<std::string> encode(std::string s);
+
 	std::array<unsigned char, 32> client_hello();
-	int server_hello(std::array<unsigned char, 32> id), server_certificate(),
-		server_key_exchange(), server_hello_done();
+	auto server_hello(std::array<unsigned char, 32> id) {
+		struct {
+			TLS_header h1;
+			Handshake_header h2;
+			Hello_header h3;
+		}__attribute__((packed)) r;
+
+		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
+		r.h2.length[2] = sizeof(Hello_header);
+		r.h2.handshake_type = 2;
+		memcpy(r.h3.unix_time, server_random_.data(), 32);
+		memcpy(r.h3.session_id, id.data(), 32);
+		return r;
+	}
+/**************
+(00,33)DHE-RSA-AES128-SHA : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
+(00,67)DHE-RSA-AES128-SHA256 : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
+(00,39)DHE-RSA-AES256-SHA : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
+(00,6b)DHE-RSA-AES256-SHA256 : 256 Bit Key exchange: DH, encryption: AES, MAC: SHA256.
+
+ServerHello: The ServerHello message is very similar to the ClientHello message, with the exception that it only includes one CipherSuite and one Compression method. If it includes a SessionId (i.e. SessionId Length is > 0), it signals the client to attempt to reuse it in the future.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----------+----+----------+----+----+----+----------+
+     |  2 |    |    |    |    |    |  32byte  |    |max 32byte|    |    |    |Extensions|
+     |0x02|    |    |    |  3 |  1 |  random  |    |session Id|    |    |    |          |
+- ---+----+----+----+----+----+----+----------+----+----------+--------------+----------+
+  /  |  \    \---------\    \----\               \       \       \----\    \
+ /       \        \            \                  \   SessionId      \  Compression
+record    \     length        SSL/TLS              \ (if length > 0)  \   method
+length     \                  version           SessionId              \
+            type: 2       (TLS 1.0 here)         length            CipherSuite
+****************/
+
+	int server_certificate();
+	auto server_key_exchange() {
+		struct {
+			TLS_header h1;
+			Handshake_header h2;
+			uint8_t p[32], g[32], ya[32], sign[256];
+		}__attribute__((packed)) r;
+
+		r.h1.length[0] = 1;//256
+		r.h1.length[1] = sizeof(Handshake_header) + 96;
+		r.h2.length[1] = 1; r.h2.length[2] = 96;
+		r.h2.handshake_type = 12;
+		mpz2bnd(diffie_.p, r.p, r.p+32);
+		mpz2bnd(diffie_.g, r.g, r.g+32);
+		mpz2bnd(diffie_.ya, r.ya, r.ya+32);
+
+		unsigned char a[160];
+		memcpy(a, client_random_.data(), 32);
+		memcpy(a + 32, server_random_.data(), 32);
+		memcpy(a + 64, r.p, 96);
+		auto b = server_mac_.hash(a, a + 160);
+		auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
+		mpz2bnd(z, r.sign, r.sign + 256);
+
+		return r;
+	}
+/************************
+ServerKeyExchange: This message carries the keys exchange algorithm parameters that the client needs from the server in order to get the symmetric encryption working thereafter. It is optional, since not all key exchanges require the server explicitly sending this message. Actually, in most cases, the Certificate message is enough for the client to securely communicate a premaster key with the server. The format of those parameters depends exclusively on the selected CipherSuite, which has been previously set by the server via the ServerHello message.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------------+
+     | 12 |    |    |    |   algorithm    |
+     |0x0c|    |    |    |   parameters   |
+- ---+----+----+----+----+----------------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 12
+
+struct {
+select (KeyExchangeAlgorithm) {
+	case dh_anon:
+		ServerDHParams params;
+	case dhe_dss:
+	case dhe_rsa:
+		ServerDHParams params;
+		digitally-signed struct {
+			opaque client_random[32];
+			opaque server_random[32];
+			ServerDHParams params;
+		} signed_params;
+	case rsa:
+	case dh_dss:
+	case dh_rsa:
+	struct {} ;
+		 message is omitted for rsa, dh_dss, and dh_rsa 
+		 may be extended, e.g., for ECDH -- see [TLSECC] 
+};
+} ServerKeyExchange;
+params
+The server’s key exchange parameters.
+signed_params
+For non-anonymous key exchanges, a signature over the server’s
+key exchange parameters.
+*********************/
+	auto server_hello_done() {
+		struct {
+			TLS_header h1;
+			Handshake_header h2;
+		}__attribute__((packed)) r;
+
+		r.h2.handshake_type = 14;
+		r.h1.length[1] = sizeof(Handshake_header);
+		return r;
+	}
+/*****************************
+ServerHelloDone: This message finishes the server part of the handshake negotiation. It does not carry any additional information.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+
+     | 14 |    |    |    |
+   4 |0x0e|  0 |  0 |  0 |
+- ---+----+----+----+----+
+  /  |  \    \---------\
+ /       \        \
+record    \     length: 0
+length     \
+            type: 14
+*********************/
 	std::array<unsigned char, 64> client_key_exchange();
-	int	client_finished(), server_finished();
+	int	client_finished();
+	auto server_finished() {
+		struct {
+			TLS_header h1;
+			Handshake_header h2;
+		}__attribute__((packed)) r;
+
+		r.h1.length[1] = sizeof(Handshake_header);
+		r.h2.handshake_type = 16;
+		return r;
+	}
 	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
 	void set_buf(void* p);
 protected:
-	TLS_header *rec_received_, *rec_to_send_;
+	TLS_header *rec_received_;
 	AES server_aes_, client_aes_;
 	HMAC<SHA1> server_mac_, client_mac_;
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	int id_length_;
 private:
-	unsigned char* init(int handshake_type, int sz);
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
 	static std::vector<unsigned char> certificate_;
 	static RSA rsa_;
