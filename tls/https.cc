@@ -110,8 +110,7 @@ void HTTPS::connected(int client_fd)
 		s = recv();
 		t.set_buf(s.data());
 		idNchannel_[id]->send(t.decode());
-		auto v = t.encode(idNchannel_[id]->recv());
-		for(const auto& a : v) send(a);
+		for(const auto& a : t.encode(idNchannel_[id]->recv())) send(a);
 		idNchannel_[id]->clock::time_point::operator=(clock::now());
 	}
 	close(client_fd);

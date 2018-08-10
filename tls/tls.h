@@ -1,5 +1,6 @@
 #pragma once
 #include"crypt.h"
+#include"cert.h"//include const char certificate[] <- certheadergen.cpp
 /*********************
                TLS Handshake
 
@@ -189,7 +190,61 @@ length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
 
-	int server_certificate();
+	auto server_certificate() {
+		struct {
+			TLS_header h1;
+			Handshake_header h2;
+			char cert[sizeof(certificate)];
+		} r;
+		memcpy(r.cert, certificate, sizeof(certificate));
+		r.h2.handshake_type = 0x0b;
+		mpz2bnd(sizeof(r), r.h2.length, r.h2.length+3);
+		mpz2bnd(sizeof(r) + sizeof(Handshake_header), r.h1.length, r.h1.length+2);
+
+		return r;
+	}
+
+/************************
+Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+     | 11 |    |    |    |    |    |    |    |    |    |           |
+     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+  /  |  \    \---------\    \---------\    \---------\
+ /       \        \              \              \
+record    \     length      Certificate    Certificate
+length     \                   chain         length
+            type: 11           length
+***************************/
+
+
+/************************
+CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
+     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+  /  |  \    \---------\    \    \                \----\   \-----\
+ /       \        \          \ Certificate           \        \
+record    \     length        \ Type 1 Id        Certificate   \
+length     \             Certificate         Authorities length \
+            type: 13     Types length                         Certificate Authority
+                                                                      length
+*********************/
 	auto server_key_exchange() {
 		struct {
 			TLS_header h1;
@@ -312,6 +367,5 @@ protected:
 	int id_length_;
 private:
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
-	static std::vector<unsigned char> certificate_;
 	static RSA rsa_;
 };

@@ -99,3 +99,5 @@ TEST_CASE("array init") {
 	for(auto c : array<int, 10>{}) REQUIRE(c == 0);
 //	for(int i=0; i<10; i++) REQUIRE(b[i] == 0);//this is not true
 }
+
+

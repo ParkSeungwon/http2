@@ -5,6 +5,7 @@
 #include<unistd.h>
 #include<arpa/inet.h>//htons
 #include<cassert>
+#include<initializer_list>
 #include"tls.h"
 using namespace std;
 
@@ -14,23 +15,14 @@ string get_certificate_core(istream& is);
 
 //static member initialization
 static mpz_class ze, zd, zK;//used in TLS constructor
-static vector<unsigned char> init_certificate()
+static int init_certificate()
 {
 	ifstream f2("p.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
 	ifstream f("pu.pem"); //generated with openssl genrsa 2048 > p.pem
 	auto [K, e, d] = get_keys(f2);
 	zK = K; ze = e; zd = d;
-	vector<unsigned char> v;
-	for(int i=0; i<4; i++) v.push_back(0x0b);//certificate type + 3 byte size placehold
-	for(string s; (s = get_certificate_core(f)) != "";) {
-		for(int i=0; i<3; i++) v.push_back(0);
-		mpz2bnd(s.size(), v.end() - 3, v.end());
-		v.insert(v.end(), s.begin(), s.end());
-	}
-	mpz2bnd(v.size() - 4, v.begin() + 1, v.begin() + 4);
-	return v;
 }
-vector<unsigned char> TLS::certificate_ = init_certificate();
+static int k = init_certificate();
 RSA TLS::rsa_{ze, zd, zK};
 
 TLS::TLS(unsigned char* buffer)
@@ -115,54 +107,6 @@ Extensions
 
 
 
-int TLS::server_certificate()
-{//return data_size
-	int sz = certificate_.size();
-//	unsigned char* p = init(11, sz);
-//	for(int i=0; i<sz; i++) p[i] = certificate_[i];
-	return sz + 10;
-}
-/************************
-Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
-     | 11 |    |    |    |    |    |    |    |    |    |           |
-     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
-- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
-  /  |  \    \---------\    \---------\    \---------\
- /       \        \              \              \
-record    \     length      Certificate    Certificate
-length     \                   chain         length
-            type: 11           length
-***************************/
-
-
-/************************
-CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
-     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
-     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
-- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
-  /  |  \    \---------\    \    \                \----\   \-----\
- /       \        \          \ Certificate           \        \
-record    \     length        \ Type 1 Id        Certificate   \
-length     \             Certificate         Authorities length \
-            type: 13     Types length                         Certificate Authority
-                                                                      length
-*********************/
 
 array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
 {
