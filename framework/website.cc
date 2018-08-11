@@ -2,29 +2,21 @@
 #include<sstream>
 #include<cstring>
 #include<iostream>
+#include<experimental/filesystem>
 #include"util.h"
 #include"server.h"
 #include"website.h"
 using namespace std;
+using namespace std::experimental::filesystem;
 
 map<string, string> WebSite::fileNhtml_;
 WebSite::WebSite()
 {
-	const char *load[] = {"html", "js", "css", "jpg", "png", "jpeg"};
-	for(auto& a : getdir(".")) {//read html files in the current directory
-		size_t pos = a.first.find_last_of('.');
-		if(pos != string::npos) {
-			string ext = a.first.substr(pos+1);
-			bool ok = false;
-			for(auto* s : load) if(s == ext) ok = true;
-			if(ok) {
-				cout << "loading " << a.first << endl;
-				string s; char c;
-				ifstream f(a.first);
-				while(f >> noskipws >> c) s += c;
-				fileNhtml_[a.first] = s;
-			}
-		}
+	for(const path& a : directory_iterator{"www"}) {//directory entry has operator path
+		ifstream f(a.string()); string s; char c;
+		while(f >> noskipws >> c) s += c;
+		fileNhtml_[a.filename()] = s;
+		cout << "loading " << a.filename() << endl;
 	}
 }
 
