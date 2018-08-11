@@ -194,7 +194,7 @@ length     \                  version           SessionId              \
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-			char cert[sizeof(certificate)];
+			char cert[sizeof(certificate)];//cert.h
 		} r;
 		memcpy(r.cert, certificate, sizeof(certificate));
 		r.h2.handshake_type = 0x0b;

@@ -1,4 +1,5 @@
-const char certificate[] = R"cert(Certificate:
+const char certificate[] = R"cert(
+Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 1 (0x1)
