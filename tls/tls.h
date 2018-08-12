@@ -195,7 +195,7 @@ length     \                  version           SessionId              \
 			TLS_header h1;
 			Handshake_header h2;
 			char cert[sizeof(certificate)];//cert.h
-		} r;
+		}__attribute__((packed)) r;
 		memcpy(r.cert, certificate, sizeof(certificate));
 		r.h2.handshake_type = 0x0b;
 		mpz2bnd(sizeof(r), r.h2.length, r.h2.length+3);
