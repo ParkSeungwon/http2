@@ -1,6 +1,7 @@
 #pragma once
 #include"crypt.h"
 #include"cert.h"//include const char certificate[] <- certheadergen.cpp
+#pragma pack(1)
 /*********************
                TLS Handshake
 
@@ -50,7 +51,7 @@ struct TLS_header {
 	uint8_t content_type = 0x16;  // 0x17 for Application Data, 0x16 handshake
 	uint8_t version[2] = {0x03, 0x03};      // 0x0303 for TLS 1.2
 	uint8_t length[2] = {0, 0};       // length of encrypted_data
-} __attribute__((packed));
+} ;
 /*********************************
 Record Protocol format
 
@@ -93,7 +94,7 @@ The TLS Record header comprises three fields, necessary to allow the higher laye
 struct Handshake_header {
 	uint8_t handshake_type;
 	uint8_t length[3] = {0,0,0};
-} __attribute__((packed));
+} ;
 /***********************
 Handshake Protocol format
 
@@ -140,7 +141,7 @@ struct Hello_header {
 	uint8_t session_id[32];
 	uint8_t cipher_suite[2] = {0x00, 0x33};
 	uint8_t compression = 0;
-} __attribute__((packed));
+} ;
 
 
 class TLS
@@ -156,7 +157,7 @@ public:
 			TLS_header h1;
 			Handshake_header h2;
 			Hello_header h3;
-		}__attribute__((packed)) r;
+		} r;
 
 		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
 		r.h2.length[2] = sizeof(Hello_header);
@@ -195,7 +196,7 @@ length     \                  version           SessionId              \
 			TLS_header h1;
 			Handshake_header h2;
 			char cert[sizeof(certificate)];//cert.h
-		}__attribute__((packed)) r;
+		} r;
 		memcpy(r.cert, certificate, sizeof(certificate));
 		r.h2.handshake_type = 0x0b;
 		mpz2bnd(sizeof(r), r.h2.length, r.h2.length+3);
@@ -250,7 +251,7 @@ length     \             Certificate         Authorities length \
 			TLS_header h1;
 			Handshake_header h2;
 			uint8_t p[32], g[32], ya[32], sign[256];
-		}__attribute__((packed)) r;
+		} r;
 
 		r.h1.length[0] = 1;//256
 		r.h1.length[1] = sizeof(Handshake_header) + 96;
@@ -319,7 +320,7 @@ key exchange parameters.
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-		}__attribute__((packed)) r;
+		} r;
 
 		r.h2.handshake_type = 14;
 		r.h1.length[1] = sizeof(Handshake_header);
@@ -350,7 +351,7 @@ length     \
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-		}__attribute__((packed)) r;
+		} r;
 
 		r.h1.length[1] = sizeof(Handshake_header);
 		r.h2.handshake_type = 16;
@@ -369,3 +370,4 @@ private:
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
 	static RSA rsa_;
 };
+#pragma pack()
