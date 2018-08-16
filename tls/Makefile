@@ -11,3 +11,4 @@ all : $(OBJ) $(MAIN_OBJ)
 
 ../obj/%.x : %.cpp
 	$(CC) $(INCLUDE) $(CFLAG) $< -o $@
+
