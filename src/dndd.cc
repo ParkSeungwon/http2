@@ -2,7 +2,7 @@
 #include<fstream>
 #include<regex>
 #include"dndd.h"
-#include"util.h"
+#include"database/util.h"
 using namespace std;
 
 DnDD::DnDD()

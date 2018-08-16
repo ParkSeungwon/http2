@@ -4,8 +4,9 @@
 #include<regex>
 #include<iomanip>
 #include<gmpxx.h>
-#include"crypt.h"
-#include"server.h"
+#include"tls/crypt.h"
+#include"framework/server.h"
+#include"tls/tls.h"
 using namespace std;
 
 string get_certificate_core(istream& is);
@@ -100,4 +101,9 @@ TEST_CASE("array init") {
 //	for(int i=0; i<10; i++) REQUIRE(b[i] == 0);//this is not true
 }
 
-
+TEST_CASE("certificate func") {
+	TLS t;
+	auto a = t.server_certificate();
+	cout << "certificate" << endl;
+	for(int i=0; i<100; i++) cout << hex << +a.cert[i];
+}

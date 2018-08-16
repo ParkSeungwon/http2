@@ -1,5 +1,5 @@
-#include"mysqldata.h"
-#include"bootstrap.h"
+#include"database/mysqldata.h"
+#include"framework/bootstrap.h"
 
 class DnDD : public BootStrapSite
 {

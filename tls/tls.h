@@ -50,7 +50,7 @@ Application Data Protocol: It takes arbitrary data (application-layer data gener
 struct TLS_header {
 	uint8_t content_type = 0x16;  // 0x17 for Application Data, 0x16 handshake
 	uint8_t version[2] = {0x03, 0x03};      // 0x0303 for TLS 1.2
-	uint8_t length[2] = {0, 0};       // length of encrypted_data
+	uint8_t length[2] = {0, 4};       //length of encrypted_data, 4 : handshake size
 } ;
 /*********************************
 Record Protocol format
@@ -192,15 +192,17 @@ length     \                  version           SessionId              \
 ****************/
 
 	auto server_certificate() {
+		const int sz = sizeof(certificate);
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-			char cert[sizeof(certificate)];//cert.h
+			char cert[sz];//cert.h
 		} r;
-		memcpy(r.cert, certificate, sizeof(certificate));
+		for(int i=0; i<sz; i++) r.cert[i] = certificate[i];
+		//memcpy(r.cert, certificate, sz);
 		r.h2.handshake_type = 0x0b;
-		mpz2bnd(sizeof(r), r.h2.length, r.h2.length+3);
-		mpz2bnd(sizeof(r) + sizeof(Handshake_header), r.h1.length, r.h1.length+2);
+		mpz2bnd(sz, r.h2.length, r.h2.length+3);
+		mpz2bnd(sz + sizeof(Handshake_header), r.h1.length, r.h1.length+2);
 
 		return r;
 	}
@@ -323,7 +325,6 @@ key exchange parameters.
 		} r;
 
 		r.h2.handshake_type = 14;
-		r.h1.length[1] = sizeof(Handshake_header);
 		return r;
 	}
 /*****************************
@@ -353,7 +354,6 @@ length     \
 			Handshake_header h2;
 		} r;
 
-		r.h1.length[1] = sizeof(Handshake_header);
 		r.h2.handshake_type = 16;
 		return r;
 	}
