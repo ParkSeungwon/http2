@@ -1,34 +1,119 @@
 //http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session
-#include<fstream>
 #include<cstring>
 #include<iostream>
 #include<unistd.h>
 #include<arpa/inet.h>//htons
 #include<cassert>
 #include<initializer_list>
+#include<fstream>
 #include"tls.h"
 using namespace std;
 
 array<mpz_class, 3> get_keys(istream& is);
 mpz_class get_prvkey(istream& is);
-string get_certificate_core(istream& is);
+std::string get_certificate_core(std::istream& is);
 
 //static member initialization
 static mpz_class ze, zd, zK;//used in TLS constructor
-static int init_certificate()
+static vector<vector<unsigned char>> init_certificate()
 {
 	ifstream f2("p.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
 	ifstream f("pu.pem"); //generated with openssl genrsa 2048 > p.pem
 	auto [K, e, d] = get_keys(f2);
 	zK = K; ze = e; zd = d;
+	vector<vector<unsigned char>> vv;
+
+	for(string s; (s = get_certificate_core(f)) != "";) {
+		vector<unsigned char> v;
+		for(unsigned char c : base64_decode(s)) v.push_back(c);
+		vv.push_back(v);
+	}
+	return vv;
 }
-static int k = init_certificate();
+vector<vector<unsigned char>> TLS::certificates_ = init_certificate();
 RSA TLS::rsa_{ze, zd, zK};
 
 TLS::TLS(unsigned char* buffer)
 {//buffer = read buffer, buffer2 = write buffer
 	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
 }
+
+vector<unsigned char> TLS::to_byte(int k, int sz)
+{
+	vector<unsigned char> v(sz);
+	mpz2bnd(k, v.begin(), v.end());
+	return v;
+}
+
+vector<unsigned char> TLS::server_certificate()
+{
+	deque<unsigned char> r;
+	for(const auto &v : certificates_) {
+		for(unsigned char c : to_byte(v.size(), 3)) r.push_back(c);
+		for(unsigned char c : v) r.push_back(c);
+	}
+	for(int i=0; i<2; i++) {
+		auto v = to_byte(r.size(), 3);
+		r.insert(r.begin(), v.begin(), v.end());
+	}
+	r.push_front(0x0b);
+	auto v = to_byte(r.size(), 2);
+	r.insert(r.begin(), v.begin(), v.end());
+	r.push_front(3); r.push_front(3); r.push_front(0x16);
+	vector<unsigned char> rv;
+	for(unsigned char c : r) rv.push_back(c);
+	return rv;
+}
+
+/************************
+Structure of this message:
+
+opaque ASN.1Cert<1..2^24-1>;
+
+struct {
+	ASN.1Cert certificate_list<0..2^24-1>;
+} Certificate;
+
+Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+     | 11 |    |    |    |    |    |    |    |    |    |           |
+     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+  /  |  \    \---------\    \---------\    \---------\
+ /       \        \              \              \
+record    \     length      Certificate    Certificate
+length     \                   chain         length
+            type: 11           length
+***************************/
+
+
+/************************
+CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
+     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+  /  |  \    \---------\    \    \                \----\   \-----\
+ /       \        \          \ Certificate           \        \
+record    \     length        \ Type 1 Id        Certificate   \
+length     \             Certificate         Authorities length \
+            type: 13     Types length                         Certificate Authority
+                                                                      length
+*********************/
 
 void TLS::set_buf(void* p)
 {

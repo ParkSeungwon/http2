@@ -4,7 +4,6 @@
 #include<sstream>
 #include<fstream>
 #include"crypt.h"
-#include"tls.h"
 using namespace std;
 
 vector<unsigned char> base64_decode(string);

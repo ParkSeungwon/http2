@@ -19,6 +19,7 @@ HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
 	else cout << "binding" << endl;
 	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
 	else cout << "listening" << endl;
+	cout << "opening port " << outport << endl << "opening inner port " << inport << endl;
 } 
 	
 HTTPS::~HTTPS() {}
@@ -67,7 +68,7 @@ void HTTPS::connected(int client_fd)
 			write(client_fd, &a, sizeof(a));
 			cout << "server hello done" << endl;
 			auto b = t.server_certificate();
-			write(client_fd, &b, sizeof(b));
+			write(client_fd, b.data(), b.size());
 			cout << "server certificate " << endl;
 			auto c = t.server_key_exchange();
 			write(client_fd, &c, sizeof(c));

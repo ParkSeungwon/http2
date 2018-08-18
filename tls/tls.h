@@ -143,7 +143,6 @@ struct Hello_header {
 	uint8_t compression = 0;
 } ;
 
-
 class TLS
 {//this class just deals with memory structure -> decoupled from underlying algorithm
 public:
@@ -152,6 +151,11 @@ public:
 	std::vector<std::string> encode(std::string s);
 
 	std::array<unsigned char, 32> client_hello();
+	std::array<unsigned char, 64> client_key_exchange();
+	int	client_finished();
+	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
+	void set_buf(void* p);
+
 	auto server_hello(std::array<unsigned char, 32> id) {
 		struct {
 			TLS_header h1;
@@ -190,64 +194,7 @@ record    \     length        SSL/TLS              \ (if length > 0)  \   method
 length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
-
-	auto server_certificate() {
-		const int sz = sizeof(certificate);
-		struct {
-			TLS_header h1;
-			Handshake_header h2;
-			char cert[sz];//cert.h
-		} r;
-		for(int i=0; i<sz; i++) r.cert[i] = certificate[i];
-		//memcpy(r.cert, certificate, sz);
-		r.h2.handshake_type = 0x0b;
-		mpz2bnd(sz, r.h2.length, r.h2.length+3);
-		mpz2bnd(sz + sizeof(Handshake_header), r.h1.length, r.h1.length+2);
-
-		return r;
-	}
-
-/************************
-Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
-     | 11 |    |    |    |    |    |    |    |    |    |           |
-     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
-- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
-  /  |  \    \---------\    \---------\    \---------\
- /       \        \              \              \
-record    \     length      Certificate    Certificate
-length     \                   chain         length
-            type: 11           length
-***************************/
-
-
-/************************
-CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
-
-     |
-     |
-     |
-     |  Handshake Layer
-     |
-     |
-- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
-     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
-     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
-- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
-  /  |  \    \---------\    \    \                \----\   \-----\
- /       \        \          \ Certificate           \        \
-record    \     length        \ Type 1 Id        Certificate   \
-length     \             Certificate         Authorities length \
-            type: 13     Types length                         Certificate Authority
-                                                                      length
-*********************/
+	std::vector<unsigned char> server_certificate();
 	auto server_key_exchange() {
 		struct {
 			TLS_header h1;
@@ -346,8 +293,6 @@ record    \     length: 0
 length     \
             type: 14
 *********************/
-	std::array<unsigned char, 64> client_key_exchange();
-	int	client_finished();
 	auto server_finished() {
 		struct {
 			TLS_header h1;
@@ -357,17 +302,17 @@ length     \
 		r.h2.handshake_type = 16;
 		return r;
 	}
-	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
-	void set_buf(void* p);
 protected:
 	TLS_header *rec_received_;
 	AES server_aes_, client_aes_;
 	HMAC<SHA1> server_mac_, client_mac_;
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
+	static std::vector<std::vector<unsigned char>> certificates_;
 	int id_length_;
 private:
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
+	std::vector<unsigned char> to_byte(int k, int sz);
 	static RSA rsa_;
 };
 #pragma pack()

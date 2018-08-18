@@ -102,8 +102,4 @@ TEST_CASE("array init") {
 }
 
 TEST_CASE("certificate func") {
-	TLS t;
-	auto a = t.server_certificate();
-	cout << "certificate" << endl;
-	for(int i=0; i<100; i++) cout << hex << +a.cert[i];
 }
