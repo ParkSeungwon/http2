@@ -1,11 +1,4 @@
-all : tls/cert.h others
-
-tls/cert.h : pu.pem
-	echo "const char certificate[] = R\"cert(" > $@
-	cat $< >> $@
-	echo ")cert\";" >> $@
-
-others:
+all : 
 	incltouch.x
 	make -C src/
 	make -C framework/

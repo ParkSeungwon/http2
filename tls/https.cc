@@ -58,7 +58,7 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	TLS t;//TLS is decoupled from file descriptor
-	string s = recv();
+	string s = recv();//error
 	t.set_buf(s.data());
 	auto id = t.client_hello();
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake

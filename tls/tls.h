@@ -1,7 +1,7 @@
 #pragma once
 #include"crypt.h"
-#include"cert.h"//include const char certificate[] <- certheadergen.cpp
 #pragma pack(1)
+#define DH_KEY_SZ 128
 /*********************
                TLS Handshake
 
@@ -141,6 +141,7 @@ struct Hello_header {
 	uint8_t session_id[32];
 	uint8_t cipher_suite[2] = {0x00, 0x33};
 	uint8_t compression = 0;
+	uint8_t extension_length[2] = {0, 0};
 } ;
 
 class TLS
@@ -155,6 +156,7 @@ public:
 	int	client_finished();
 	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
 	void set_buf(void* p);
+	std::vector<unsigned char> server_certificate();
 
 	auto server_hello(std::array<unsigned char, 32> id) {
 		struct {
@@ -194,27 +196,34 @@ record    \     length        SSL/TLS              \ (if length > 0)  \   method
 length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
-	std::vector<unsigned char> server_certificate();
 	auto server_key_exchange() {
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-			uint8_t p[32], g[32], ya[32], sign[256];
+			uint8_t p_length[2] = {0, DH_KEY_SZ}, p[DH_KEY_SZ],
+					g_length[2] = {0, DH_KEY_SZ}, g[DH_KEY_SZ],
+					ya_length[2] = {0, DH_KEY_SZ}, ya[DH_KEY_SZ];
+			uint8_t signature_hash = 2, //SHA1
+					signature_sign = 1, //rsa
+					signature_length[2] = {1, 0}, sign[256];
+/*enum { none(0), md5(1), sha1(2), sha224(3), sha256(4), sha384(5), sha512(6), (255) } HashAlgorithm;
+enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 		} r;
 
-		r.h1.length[0] = 1;//256
-		r.h1.length[1] = sizeof(Handshake_header) + 96;
-		r.h2.length[1] = 1; r.h2.length[2] = 96;
+		const int k = 3 * DH_KEY_SZ + 266;
+		r.h1.length[0] = (k + sizeof(Handshake_header)) / 0x100;
+		r.h1.length[1] = (k + sizeof(Handshake_header)) % 0x100;
+		r.h2.length[1] = k / 0x100; r.h2.length[2] = k % 0x100;
 		r.h2.handshake_type = 12;
-		mpz2bnd(diffie_.p, r.p, r.p+32);
-		mpz2bnd(diffie_.g, r.g, r.g+32);
-		mpz2bnd(diffie_.ya, r.ya, r.ya+32);
+		mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
+		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
+		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
 
-		unsigned char a[160];
+		unsigned char a[64 + 3 * DH_KEY_SZ];
 		memcpy(a, client_random_.data(), 32);
 		memcpy(a + 32, server_random_.data(), 32);
-		memcpy(a + 64, r.p, 96);
-		auto b = server_mac_.hash(a, a + 160);
+		memcpy(a + 64, r.p, 3 * DH_KEY_SZ);
+		auto b = server_mac_.hash(a, a + 64 + 3 * DH_KEY_SZ);
 		auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
 		mpz2bnd(z, r.sign, r.sign + 256);
 
@@ -306,13 +315,12 @@ protected:
 	TLS_header *rec_received_;
 	AES server_aes_, client_aes_;
 	HMAC<SHA1> server_mac_, client_mac_;
-	DiffieHellman diffie_;
+	DiffieHellman<DH_KEY_SZ> diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
-	static std::vector<std::vector<unsigned char>> certificates_;
+	static std::vector<unsigned char> certificate_;
 	int id_length_;
 private:
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
-	std::vector<unsigned char> to_byte(int k, int sz);
 	static RSA rsa_;
 };
 #pragma pack()

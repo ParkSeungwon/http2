@@ -66,7 +66,7 @@ TEST_CASE("c++17 []") {
 
 array<mpz_class, 3> get_pubkeys(istream& is);
 TEST_CASE("get_pubkey") {
-	ifstream f("pu.pem");
+	ifstream f("cert.pem");
 	auto [a,b,c] = get_pubkeys(f);
 	cout << "pubkey : "  << hex << a << endl << b << endl << c << endl;
 	cout << hex << powm(c, b, a);

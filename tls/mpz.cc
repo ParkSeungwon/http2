@@ -38,7 +38,11 @@ mpz_class random_prime(unsigned byte)
 	uniform_int_distribution<> di(0, 0xff);
 	random_device rd;
 	for(int i=0; i<byte; i++) arr[i] = di(rd);
-	return nextprime(bnd2mpz(arr, arr+byte));//a little hole : over 0xffffffffffff
+	auto z = nextprime(bnd2mpz(arr, arr+byte));//a little hole : over 0xffffffffffff
+	stringstream ss; ss << "0x";
+	for(int i=0; i<byte; i++) ss << "ff";
+	if(z > mpz_class{ss.str()}) return random_prime(byte);
+	else return z;
 }
 
 mpz_class powm(mpz_class base, mpz_class exp, mpz_class mod) 

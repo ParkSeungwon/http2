@@ -15,10 +15,16 @@ std::string get_certificate_core(std::istream& is);
 
 //static member initialization
 static mpz_class ze, zd, zK;//used in TLS constructor
-static vector<vector<unsigned char>> init_certificate()
+static vector<unsigned char> to_byte(int k, int sz)
 {
-	ifstream f2("p.pem");//openssl req -x509 -days 1000 -new -key p.pem -out pu.pem
-	ifstream f("pu.pem"); //generated with openssl genrsa 2048 > p.pem
+	vector<unsigned char> v(sz);
+	mpz2bnd(k, v.begin(), v.end());
+	return v;
+}
+static vector<unsigned char> init_certificate()
+{
+	ifstream f2("key.pem");//generated with openssl genrsa 2048 > key.pem
+	ifstream f("cert.pem");//openssl req -x509 -days 1000 -new -key key.pem -out cert.pem
 	auto [K, e, d] = get_keys(f2);
 	zK = K; ze = e; zd = d;
 	vector<vector<unsigned char>> vv;
@@ -28,27 +34,9 @@ static vector<vector<unsigned char>> init_certificate()
 		for(unsigned char c : base64_decode(s)) v.push_back(c);
 		vv.push_back(v);
 	}
-	return vv;
-}
-vector<vector<unsigned char>> TLS::certificates_ = init_certificate();
-RSA TLS::rsa_{ze, zd, zK};
 
-TLS::TLS(unsigned char* buffer)
-{//buffer = read buffer, buffer2 = write buffer
-	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
-}
-
-vector<unsigned char> TLS::to_byte(int k, int sz)
-{
-	vector<unsigned char> v(sz);
-	mpz2bnd(k, v.begin(), v.end());
-	return v;
-}
-
-vector<unsigned char> TLS::server_certificate()
-{
 	deque<unsigned char> r;
-	for(const auto &v : certificates_) {
+	for(const auto &v : vv) {
 		for(unsigned char c : to_byte(v.size(), 3)) r.push_back(c);
 		for(unsigned char c : v) r.push_back(c);
 	}
@@ -60,9 +48,23 @@ vector<unsigned char> TLS::server_certificate()
 	auto v = to_byte(r.size(), 2);
 	r.insert(r.begin(), v.begin(), v.end());
 	r.push_front(3); r.push_front(3); r.push_front(0x16);
-	vector<unsigned char> rv;
-	for(unsigned char c : r) rv.push_back(c);
-	return rv;
+
+	v.clear();
+	for(unsigned char c : r) v.push_back(c);
+	return v;
+}
+vector<unsigned char> TLS::certificate_ = init_certificate();
+RSA TLS::rsa_{ze, zd, zK};
+
+
+TLS::TLS(unsigned char* buffer)
+{//buffer = read buffer, buffer2 = write buffer
+	rec_received_ = reinterpret_cast<TLS_header*>(buffer);
+}
+
+vector<unsigned char> TLS::server_certificate()
+{
+	return certificate_;
 }
 
 /************************
@@ -211,13 +213,13 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	Handshake_header* ph = (Handshake_header*)(rec_received_+1);
 	assert(ph->handshake_type == 16);
 
-	unsigned char rand[64], pre[32];
-	auto pre_master_secret = diffie_.yb(bnd2mpz((unsigned char*)ph+1, (unsigned char*)(ph+1)+32));
-	mpz2bnd(pre_master_secret, pre, pre+32);
+	unsigned char rand[64], pre[128];
+	auto pre_master_secret = diffie_.yb(bnd2mpz((unsigned char*)ph+1, (unsigned char*)(ph+1)+128));
+	mpz2bnd(pre_master_secret, pre, pre + 128);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	PRF<SHA1> prf;
-	prf.secret(pre, pre+32);
+	PRF<SHA2> prf;
+	prf.secret(pre, pre + 128);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
 	auto master_secret = prf.get_n_byte(48);
@@ -282,16 +284,16 @@ The mission of this protocol is to properly encapsulate the data coming from the
 vector<string> TLS::encode(string s) {
 	struct {
 		TLS_header h1;
-		uint8_t random[16];
+		//uint8_t random[16];
 	}__attribute__((packed)) r;
 	r.h1.content_type = 0x17;
 	vector<string> vs;
 
 	const int chunk_size = (2 << 14) - 1024 - 20;//cut string into 2^14
 	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
-		auto z = random_prime(16);
-		mpz2bnd(z, r.random, r.random + 16);
-		server_aes_.iv(z);
+//		auto z = random_prime(16);
+//		mpz2bnd(z, r.random, r.random + 16);
+//		server_aes_.iv(z);
 
 		int len = sq * chunk_size > s.size() ? s.size() % chunk_size : chunk_size;
 		int padding_length = 16 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
@@ -304,7 +306,7 @@ vector<string> TLS::encode(string s) {
 		s2 += string(padding_length, padding_length);
 		auto v = server_aes_.encrypt((uint8_t*)s2.data()+6,//exclude first 6 bytes
 				(uint8_t*)s2.data() + s2.size());
-		string s3 = s2.substr(0, 6) + string{(const char*)r.random, 16} +
+		string s3 = s2.substr(0, 6) + //string{(const char*)r.random, 16} +
 			string{v.begin(), v.end()};
 		vs.push_back(s3);
 	}

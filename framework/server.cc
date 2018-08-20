@@ -50,7 +50,7 @@ TlsLayer::TlsLayer(int port) : Vrecv{port}
 
 int TlsLayer::get_full_length(const string& s)
 {
-	return s[3] * 0x100 + s[4] + 5;
+	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
 }
 
 Client::Client(string ip, int port) : Http(port)

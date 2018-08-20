@@ -192,12 +192,20 @@ the following bytes:
 73 6C 69 74 68 79 20 74 6F 76 65 73
 *******************************/
 
-class DiffieHellman
+template<unsigned Ksz> class DiffieHellman
 {
 public:
-	DiffieHellman();
-	mpz_class yb(mpz_class pub_key);
+	DiffieHellman() {
+		p = random_prime(Ksz), q = random_prime(Ksz / 2), h = random_prime(Ksz / 2);
+		g = powm(h, (p-1)/q, p);
+		ya = random_prime(Ksz);
+		xa = powm(g, xa, p);
+	}
+	mpz_class yb(mpz_class pub_key) {
+		return K = powm(yb_ = pub_key, xa, p);
+	}
 	mpz_class p, g, ya, yb_;
+
 protected:
 	mpz_class q, h, K, xa;
 };

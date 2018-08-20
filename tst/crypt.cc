@@ -45,7 +45,7 @@ Encryption key: 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
 ******************/
 
 TEST_CASE("Diffie hellman test") {
-	DiffieHellman dh;//send dh.ya, dh.p, dh.g and get yb
+	DiffieHellman<32> dh;//send dh.ya, dh.p, dh.g and get yb
 	auto K = dh.yb(random_prime(32));//Bob's pub key
 }
 

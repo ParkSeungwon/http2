@@ -1,1 +1,0 @@
-static const int certificate_sz = 989;
