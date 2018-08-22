@@ -6,8 +6,11 @@
 #include<wolfssl/wolfcrypt/aes.h>
 #include<wolfssl/wolfcrypt/sha.h>
 #include<wolfssl/wolfcrypt/sha256.h>
+#define WOLFSSL_SHA512
+#include<wolfssl/wolfcrypt/sha512.h>
 #include<json/json.h>
 
+Json::Value pem2json(std::istream& is);
 Json::Value der2json(std::istream& is);
 std::string base64_encode(std::vector<unsigned char> v);
 std::vector<unsigned char> base64_decode(std::string s);
@@ -18,6 +21,7 @@ mpz_class powm(mpz_class base, mpz_class exp, mpz_class mod);
 template<typename It> void mpz2bnd(mpz_class n, It begin, It end);
 template<typename It> mpz_class bnd2mpz(It begin, It end);
 void print(unsigned char* r, const char* c);
+std::string get_certificate_core(std::istream& is);
 
 class AES
 {
@@ -73,6 +77,25 @@ public:
 	}
 protected:
 	Sha256 sha_;
+};
+
+class SHA5
+{//sha512
+public:
+	static const int block_size = 128;
+	static const int output_size = 64;
+	SHA5() {
+		if(wc_InitSha512(&sha_)) std::cerr << "wc_init_sha512_failed" << std::endl;
+	}
+	template<class It>
+	std::array<unsigned char, output_size> hash(const It begin, const It end) {
+		std::array<unsigned char, output_size> r;
+		wc_Sha512Update(&sha_, &*begin, end - begin);
+		wc_Sha512Final(&sha_, r.data());
+		return r;
+	}
+protected:
+	Sha512 sha_;
 };
 
 

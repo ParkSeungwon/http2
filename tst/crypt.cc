@@ -64,6 +64,15 @@ TEST_CASE("sha1") {
 	**************/
 }
 
+TEST_CASE("sha512") {
+	SHA5 sha;
+	unsigned char c[] = "abc";
+	auto v = sha.hash(c, c+3);
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"});
+}
+/*"abc"
+SHA-512	ddaf35a193617aba cc417349ae204131 12e6fa4e89a97ea2 0a9eeee64b55d39a 2192992a274fc1a8 36ba3c23a3feebbd 454d4423643ce80e 2a9ac94fa54ca49f
+*/
 TEST_CASE("rsa") {
 	RSA rsa{32};
 	RSA rsa2{

@@ -1,7 +1,7 @@
 #pragma once
 #include"crypt.h"
 #pragma pack(1)
-#define DH_KEY_SZ 128
+#define DH_KEY_SZ 256
 /*********************
                TLS Handshake
 
@@ -200,9 +200,9 @@ length     \                  version           SessionId              \
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
-			uint8_t p_length[2] = {0, DH_KEY_SZ}, p[DH_KEY_SZ],
-					g_length[2] = {0, DH_KEY_SZ}, g[DH_KEY_SZ],
-					ya_length[2] = {0, DH_KEY_SZ}, ya[DH_KEY_SZ];
+			uint8_t p_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 0x100}, p[DH_KEY_SZ],
+					g_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 0x100}, g[DH_KEY_SZ],
+					ya_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 256}, ya[DH_KEY_SZ];
 			uint8_t signature_hash = 2, //SHA1
 					signature_sign = 1, //rsa
 					signature_length[2] = {1, 0}, sign[256];
@@ -219,11 +219,13 @@ enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
 		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
 
-		unsigned char a[64 + 3 * DH_KEY_SZ];
+		unsigned char a[64 + 3 * DH_KEY_SZ + 6];
 		memcpy(a, client_random_.data(), 32);
 		memcpy(a + 32, server_random_.data(), 32);
-		memcpy(a + 64, r.p, 3 * DH_KEY_SZ);
-		auto b = server_mac_.hash(a, a + 64 + 3 * DH_KEY_SZ);
+		memcpy(a + 64, r.p_length, 6 + 3 * DH_KEY_SZ);
+//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
+		SHA1 sha;
+		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
 		auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
 		mpz2bnd(z, r.sign, r.sign + 256);
 

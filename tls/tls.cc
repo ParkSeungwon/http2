@@ -27,6 +27,9 @@ static vector<unsigned char> init_certificate()
 	ifstream f("cert.pem");//openssl req -x509 -days 1000 -new -key key.pem -out cert.pem
 	auto [K, e, d] = get_keys(f2);
 	zK = K; ze = e; zd = d;
+//	mpz_class m{"0x23232"};
+//	auto z = powm(m, e, K);
+//	assert(m == powm(z, d, K));
 	vector<vector<unsigned char>> vv;
 
 	for(string s; (s = get_certificate_core(f)) != "";) {
@@ -210,16 +213,23 @@ array<unsigned char, 64> TLS::use_key(vector<unsigned char> keys)
 
 array<unsigned char, 64> TLS::client_key_exchange()//16
 {//return client_aes_key + server_aes_key
-	Handshake_header* ph = (Handshake_header*)(rec_received_+1);
-	assert(ph->handshake_type == 16);
+	struct H {
+		TLS_header h1;
+		Handshake_header h2;
+		uint8_t key_sz[2];
+		uint8_t pub_key[];
+	}__attribute__((packed));
+	H* ph = (H*)rec_received_;;
+	assert(ph->h2.handshake_type == 16);
 
-	unsigned char rand[64], pre[128];
-	auto pre_master_secret = diffie_.yb(bnd2mpz((unsigned char*)ph+1, (unsigned char*)(ph+1)+128));
-	mpz2bnd(pre_master_secret, pre, pre + 128);
+	unsigned char rand[64], pre[DH_KEY_SZ];
+	int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
+	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+	mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
 	PRF<SHA2> prf;
-	prf.secret(pre, pre + 128);
+	prf.secret(pre, pre + DH_KEY_SZ);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
 	auto master_secret = prf.get_n_byte(48);

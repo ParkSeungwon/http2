@@ -102,4 +102,9 @@ TEST_CASE("array init") {
 }
 
 TEST_CASE("certificate func") {
+	stringstream ss; unsigned char c = 25, d = 2;
+	ss << c; ss << d;
+	ss >> c; ss >> d;
+	REQUIRE(c == 25);
+	REQUIRE(d == 2);
 }

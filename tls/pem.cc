@@ -46,11 +46,11 @@ array<mpz_class, 3> get_pubkeys(istream& is)
 {//array = {RSA modulus, RSA exponent, sha sign}
 	auto jv = pem2json(is);
 	auto [a, b] = process_bitstring(jv[0][0][6][1].asString());//asString remove " ";
-	auto c = str2mpz(jv[0][2].asString());
-	return {a, b, c};
+	auto c = str2mpz(jv[0][2].asString());//signature
+	return {a, b, c};//K, e, signature
 }
 
-array<mpz_class, 3> get_keys(istream& is)
+array<mpz_class, 3> get_keys(istream& is)//is key.pem
 {
 	auto jv = pem2json(is);
 	return {str2mpz(jv[0][1].asString()), str2mpz(jv[0][2].asString()), str2mpz(jv[0][3].asString())};
