@@ -16,10 +16,10 @@ string get_certificate_core(istream& is) {//if certificate has no -----END hang.
 }
 
 mpz_class str2mpz(string s) {
-	vector<unsigned char> v; stringstream ss; char c;
-	ss << s; 
-	while(ss >> setw(2) >> s >> c) v.push_back(stoi(s, nullptr, 16));
-	return bnd2mpz(v.begin(), v.end());
+	stringstream ss; char c; string r = "0x";
+	ss << s;
+	while(ss >> setw(2) >> s >> c) r += s;
+	return mpz_class{r};
 }
 
 Json::Value pem2json(istream& is) {

@@ -226,6 +226,7 @@ enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 //		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
 		SHA1 sha;
 		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
+//		1ffff padding should be added in front of b;
 		auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
 		mpz2bnd(z, r.sign, r.sign + 256);
 

@@ -29,8 +29,8 @@ TEST_CASE("embed picture & html with base64 encode") {
 
 TEST_CASE("pem test") {
 	ifstream f("server-cert.pem");
-	cout << pem2json(f) << endl;//first
-	cout << pem2json(f) << endl;//second that sponsor first
+	pem2json(f);//first
+	pem2json(f);//second that sponsor first
 }
 
 TEST_CASE("mpz2bnd") {
@@ -63,14 +63,6 @@ TEST_CASE("c++17 []") {
 //	for(auto a : z) cout << hex << a << endl;
 //	cout << powm(z[2], z[1], z[3]) << endl;
 //}
-
-array<mpz_class, 3> get_pubkeys(istream& is);
-TEST_CASE("get_pubkey") {
-	ifstream f("cert.pem");
-	auto [a,b,c] = get_pubkeys(f);
-	cout << "pubkey : "  << hex << a << endl << b << endl << c << endl;
-	cout << hex << powm(c, b, a);
-}
 
 TEST_CASE("regex") {
 	string s = "Last-Modified: Sat, 23 Sep 2017 01:42:37 GMT\n"
