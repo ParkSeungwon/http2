@@ -1,4 +1,5 @@
 #pragma once
+#include<deque>
 #include"crypt.h"
 #pragma pack(1)
 #define DH_KEY_SZ 256
@@ -226,8 +227,20 @@ enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 //		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
 		SHA1 sha;
 		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
+		std::deque<unsigned char> dq{b.begin(), b.end()};
+		unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04};
+		dq.push_front(dq.size());
+		dq.insert(dq.begin(), d, d + 16);
+		dq.push_front(dq.size());
+		dq.push_front(0x30);
+		dq.push_front(0x00);
+		while(dq.size() < 254) dq.push_front(0xff);
+		dq.push_front(0x01);
+		dq.push_front(0x00);
+//		3031300d060960864801650304020105000420
+//		3051300d060960864801650304020305000440		
 //		1ffff padding should be added in front of b;
-		auto z = rsa_.sign(bnd2mpz(b.begin(), b.end()));//SIGPE
+		auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
 		mpz2bnd(z, r.sign, r.sign + 256);
 
 		return r;
