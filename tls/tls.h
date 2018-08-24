@@ -1,8 +1,7 @@
 #pragma once
-#include<deque>
 #include"crypt.h"
 #pragma pack(1)
-#define DH_KEY_SZ 256
+#define DH_KEY_SZ 128
 /*********************
                TLS Handshake
 
@@ -158,6 +157,7 @@ public:
 	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
 	void set_buf(void* p);
 	std::vector<unsigned char> server_certificate();
+	void change_cipher_spec();
 
 	auto server_hello(std::array<unsigned char, 32> id) {
 		struct {
@@ -204,7 +204,7 @@ length     \                  version           SessionId              \
 			uint8_t p_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 0x100}, p[DH_KEY_SZ],
 					g_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 0x100}, g[DH_KEY_SZ],
 					ya_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 256}, ya[DH_KEY_SZ];
-			uint8_t signature_hash = 2, //SHA1
+			uint8_t signature_hash = 6, //SHA512
 					signature_sign = 1, //rsa
 					signature_length[2] = {1, 0}, sign[256];
 /*enum { none(0), md5(1), sha1(2), sha224(3), sha256(4), sha384(5), sha512(6), (255) } HashAlgorithm;
@@ -219,30 +219,7 @@ enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 		mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
 		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
 		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
-
-		unsigned char a[64 + 3 * DH_KEY_SZ + 6];
-		memcpy(a, client_random_.data(), 32);
-		memcpy(a + 32, server_random_.data(), 32);
-		memcpy(a + 64, r.p_length, 6 + 3 * DH_KEY_SZ);
-//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
-		SHA1 sha;
-		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
-		std::deque<unsigned char> dq{b.begin(), b.end()};
-		unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04};
-		dq.push_front(dq.size());
-		dq.insert(dq.begin(), d, d + 16);
-		dq.push_front(dq.size());
-		dq.push_front(0x30);
-		dq.push_front(0x00);
-		while(dq.size() < 254) dq.push_front(0xff);
-		dq.push_front(0x01);
-		dq.push_front(0x00);
-//		3031300d060960864801650304020105000420
-//		3051300d060960864801650304020305000440		
-//		1ffff padding should be added in front of b;
-		auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
-		mpz2bnd(z, r.sign, r.sign + 256);
-
+		generate_signature(r.p_length, r.sign);
 		return r;
 	}
 /************************
@@ -338,5 +315,6 @@ protected:
 private:
 	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
 	static RSA rsa_;
+	void generate_signature(unsigned char*, unsigned char*);
 };
 #pragma pack()

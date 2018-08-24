@@ -66,7 +66,7 @@ TEST_CASE("get_pubkey") {
 array<mpz_class, 2> process_bitstring(string s);
 TEST_CASE("DHA-RSA server key exchange signature verify") {
 	stringstream ss;
-	const char sign[] = "86:b1:16:16:2e:f6:e1:aa:cd:f3:56:d7:42:7f:3a:48:f4:2f:d0:70:5c:23:a3:6c:5e:9a:05:19:3d:9b:c5:4e:0c:3e:bd:ea:af:29:40:d7:73:88:8f:46:80:71:40:55:6d:c5:27:de:45:6c:47:1d:7a:be:23:75:25:53:02:44:57:3c:ea:c9:ee:1c:26:10:27:c9:f5:fa:b5:33:d5:76:00:45:3c:89:2e:55:51:fc:47:52:88:41:ff:f2:10:dc:eb:64:59:ce:93:71:cc:2c:20:5b:c1:53:5b:c0:0a:bf:7f:dc:6a:10:e3:17:58:9b:3e:be:20:de:a5:77:c3:c6:18:16:7d:80:d9:71:f1:6e:ca:5e:ac:f0:00:34:52:c2:a3:95:c9:b7:6d:06:82:8c:4c:bc:92:a2:6d:99:a2:b3:d3:f5:a9:39:c9:35:74:12:ca:ae:9d:db:c0:a2:23:5d:6a:bc:12:65:c6:9c:5a:2e:27:19:32:29:58:ec:0e:1c:f1:8d:21:3e:c7:ac:59:fb:fd:dc:6a:1a:2a:b3:65:d1:56:45:c1:fa:3a:cf:5c:79:71:75:3a:8b:ba:9b:83:09:4d:cd:7d:e0:b7:07:34:00:51:af:61:4a:68:55:55:59:0a:23:4f:d4:2c:79:70:47:dc:84:f9:f4:bd:c2:46:1e";
+//	const char sign[] = "86:b1:16:16:2e:f6:e1:aa:cd:f3:56:d7:42:7f:3a:48:f4:2f:d0:70:5c:23:a3:6c:5e:9a:05:19:3d:9b:c5:4e:0c:3e:bd:ea:af:29:40:d7:73:88:8f:46:80:71:40:55:6d:c5:27:de:45:6c:47:1d:7a:be:23:75:25:53:02:44:57:3c:ea:c9:ee:1c:26:10:27:c9:f5:fa:b5:33:d5:76:00:45:3c:89:2e:55:51:fc:47:52:88:41:ff:f2:10:dc:eb:64:59:ce:93:71:cc:2c:20:5b:c1:53:5b:c0:0a:bf:7f:dc:6a:10:e3:17:58:9b:3e:be:20:de:a5:77:c3:c6:18:16:7d:80:d9:71:f1:6e:ca:5e:ac:f0:00:34:52:c2:a3:95:c9:b7:6d:06:82:8c:4c:bc:92:a2:6d:99:a2:b3:d3:f5:a9:39:c9:35:74:12:ca:ae:9d:db:c0:a2:23:5d:6a:bc:12:65:c6:9c:5a:2e:27:19:32:29:58:ec:0e:1c:f1:8d:21:3e:c7:ac:59:fb:fd:dc:6a:1a:2a:b3:65:d1:56:45:c1:fa:3a:cf:5c:79:71:75:3a:8b:ba:9b:83:09:4d:cd:7d:e0:b7:07:34:00:51:af:61:4a:68:55:55:59:0a:23:4f:d4:2c:79:70:47:dc:84:f9:f4:bd:c2:46:1e";
 	for(unsigned char c : tr(cert)) ss << noskipws << c;
 	Json::Value jv = der2json(ss);
 	const auto &[K, e] = process_bitstring(jv[0][0][6][1].asString());
@@ -83,12 +83,12 @@ TEST_CASE("DHA-RSA server key exchange signature verify") {
 	v.push_back(0); v.push_back(128);
 	for(unsigned char c : tr(ya)) v.push_back(c);
 	
-	SHA1 sha;
+	SHA5 sha;
 	auto ar = sha.hash(v.begin(), v.end());
 	auto h = bnd2mpz(ar.begin(), ar.end());
 
 	string s = "0x1";
-	for(int i=0; i<SHA1::output_size; i++) s += "00";
+	for(int i=0; i<SHA5::output_size; i++) s += "00";
 	REQUIRE(signature_decode % mpz_class{s} == h);
 
 	auto ss2 = get_padding(signature_decode);

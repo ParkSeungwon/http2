@@ -15,12 +15,13 @@ Vrecv::Vrecv(int port) : Tcpip{port}
 
 string Vrecv::recv()
 {
-	string s = Tcpip::recv();
+	string s;
+	if(trailing_string_ == "") s = Tcpip::recv();
 	s = trailing_string_ + s;
 	trailing_string_ = "";
 	int len = get_full_length(s);
 	if(len < s.size()) {//two packet once
-		trailing_string_ = s.substr(len + 1);
+		trailing_string_ = s.substr(len);
 		s = s.substr(0, len);
 	} else if(len > s.size()) {//more to come
 		for(int n; s.size() < len; s += string(buffer, n))

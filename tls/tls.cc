@@ -6,6 +6,7 @@
 #include<cassert>
 #include<initializer_list>
 #include<fstream>
+#include<deque>
 #include"tls.h"
 using namespace std;
 
@@ -338,10 +339,12 @@ struct {
 	};
 } GenericBlockCipher;
 *********************/
+
+void TLS::change_cipher_spec() {}
 int TLS::client_finished()
 {
 	Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
-	assert(ph->handshake_type == 20);
+//	assert(ph->handshake_type == 20);
 	return 7;
 }
 /***********************
@@ -364,3 +367,28 @@ length     \
             type: 20
 *********************/
 
+void TLS::generate_signature(unsigned char *p_length, unsigned char *p) {
+	unsigned char a[64 + 3 * DH_KEY_SZ + 6];
+	memcpy(a, client_random_.data(), 32);
+	memcpy(a + 32, server_random_.data(), 32);
+	memcpy(a + 64, p_length, 6 + 3 * DH_KEY_SZ);
+	//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
+	SHA5 sha;
+	auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
+	deque<unsigned char> dq{b.begin(), b.end()};
+	unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+						 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04};
+	dq.push_front(dq.size());
+	dq.insert(dq.begin(), d, d + 16);
+	dq.push_front(dq.size());
+	dq.push_front(0x30);
+	dq.push_front(0x00);
+	while(dq.size() < 254) dq.push_front(0xff);
+	dq.push_front(0x01);
+	dq.push_front(0x00);
+	//		3031300d060960864801650304020105000420
+	//		3051300d060960864801650304020305000440		
+	//		1ffff padding should be added in front of b;
+	auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
+	mpz2bnd(z, p, p + 256);
+}

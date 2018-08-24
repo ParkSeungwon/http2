@@ -66,7 +66,7 @@ void HTTPS::connected(int client_fd)
 			id = new_id();
 			auto a = t.server_hello(id);
 			write(client_fd, &a, sizeof(a));
-			cout << "server hello done" << endl;
+			cout << "server hello" << endl;
 			auto b = t.server_certificate();
 			write(client_fd, b.data(), b.size());
 			cout << "server certificate " << endl;
@@ -80,6 +80,10 @@ void HTTPS::connected(int client_fd)
 			t.set_buf(s.data());
 			idNchannel_[id]->keys = t.client_key_exchange();
 			cout << "client key exchange" << endl;
+			s = recv();
+			t.set_buf(s.data());
+			t.change_cipher_spec();
+			cout << "change cipher spec" << endl;
 			s = recv();
 			t.set_buf(s.data());
 			t.client_finished();
