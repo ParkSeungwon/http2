@@ -301,7 +301,7 @@ length     \
 			Handshake_header h2;
 		} r;
 
-		r.h2.handshake_type = 16;
+		r.h2.handshake_type = 20;
 		return r;
 	}
 protected:
