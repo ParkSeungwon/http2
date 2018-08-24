@@ -199,20 +199,80 @@ Extensions
 
 
 
-array<unsigned char, 64> TLS::use_key(array<unsigned char, 64> keys)
+array<unsigned char, 32 * 4> TLS::use_key(array<unsigned char, 32 * 4> keys)
 {
-	client_aes_.key(keys.data());
-	server_aes_.key(keys.data() + 32);
+	unsigned char *p = keys.data();
+	client_mac_.key(p, p + 32);
+	server_mac_.key(p + 32, p + 64);
+	client_aes_.key(p + 64);//AES128 key size 16
+	server_aes_.key(p + 80);
+	client_aes_.iv(p + 96);
+	server_aes_.iv(p + 112);
 	return keys;
 }
-array<unsigned char, 64> TLS::use_key(vector<unsigned char> keys)
-{
-	array<unsigned char, 64> r;
-	for(int i=0; i<64; i++) r[i] = keys[i];
+array<unsigned char, 32 * 4> TLS::use_key(vector<unsigned char> keys)
+{//just pass to upper function
+	array<unsigned char, 32 * 4> r;
+	for(int i=0; i < 32 * 4; i++) r[i] = keys[i];
 	return use_key(r);
 }
+/******
+ Then, the key_block is
+partitioned as follows:
+client_write_MAC_key[SecurityParameters.mac_key_length] 32?
+server_write_MAC_key[SecurityParameters.mac_key_length]
+client_write_key[SecurityParameters.enc_key_length] 32
+server_write_key[SecurityParameters.enc_key_length]
+client_write_IV[SecurityParameters.fixed_iv_length] 16
+server_write_IV[SecurityParameters.fixed_iv_length]
+Currently, the client_write_IV and server_write_IV are only generated
+for implicit nonce techniques as described in Section 3.2.1 of
+[AEAD].
+Implementation note: The currently defined cipher suite which
+requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
+byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
+material.
 
-array<unsigned char, 64> TLS::client_key_exchange()//16
+Immediately after sending a ChangeCipherSpec message, the client will send an encrypted Handshake Finished message to ensure the server is able to understand the agreed-upon encryption. The message will contain a hash of all previous handshake messages, along with the string “client finished”. This is very important because it verifies that no part of the handshake has been tampered with by an attacker. It also includes the random bytes that were sent by the client and server, protecting it from replay attacks where the attacker pretends to be one of the parties.
+
+Once received by the server, the server will acknowledge with its own ChangeCipherSpec message, followed immediately by its own Finished message verifying the contents of the handshake.
+
+Note: if you have been following along in Wireshark, there appears to be a bug with Client/Server Finish messages when using AES_GCM that mislabels them.
+Application Data
+
+Finally, we can begin to transmit encrypted data! It may seem like a lot of work, but that is soon to pay off. The only remaining step is to discuss how the data is encrypted with AES_GCM, an AEAD cipher.
+
+First, we generate a MAC, key, and IV for both the client and the server using our master secret and the PRF definition from earlier.
+
+key_data = PRF(master_secret, "key expansion", server_random + client_random);
+
+Since we are using 128-bit AES with SHA-256, we’ll pull out the following key data:
+
+// client_write_MAC_key = key_data[0..31]
+// server_write_MAC_key = key_data[32..63]
+client_write_key = key_data[64..79]
+server_write_key = key_data[80..95]
+client_write_IV = key_data[96..99]
+server_write_IV = key_data[100..103]
+
+For AEAD ciphers like GCM, we don’t need the MAC keys, but we offset them anyways. The client and server also get different keys to prevent a replay attack where a client message it looped back to it.
+
+We also construct additional_data and an 8-byte nonce, both of which are sent with the encrypted data. In the past, it was thought that the nonce could be either random or just a simple session counter. However, recent research found many sites using random nonces for AES_GCM were vulnerable to nonce reuse attacks, so it’s best to just use an incrementing counter tied to the session.
+
+additional_data = sequence_num + record_type + tls_version + length
+nonce = <random_8_bytes>
+
+Finally, we can encrypt our data with AES GCM!
+
+encrypted = AES_GCM(client_write_key, client_write_IV+nonce, <DATA>, additional_data)
+
+and the server can read it with
+
+<DATA> = AES_GCM(client_write_key, client_write_IV+nonce, encrypted, additional_data)
+
+******/
+
+array<unsigned char, 32*4> TLS::client_key_exchange()//16
 {//return client_aes_key + server_aes_key
 	struct H {
 		TLS_header h1;
@@ -229,7 +289,7 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	PRF<SHA2> prf;
+	PRF<SHA1> prf;
 	prf.secret(pre, pre + DH_KEY_SZ);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
@@ -239,7 +299,7 @@ array<unsigned char, 64> TLS::client_key_exchange()//16
 	prf.secret(master_secret.begin(), master_secret.end());
 	prf.label("key expansion");
 	prf.seed(rand, rand+64);
-	return use_key(prf.get_n_byte(64));
+	return use_key(prf.get_n_byte(32 * 4));
 }
 /*****************************
 ClientKeyExchange: It provides the server with the necessary data to generate the keys for the symmetric encryption. The message format is very similar to ServerKeyExchange, since it depends mostly on the key exchange algorithm picked by the server.
@@ -259,14 +319,16 @@ ClientKeyExchange: It provides the server with the necessary data to generate th
 record    \     length
 length     \
             type: 16
+
+until enough output has been generated.
 **********************/
 
 string TLS::decode()
 {
-	assert(rec_received_->content_type == 0x17);
+//	assert(rec_received_->content_type == 0x17);
 	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
-	client_aes_.iv(p);
-	auto v = client_aes_.decrypt(p + 16, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
+//	client_aes_.iv(p);
+	auto v = client_aes_.decrypt(p, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
 	return {v.data(), v.data() + v.size() - 20 - v.back()};//v.back() == padding length
 }
 /***********************
@@ -343,6 +405,8 @@ struct {
 void TLS::change_cipher_spec() {}
 int TLS::client_finished()
 {
+	string s = decode();
+	for(unsigned char c : s) cout << noskipws << hex << +c << ' ';
 	Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
 //	assert(ph->handshake_type == 20);
 	return 7;

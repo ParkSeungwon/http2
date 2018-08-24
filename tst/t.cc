@@ -92,7 +92,8 @@ TEST_CASE("array init") {
 	for(auto c : array<int, 10>{}) REQUIRE(c == 0);
 //	for(int i=0; i<10; i++) REQUIRE(b[i] == 0);//this is not true
 	string s = "abcde";
-	cout << s.substr(0, 2) << s.substr(3);
+	REQUIRE("ab" == s.substr(0, 2));
+	REQUIRE("de" == s.substr(3));
 }
 
 TEST_CASE("certificate func") {

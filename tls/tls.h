@@ -152,9 +152,9 @@ public:
 	std::vector<std::string> encode(std::string s);
 
 	std::array<unsigned char, 32> client_hello();
-	std::array<unsigned char, 64> client_key_exchange();
+	std::array<unsigned char, 128> client_key_exchange();
 	int	client_finished();
-	std::array<unsigned char, 64> use_key(std::array<unsigned char, 64> keys);
+	std::array<unsigned char, 128> use_key(std::array<unsigned char, 128> keys);
 	void set_buf(void* p);
 	std::vector<unsigned char> server_certificate();
 	void change_cipher_spec();
@@ -302,7 +302,13 @@ length     \
 		} r;
 
 		r.h2.handshake_type = 20;
-		return r;
+		char *p = (char*)&r;
+		string s{p, p + sizeof(r)};
+		string x = encode(s)[0];
+		vector<unsigned char> v{0x16, 3, 3, 0};
+		v.push_back(x.size());
+		for(unsigned char c : x) v.push_back(c);
+		return v;
 	}
 protected:
 	TLS_header *rec_received_;
@@ -313,7 +319,7 @@ protected:
 	static std::vector<unsigned char> certificate_;
 	int id_length_;
 private:
-	std::array<unsigned char, 64> use_key(std::vector<unsigned char> keys);
+	std::array<unsigned char, 128> use_key(std::vector<unsigned char> keys);
 	static RSA rsa_;
 	void generate_signature(unsigned char*, unsigned char*);
 };
