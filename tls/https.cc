@@ -82,14 +82,18 @@ void HTTPS::connected(int client_fd)
 			cout << "client key exchange" << endl;
 			s = recv();
 			t.set_buf(s.data());
-			t.change_cipher_spec();
+			if(t.get_content_type() == 20) {
+				cout << "change cipher spec" << endl;
+				s = recv();
+				t.set_buf(s.data());
+				t.client_finished();
+				cout << "client finished" << endl;
+			}
+			auto f = t.change_cipher_spec();
+			write(client_fd, &f, sizeof(f));
 			cout << "change cipher spec" << endl;
-			s = recv();
-			t.set_buf(s.data());
-			t.client_finished();
-			cout << "client finished" << endl;
 			auto e = t.server_finished();
-			write(client_fd, &e, sizeof(e));
+			write(client_fd, e.data(), e.size());
 			cout << "server finished" << endl;
 		} catch(const char* e) {
 			cerr << e << endl; 

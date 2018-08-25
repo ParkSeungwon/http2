@@ -323,13 +323,20 @@ length     \
 until enough output has been generated.
 **********************/
 
+int TLS::get_content_type() {
+	return rec_received_->content_type;
+}
+
 string TLS::decode()
 {
 //	assert(rec_received_->content_type == 0x17);
 	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
 //	client_aes_.iv(p);
 	auto v = client_aes_.decrypt(p, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
-	return {v.data(), v.data() + v.size() - 20 - v.back()};//v.back() == padding length
+	for(int i=v.back(); i>0; i--) v.pop_back();
+	auto a = client_mac_.hash(v.begin(), v.end() - 20);
+	for(int i=0; i<20; i++) cout << +a[i] << ':' << v[v.size() - 20 + i];
+	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************
 ApplicationData Protocol format
@@ -402,7 +409,7 @@ struct {
 } GenericBlockCipher;
 *********************/
 
-void TLS::change_cipher_spec() {}
+void TLS::change_cipher_spec(int) {}
 int TLS::client_finished()
 {
 	string s = decode();

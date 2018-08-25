@@ -157,7 +157,8 @@ public:
 	std::array<unsigned char, 128> use_key(std::array<unsigned char, 128> keys);
 	void set_buf(void* p);
 	std::vector<unsigned char> server_certificate();
-	void change_cipher_spec();
+	void change_cipher_spec(int);
+	int get_content_type();
 
 	auto server_hello(std::array<unsigned char, 32> id) {
 		struct {
@@ -295,6 +296,16 @@ record    \     length: 0
 length     \
             type: 14
 *********************/
+	auto change_cipher_spec() {
+		struct {
+			TLS_header h1;
+			uint8_t spec = 1;
+		} r;
+		r.h1.content_type = 20;
+		r.h1.length[1] = 1;
+		return r;
+	}
+
 	auto server_finished() {
 		struct {
 			TLS_header h1;
@@ -303,9 +314,9 @@ length     \
 
 		r.h2.handshake_type = 20;
 		char *p = (char*)&r;
-		string s{p, p + sizeof(r)};
-		string x = encode(s)[0];
-		vector<unsigned char> v{0x16, 3, 3, 0};
+		std::string s{p, p + sizeof(r)};
+		std::string x = encode(s)[0];
+		std::vector<unsigned char> v{0x16, 3, 3, 0};
 		v.push_back(x.size());
 		for(unsigned char c : x) v.push_back(c);
 		return v;
