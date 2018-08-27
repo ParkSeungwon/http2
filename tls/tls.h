@@ -1,7 +1,8 @@
 #pragma once
 #include"crypt.h"
 #pragma pack(1)
-#define DH_KEY_SZ 128
+#define DH_KEY_SZ 256
+#define KEY_SZ 104
 /*********************
                TLS Handshake
 
@@ -152,9 +153,9 @@ public:
 	std::vector<std::string> encode(std::string s);
 
 	std::array<unsigned char, 32> client_hello();
-	std::array<unsigned char, 128> client_key_exchange();
+	std::array<unsigned char, KEY_SZ> client_key_exchange();
 	int	client_finished();
-	std::array<unsigned char, 128> use_key(std::array<unsigned char, 128> keys);
+	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
 	void set_buf(void* p);
 	std::vector<unsigned char> server_certificate();
 	void change_cipher_spec(int);
@@ -325,12 +326,12 @@ protected:
 	TLS_header *rec_received_;
 	AES server_aes_, client_aes_;
 	HMAC<SHA1> server_mac_, client_mac_;
-	DiffieHellman<DH_KEY_SZ> diffie_;
+	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	static std::vector<unsigned char> certificate_;
 	int id_length_;
 private:
-	std::array<unsigned char, 128> use_key(std::vector<unsigned char> keys);
+	std::array<unsigned char, KEY_SZ> use_key(std::vector<unsigned char> keys);
 	static RSA rsa_;
 	void generate_signature(unsigned char*, unsigned char*);
 };

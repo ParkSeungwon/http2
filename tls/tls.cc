@@ -199,29 +199,29 @@ Extensions
 
 
 
-array<unsigned char, 32 * 4> TLS::use_key(array<unsigned char, 32 * 4> keys)
+array<unsigned char, KEY_SZ> TLS::use_key(array<unsigned char, KEY_SZ> keys)
 {
 	unsigned char *p = keys.data();
-	client_mac_.key(p, p + 32);
-	server_mac_.key(p + 32, p + 64);
-	client_aes_.key(p + 64);//AES128 key size 16
-	server_aes_.key(p + 80);
-	client_aes_.iv(p + 96);
-	server_aes_.iv(p + 112);
+	client_mac_.key(p, p + 20);
+	server_mac_.key(p + 20, p + 40);
+	client_aes_.key(p + 40);//AES128 key size 16
+	server_aes_.key(p + 56);
+	client_aes_.iv(p + 72);
+	server_aes_.iv(p + 88);
 	return keys;
 }
-array<unsigned char, 32 * 4> TLS::use_key(vector<unsigned char> keys)
+array<unsigned char, KEY_SZ> TLS::use_key(vector<unsigned char> keys)
 {//just pass to upper function
-	array<unsigned char, 32 * 4> r;
-	for(int i=0; i < 32 * 4; i++) r[i] = keys[i];
+	array<unsigned char, KEY_SZ> r;
+	for(int i=0; i < KEY_SZ; i++) r[i] = keys[i];
 	return use_key(r);
 }
 /******
  Then, the key_block is
 partitioned as follows:
-client_write_MAC_key[SecurityParameters.mac_key_length] 32?
+client_write_MAC_key[SecurityParameters.mac_key_length] 20
 server_write_MAC_key[SecurityParameters.mac_key_length]
-client_write_key[SecurityParameters.enc_key_length] 32
+client_write_key[SecurityParameters.enc_key_length] 16
 server_write_key[SecurityParameters.enc_key_length]
 client_write_IV[SecurityParameters.fixed_iv_length] 16
 server_write_IV[SecurityParameters.fixed_iv_length]
@@ -270,9 +270,10 @@ and the server can read it with
 
 <DATA> = AES_GCM(client_write_key, client_write_IV+nonce, encrypted, additional_data)
 
+
 ******/
 
-array<unsigned char, 32*4> TLS::client_key_exchange()//16
+array<unsigned char, KEY_SZ> TLS::client_key_exchange()//16
 {//return client_aes_key + server_aes_key
 	struct H {
 		TLS_header h1;
@@ -285,11 +286,11 @@ array<unsigned char, 32*4> TLS::client_key_exchange()//16
 
 	unsigned char rand[64], pre[DH_KEY_SZ];
 	int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
-	auto pre_master_secret = diffie_.yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+	auto pre_master_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
 	mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	PRF<SHA1> prf;
+	PRF<SHA2> prf;
 	prf.secret(pre, pre + DH_KEY_SZ);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
@@ -299,7 +300,7 @@ array<unsigned char, 32*4> TLS::client_key_exchange()//16
 	prf.secret(master_secret.begin(), master_secret.end());
 	prf.label("key expansion");
 	prf.seed(rand, rand+64);
-	return use_key(prf.get_n_byte(32 * 4));
+	return use_key(prf.get_n_byte(KEY_SZ));
 }
 /*****************************
 ClientKeyExchange: It provides the server with the necessary data to generate the keys for the symmetric encryption. The message format is very similar to ServerKeyExchange, since it depends mostly on the key exchange algorithm picked by the server.
@@ -331,11 +332,12 @@ string TLS::decode()
 {
 //	assert(rec_received_->content_type == 0x17);
 	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
-//	client_aes_.iv(p);
-	auto v = client_aes_.decrypt(p, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
-	for(int i=v.back(); i>0; i--) v.pop_back();
+	client_aes_.iv(p);
+	auto v = client_aes_.decrypt(p + 16, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
+	cout << "v size " << v.size() << ", back " << +v.back() << endl;
+	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
 	auto a = client_mac_.hash(v.begin(), v.end() - 20);
-	for(int i=0; i<20; i++) cout << +a[i] << ':' << v[v.size() - 20 + i];
+	for(int i=0; i<20; i++) cout << +a[i] << ':' << +v[v.size() - 20 + i] << endl;
 	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************

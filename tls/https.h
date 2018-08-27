@@ -2,6 +2,7 @@
 #include<map>
 #include<chrono>
 #include"framework/server.h"
+#include"tls.h"
 
 class HTTPS : public TlsLayer
 {//use thread for multiple connection, should overload read func-> return exact one req
@@ -13,7 +14,7 @@ public:
 protected:
 	struct Channel : public Client, std::chrono::system_clock::time_point {
 		Channel(int port);
-		std::array<unsigned char, 32 * 4> keys;
+		std::array<unsigned char, KEY_SZ> keys;
 	};
 	std::map<std::array<unsigned char, 32>, HTTPS::Channel*> idNchannel_;
 	int inport_, time_out;

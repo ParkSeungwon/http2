@@ -44,10 +44,33 @@ Encryption key: 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
 
 ******************/
 
-TEST_CASE("Diffie hellman test") {
-	DiffieHellman<32> dh;//send dh.ya, dh.p, dh.g and get yb
-	auto K = dh.yb(random_prime(32));//Bob's pub key
+TEST_CASE("Diffie hellman key exchange test") {
+	struct DH : DiffieHellman {
+		DH() = default;
+		DH(mpz_class p, mpz_class g, mpz_class ya) : DiffieHellman(p, g, ya) {}
+		auto get_K() {return K;}//for test drag protected member out
+	};
+	DH A;
+	DH B{A.p, A.g, A.ya};
+	A.set_yb(B.yb);
+	REQUIRE(A.get_K() == B.get_K());
 }
+/******
+P = da3a8085d372437805de95b88b675122f575df976610c6a844de99f1df82a06848bf7a42f18895c97402e81118e01a00d0855d51922f434c022350861d58ddf60d65bc6941fc6064b147071a4c30426d82fc90d888f94990267c64beef8c304a4b2b26fb93724d6a9472fa16bc50c5b9b8b59afb62cfe9ea3ba042c73a6ade35
+Q = f2ca7621eb250aa5f22cef1907011295defc50a7
+G = a51883e9ac0539859df3d25c716437008bb4bd8ec4786eb4bc643299daef5e3e5af5863a6ac40a597b83a27583f6a658d408825105b16d31b6ed088fc623f648fd6d95e9cefcb0745763cddf564c87bcf4ba7928e74fd6a3080481f588d535e4c026b58a21e1e5ec412ff241b436043e29173f1dc6cb943c09742de989547288
+
+For now, don't worry about Q. The G and P values have the same meaning as g and p in RFC 2631. These values are used for the next 24 test vectors in the file. The first such vector is listed as:
+
+COUNT = 0
+XstatCAVS = 42c6ee70beb7465928a1efe692d2281b8f7b53d6
+YstatCAVS = 5a7890f6d20ee9c7162cd84222cb0c7cb5b4f29244a58fc95327fc41045f476fb3da42fca76a1dd59222a7a7c3872d5af7d8dc254e003eccdb38f291619c51911df2b6ed67d0b459f4bc25819c0078777b9a1a24c72e7c037a3720a1edad5863ef5ac75ce816869c820859558d5721089ddbe331f55bef741396a3bbf85c6c1a
+XstatIUT = 54081a8fef2127a1f22ed90440b1b09c331d0614
+YstatIUT = 0b92af0468b841ea5de4ca91d895b5e922245421de57ed7a88d2de41610b208e8e233705f17b2e9eb91914bad2fa87f0a58519a7da2980bc06e7411c925a6050526bd86e621505e6f610b63fdcd9afcfaa96bd087afca44d9197cc35b559f731357a5b979250c0f3a254bb8165f5072156e3fd6f9a6e69bcf4b4578f78b3bde7
+Z = 8d8f4175e16e15a42eb9099b11528af88741cc206a088971d3064bb291eda608d1600bff829624db258fd15e95d96d3e74c6be3232afe5c855b9c59681ce13b7aea9ff2b16707e4c02f0e82bf6dadf2149ac62630f6c62dea0e505e3279404da5ffd5a088e8474ae0c8726b8189cb3d2f04baffe700be849df9f91567fc2ebb8
+CAVSHashZZ = eb99e77ac2272c7a2ee70c59375ac4d167312c20
+Result = P (0 - Correct)
+********/
 
 TEST_CASE("sha1") {
 	SHA1 sha;
