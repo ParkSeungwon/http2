@@ -1,8 +1,8 @@
 #pragma once
 #include"crypt.h"
 #pragma pack(1)
-#define DH_KEY_SZ 256
-#define KEY_SZ 104
+#define DH_KEY_SZ 128
+#define KEY_SZ 72
 /*********************
                TLS Handshake
 

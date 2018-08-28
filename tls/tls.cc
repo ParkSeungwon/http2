@@ -196,9 +196,6 @@ Extensions
 
 ***************************/
 
-
-
-
 array<unsigned char, KEY_SZ> TLS::use_key(array<unsigned char, KEY_SZ> keys)
 {
 	unsigned char *p = keys.data();
@@ -206,8 +203,8 @@ array<unsigned char, KEY_SZ> TLS::use_key(array<unsigned char, KEY_SZ> keys)
 	server_mac_.key(p + 20, p + 40);
 	client_aes_.key(p + 40);//AES128 key size 16
 	server_aes_.key(p + 56);
-	client_aes_.iv(p + 72);
-	server_aes_.iv(p + 88);
+//	client_aes_.iv(p + 72);
+//	server_aes_.iv(p + 88);
 	return keys;
 }
 array<unsigned char, KEY_SZ> TLS::use_key(vector<unsigned char> keys)
@@ -337,7 +334,8 @@ string TLS::decode()
 	cout << "v size " << v.size() << ", back " << +v.back() << endl;
 	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
 	auto a = client_mac_.hash(v.begin(), v.end() - 20);
-	for(int i=0; i<20; i++) cout << +a[i] << ':' << +v[v.size() - 20 + i] << endl;
+	for(int i=0; i<20; i++)
+		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
 	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************

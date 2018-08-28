@@ -214,3 +214,8 @@ Salt = a0ba9f936cda311827a6f796ffd5198c
 Label = 74657374206c6162656c
 Output = e3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66
 ***************************/
+
+TEST_CASE("mpz_sizeinbase") {
+	mpz_class a{"0x123213"};
+	cout <<"123213 size is " << mpz_sizeinbase(a.get_mpz_t(), 16) << endl;
+}
