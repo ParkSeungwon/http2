@@ -13,7 +13,7 @@ RSA::RSA(int key_size)
 
 RSA::RSA(mpz_class e, mpz_class d, mpz_class K)
 {
-	this->e = e;
+	this->e = e;//public key
 	this->d = d;
 	this->K = K;
 }	

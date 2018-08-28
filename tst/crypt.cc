@@ -219,3 +219,13 @@ TEST_CASE("mpz_sizeinbase") {
 	mpz_class a{"0x123213"};
 	cout <<"123213 size is " << mpz_sizeinbase(a.get_mpz_t(), 16) << endl;
 }
+
+array<mpz_class, 3> get_keys(istream& is);
+TEST_CASE("get pub key from certificate") {
+	ifstream f("key.pem");
+	auto [K, e, d] = get_keys(f);
+	RSA rsa{e, d, K};
+	auto m = mpz_class{"0x3241243"};
+	auto z = rsa.encode(m);
+	REQUIRE(rsa.decode(z) == m);
+}

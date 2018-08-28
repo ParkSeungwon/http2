@@ -132,9 +132,8 @@ array<unsigned char, 32> TLS::client_hello()
 	assert(rec_received_->content_type == 0x16);//handshake
 	assert(ph->handshake_type == 1);//client hello
 	Hello_header* p = (Hello_header*)(ph + 1);
-	memcpy(client_random_.data(), p->unix_time, 32);//unix time + 28 random
-	memcpy(server_random_.data(), p->unix_time, 4);
-	mpz2bnd(random_prime(28), server_random_.data() + 4, server_random_.end());
+	memcpy(client_random_.data(), p->random, 32);//unix time + 28 random
+	mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 	if(id_length_ = p->session_id_length) {
 		memcpy(session_id_.data(), p->session_id, id_length_);
 		return session_id_;
@@ -270,6 +269,37 @@ and the server can read it with
 
 ******/
 
+array<unsigned char, KEY_SZ> TLS::rsa_client_key_exchange()//16
+{//return client_aes_key + server_aes_key
+	struct H {
+		TLS_header h1;
+		Handshake_header h2;
+		uint8_t key_sz[2];
+		uint8_t pub_key[];
+	}__attribute__((packed));
+	H* ph = (H*)rec_received_;;
+	assert(ph->h2.handshake_type == 16);
+
+	unsigned char rand[64], pre[48];
+	int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
+	auto pre_master_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+	cout << hex << rsa_.decode(bnd2mpz(ph->pub_key, ph->pub_key + key_size)) << endl;
+	cout << "pre master : " << hex << pre_master_secret << endl;
+	mpz2bnd(pre_master_secret, pre, pre + 48);
+	memcpy(rand, client_random_.data(), 32);
+	memcpy(rand + 32, server_random_.data(), 32);
+	PRF<SHA2> prf;
+	prf.secret(pre, pre + 48);
+	prf.seed(rand, rand + 64);
+	prf.label("master secret");
+	auto master_secret = prf.get_n_byte(48);
+	memcpy(rand, server_random_.data(), 32);
+	memcpy(rand + 32, client_random_.data(), 32);
+	prf.secret(master_secret.begin(), master_secret.end());
+	prf.label("key expansion");
+	prf.seed(rand, rand + 64);
+	return use_key(prf.get_n_byte(KEY_SZ));
+}
 array<unsigned char, KEY_SZ> TLS::client_key_exchange()//16
 {//return client_aes_key + server_aes_key
 	struct H {

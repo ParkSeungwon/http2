@@ -136,11 +136,10 @@ This is the most complex subprotocol within TLS. The specification focuses prima
 
 struct Hello_header {
 	uint8_t version[2] = {0x03, 0x03};//length is from here
-	uint8_t unix_time[4];
-	uint8_t random[28];
+	uint8_t random[32];
 	uint8_t session_id_length = 32;
 	uint8_t session_id[32];
-	uint8_t cipher_suite[2] = {0x00, 0x33};
+	uint8_t cipher_suite[2] = {0x00, 0x2f};
 	uint8_t compression = 0;
 	uint8_t extension_length[2] = {0, 0};
 } ;
@@ -154,6 +153,7 @@ public:
 
 	std::array<unsigned char, 32> client_hello();
 	std::array<unsigned char, KEY_SZ> client_key_exchange();
+	std::array<unsigned char, KEY_SZ> rsa_client_key_exchange();
 	int	client_finished();
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
 	void set_buf(void* p);
@@ -171,7 +171,7 @@ public:
 		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
 		r.h2.length[2] = sizeof(Hello_header);
 		r.h2.handshake_type = 2;
-		memcpy(r.h3.unix_time, server_random_.data(), 32);
+		memcpy(r.h3.random, server_random_.data(), 32);
 		memcpy(r.h3.session_id, id.data(), 32);
 		return r;
 	}
