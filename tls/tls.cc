@@ -132,9 +132,8 @@ array<unsigned char, 32> TLS::client_hello()
 	assert(rec_received_->content_type == 0x16);//handshake
 	assert(ph->handshake_type == 1);//client hello
 	Hello_header* p = (Hello_header*)(ph + 1);
-	memcpy(client_random_.data(), p->unix_time, 32);//unix time + 28 random
-	memcpy(server_random_.data(), p->unix_time, 4);
-	mpz2bnd(random_prime(28), server_random_.data() + 4, server_random_.end());
+	memcpy(client_random_.data(), p->random, 32);//unix time + 28 random
+	mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 	if(id_length_ = p->session_id_length) {
 		memcpy(session_id_.data(), p->session_id, id_length_);
 		return session_id_;
@@ -285,18 +284,20 @@ array<unsigned char, KEY_SZ> TLS::client_key_exchange()//16
 	int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
 	auto pre_master_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
 	mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
+	PRF<SHA2> prf;
+	int i = 0;
+	while(!pre[i]) i++;//strip preceding 0s
+	prf.secret(pre + i, pre + DH_KEY_SZ);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
-	PRF<SHA2> prf;
-	prf.secret(pre, pre + DH_KEY_SZ);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
 	auto master_secret = prf.get_n_byte(48);
-	memcpy(rand + 32, client_random_.data(), 32);
-	memcpy(rand, server_random_.data(), 32);
 	prf.secret(master_secret.begin(), master_secret.end());
+	memcpy(rand, server_random_.data(), 32);
+	memcpy(rand + 32, client_random_.data(), 32);
+	prf.seed(rand, rand + 64);
 	prf.label("key expansion");
-	prf.seed(rand, rand+64);
 	return use_key(prf.get_n_byte(KEY_SZ));
 }
 /*****************************
@@ -331,11 +332,11 @@ string TLS::decode()
 	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
 	client_aes_.iv(p);
 	auto v = client_aes_.decrypt(p + 16, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
-	cout << "v size " << v.size() << ", back " << +v.back() << endl;
-	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-	auto a = client_mac_.hash(v.begin(), v.end() - 20);
-	for(int i=0; i<20; i++)
-		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
+//	cout << "v size " << v.size() << ", back " << +v.back() << endl;
+//	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
+//	auto a = client_mac_.hash(v.begin(), v.end() - 20);
+//	for(int i=0; i<20; i++)
+//		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
 	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************
