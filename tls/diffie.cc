@@ -4,7 +4,7 @@ using namespace std;
 DiffieHellman::DiffieHellman(int bit_sz)
 {//server side
 	if(bit_sz == 2048) {
-		p = bnd2mpz(premade, premade + 256);
+		p = premade;
 		g = 2;
 	}
 	xa = random_prime(bit_sz / 8);

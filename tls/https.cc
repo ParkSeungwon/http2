@@ -85,7 +85,7 @@ void HTTPS::connected(int client_fd)
 				cout << "change cipher spec" << endl;
 				s = recv();
 				t.set_buf(s.data());
-				t.client_finished();
+//				t.client_finished();
 				cout << "client finished" << endl;
 			}
 			auto f = t.change_cipher_spec();

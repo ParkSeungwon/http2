@@ -332,11 +332,11 @@ string TLS::decode()
 	unsigned char* p = reinterpret_cast<unsigned char*>(rec_received_ + 1);
 	client_aes_.iv(p);
 	auto v = client_aes_.decrypt(p + 16, p + rec_received_->length[0] * 0x100 + rec_received_->length[1]);
-//	cout << "v size " << v.size() << ", back " << +v.back() << endl;
-//	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-//	auto a = client_mac_.hash(v.begin(), v.end() - 20);
-//	for(int i=0; i<20; i++)
-//		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
+	cout << "v size " << v.size() << ", back " << +v.back() << endl;
+	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
+	auto a = client_mac_.hash(v.begin(), v.end() - 20);
+	for(int i=0; i<20; i++)
+		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
 	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************
