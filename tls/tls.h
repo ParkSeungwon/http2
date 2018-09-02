@@ -165,14 +165,14 @@ public:
 			uint8_t compression = 0;
 			uint8_t extension_length[2] = {0, 0};
 		} r;
-		if constexpr(!SV) {
+		if constexpr(!SV) {//if client
 			r.h2.handshake_type = 1;
 			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 9;
 			r.h2.length[2] = sizeof(Hello_header) + 9;
 			mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 			memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 			return r;
-		} else {
+		} else {//server
 			H *p = (H*)rec_received_;
 			memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 			int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
@@ -499,12 +499,20 @@ length     \
 			H* ph = (H*)rec_received_;;
 			assert(ph->h2.handshake_type == 16);
 			int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
-			auto premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+			mpz_class premaster_secret;
+			if(support_dhe_) 
+				premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+			else premaster_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + key_size);
 			return use_key(derive_keys(premaster_secret));
 		} else {
 			r.h2.handshake_type = 16;
-			mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
-			return r;
+			if(support_dhe_) mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
+			else {
+				premaster_secret = random_prime(48);
+				mpz2bnd(premaster_secret, r.pub_key, r.pub_key + 48);
+				use_key(derive_keys(premaster_secret));
+				return r;
+			}
 		}
 	}
 /*****************************
@@ -595,7 +603,6 @@ and the server can read it with
 
 
 ******/
-
 	int get_content_type() {
 		return rec_received_->content_type;
 	}
@@ -642,11 +649,10 @@ private:
 	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret) 
 	{
 		unsigned char pre[DH_KEY_SZ], rand[64];
-		mpz2bnd(premaster_secret, pre, pre + DH_KEY_SZ);
+		int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
+		mpz2bnd(premaster_secret, pre, pre + sz);
 		PRF<SHA2> prf;
-		int i = 0;
-		while(!pre[i]) i++;//strip preceding 0s
-		prf.secret(pre + i, pre + DH_KEY_SZ);
+		prf.secret(pre, pre + sz);
 		memcpy(rand, client_random_.data(), 32);
 		memcpy(rand + 32, server_random_.data(), 32);
 		prf.seed(rand, rand + 64);
