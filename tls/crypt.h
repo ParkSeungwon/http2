@@ -14,6 +14,7 @@
 
 Json::Value pem2json(std::istream& is);
 Json::Value der2json(std::istream& is);
+std::array<mpz_class, 3> get_pubkeys(std::istream& is);
 std::string base64_encode(std::vector<unsigned char> v);
 std::vector<unsigned char> base64_decode(std::string s);
 template<typename... Args> void show(mpz_class a, Args... b);

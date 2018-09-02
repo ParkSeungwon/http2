@@ -47,7 +47,6 @@ Alert Protocol: Used for communicating exceptions and indicate potential problem
 
 Application Data Protocol: It takes arbitrary data (application-layer data generally), and feeds it through the secure channel.
 *******************/
-
 struct TLS_header {
 	uint8_t content_type = 0x16;  // 0x17 for Application Data, 0x16 handshake
 	uint8_t version[2] = {0x03, 0x03};      // 0x0303 for TLS 1.2
@@ -91,7 +90,6 @@ The TLS Record header comprises three fields, necessary to allow the higher laye
      TLS 1.1                   3,2  0x0302
      TLS 1.2                   3,3  0x0303
  *********************/
-
 struct Handshake_header {
 	uint8_t handshake_type;
 	uint8_t length[3] = {0,0,0};
@@ -132,17 +130,12 @@ This is the most complex subprotocol within TLS. The specification focuses prima
    CLIENT_KEY_EXCHANGE       16     0x10
    FINISHED                  20     0x14
 *******************/
-
-
 struct Hello_header {
 	uint8_t version[2] = {0x03, 0x03};//length is from here
 	uint8_t random[32];
 	uint8_t session_id_length = 32;
 	uint8_t session_id[32];
-	uint8_t cipher_suite[2] = {0x00, 0x33};
-	uint8_t compression = 0;
-	uint8_t extension_length[2] = {0, 0};
-} ;
+};
 
 template<bool SV = true> class TLS
 {//this class just deals with memory structure -> decoupled from underlying algorithm
@@ -157,7 +150,6 @@ public:
 	int	client_finished();
 	void change_cipher_spec(int);
 
-
 	void set_buf(void* p) {
 		rec_received_ = (TLS_header*)p;
 	}
@@ -168,17 +160,24 @@ public:
 			TLS_header h1;
 			Handshake_header h2;
 			Hello_header h3;
+			uint8_t cipher_suite_length[2] = {0, 4};
+			uint8_t cipher_suite[4] = {0x00, 0x33, 0x00, 0x2f};
+			uint8_t compression = 0;
+			uint8_t extension_length[2] = {0, 0};
 		} r;
 		if constexpr(!SV) {
 			r.h2.handshake_type = 1;
-			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
-			r.h2.length[2] = sizeof(Hello_header);
+			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 9;
+			r.h2.length[2] = sizeof(Hello_header) + 9;
 			mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 			memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 			return r;
 		} else {
 			H *p = (H*)rec_received_;
 			memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
+			int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
+			for(int i=0; i<len; i++)
+				if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
 			if(id_length_ = p->h3.session_id_length) {
 				memcpy(session_id_.data(), p->h3.session_id, id_length_);
 				return session_id_;
@@ -240,16 +239,19 @@ Extensions
                  Id          length
 
 ***************************/
-
 	auto server_hello(std::array<unsigned char, 32> id = {0,}) {
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
 			Hello_header h3;
+			uint8_t cipher_suite[2] = {0x00, 0x2f};
+			uint8_t compression = 0;
+			uint8_t extension_length[2] = {0, 0};
 		} r;
 		if constexpr(SV) {
-			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
-			r.h2.length[2] = sizeof(Hello_header);
+			if(support_dhe_) r.cipher_suite[1] = 0x33;
+			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 5;
+			r.h2.length[2] = sizeof(Hello_header) + 5;
 			r.h2.handshake_type = 2;
 			mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 			memcpy(r.h3.random, server_random_.data(), 32);
@@ -259,6 +261,7 @@ Extensions
 			H *p = (H*)rec_received_;
 			memcpy(server_random_.data(), p->h3.random, 32);
 			memcpy(session_id_.data(), p->h3.session_id, 32);
+			if(p->cipher_suite[1] == 0x33) support_dhe_ = true;
 		}
 	}
 /**************
@@ -285,7 +288,6 @@ record    \     length        SSL/TLS              \ (if length > 0)  \   method
 length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
-
 	auto server_certificate() {
 		if constexpr(SV) return certificate_;
 		else {
@@ -299,7 +301,7 @@ length     \                  version           SessionId              \
 			uint8_t *q = p->certificate_length[1];
 			for(int i=0; i < *q * 0x10000 + *(q+1) * 0x100 + *(q+2); i++) 
 				ss << std::noskipws << p->certificate[i];//first certificate
-			der2json(ss);
+			auto [K, e, sign] = get_pubkeys(ss);
 		}
 	}
 
@@ -330,8 +332,6 @@ record    \     length      Certificate    Certificate
 length     \                   chain         length
             type: 11           length
 ***************************/
-
-
 /************************
 CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
 
@@ -383,6 +383,7 @@ enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 					  g = bnd2mpz(q->g, q->g + DH_KEY_SZ),
 					  ya = bnd2mpz(q->ya, q->ya + DH_KEY_SZ);
 			diffie_ = DiffieHellman{p, g, ya};
+			use_key(derive_keys(diffie_.K));
 		}	
 	}
 /************************
@@ -435,9 +436,10 @@ key exchange parameters.
 			TLS_header h1;
 			Handshake_header h2;
 		} r;
-
-		r.h2.handshake_type = 14;
-		return r;
+		if constexpr(SV) {
+			r.h2.handshake_type = 14;
+			return r;
+		}
 	}
 /*****************************
 ServerHelloDone: This message finishes the server part of the handshake negotiation. It does not carry any additional information.
@@ -484,36 +486,26 @@ length     \
 		return v;
 	}
 
-	std::array<unsigned char, KEY_SZ> client_key_exchange()//16
+	auto client_key_exchange()//16
 	{//return client_aes_key + server_aes_key
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
-			uint8_t key_sz[2];
-			uint8_t pub_key[];
-		}__attribute__((packed));
-		H* ph = (H*)rec_received_;;
-		assert(ph->h2.handshake_type == 16);
+			uint8_t key_sz[2] = {0, DH_KEY_SZ};
+			uint8_t pub_key[DH_KEY_SZ];
+		} r;
 
-		unsigned char rand[64], pre[DH_KEY_SZ];
-		int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
-		auto pre_master_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
-		mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
-		PRF<SHA2> prf;
-		int i = 0;
-		while(!pre[i]) i++;//strip preceding 0s
-		prf.secret(pre + i, pre + DH_KEY_SZ);
-		memcpy(rand, client_random_.data(), 32);
-		memcpy(rand + 32, server_random_.data(), 32);
-		prf.seed(rand, rand + 64);
-		prf.label("master secret");
-		auto master_secret = prf.get_n_byte(48);
-		prf.secret(master_secret.begin(), master_secret.end());
-		memcpy(rand, server_random_.data(), 32);
-		memcpy(rand + 32, client_random_.data(), 32);
-		prf.seed(rand, rand + 64);
-		prf.label("key expansion");
-		return use_key(prf.get_n_byte(KEY_SZ));
+		if constexpr(SV) {
+			H* ph = (H*)rec_received_;;
+			assert(ph->h2.handshake_type == 16);
+			int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
+			auto premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+			return use_key(derive_keys(premaster_secret));
+		} else {
+			r.h2.handshake_type = 16;
+			mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
+			return r;
+		}
 	}
 /*****************************
 ClientKeyExchange: It provides the server with the necessary data to generate the keys for the symmetric encryption. The message format is very similar to ServerKeyExchange, since it depends mostly on the key exchange algorithm picked by the server.
@@ -619,6 +611,7 @@ protected:
 
 private:
 	static RSA rsa_;
+	bool support_dhe_ = false;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p) {
 		unsigned char a[64 + 3 * DH_KEY_SZ + 6];
@@ -645,11 +638,29 @@ private:
 		auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
 		mpz2bnd(z, p, p + 256);
 	}
-	std::array<unsigned char, KEY_SZ> use_key(std::vector<unsigned char> keys)
-	{//just pass to upper function
+
+	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret) 
+	{
+		unsigned char pre[DH_KEY_SZ], rand[64];
+		mpz2bnd(premaster_secret, pre, pre + DH_KEY_SZ);
+		PRF<SHA2> prf;
+		int i = 0;
+		while(!pre[i]) i++;//strip preceding 0s
+		prf.secret(pre + i, pre + DH_KEY_SZ);
+		memcpy(rand, client_random_.data(), 32);
+		memcpy(rand + 32, server_random_.data(), 32);
+		prf.seed(rand, rand + 64);
+		prf.label("master secret");
+		auto master_secret = prf.get_n_byte(48);
+		prf.secret(master_secret.begin(), master_secret.end());
+		memcpy(rand, server_random_.data(), 32);
+		memcpy(rand + 32, client_random_.data(), 32);
+		prf.seed(rand, rand + 64);
+		prf.label("key expansion");
 		std::array<unsigned char, KEY_SZ> r;
-		for(int i=0; i < KEY_SZ; i++) r[i] = keys[i];
-		return use_key(r);
+		auto v = prf.get_n_byte(KEY_SZ);
+		for(int i=0; i<KEY_SZ; i++) r[i] = v[i];
+		return r;
 	}
 };
 #pragma pack()
