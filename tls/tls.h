@@ -144,35 +144,122 @@ struct Hello_header {
 	uint8_t extension_length[2] = {0, 0};
 } ;
 
-class TLS
+template<bool SV = true> class TLS
 {//this class just deals with memory structure -> decoupled from underlying algorithm
 public:
-	TLS(unsigned char* buf_received = nullptr);
+	TLS(unsigned char* buffer = nullptr)
+	{//buffer = read buffer, buffer2 = write buffer
+		rec_received_ = reinterpret_cast<TLS_header*>(buffer);
+	}
 	std::string decode();
 	std::vector<std::string> encode(std::string s);
 
-	std::array<unsigned char, 32> client_hello();
-	std::array<unsigned char, KEY_SZ> client_key_exchange();
 	int	client_finished();
-	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
-	void set_buf(void* p);
-	std::vector<unsigned char> server_certificate();
 	void change_cipher_spec(int);
-	int get_content_type();
 
-	auto server_hello(std::array<unsigned char, 32> id) {
-		struct {
+
+	void set_buf(void* p) {
+		rec_received_ = (TLS_header*)p;
+	}
+
+	auto client_hello()
+	{//return desired id
+		struct H {
 			TLS_header h1;
 			Handshake_header h2;
 			Hello_header h3;
 		} r;
+		if constexpr(!SV) {
+			r.h2.handshake_type = 1;
+			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
+			r.h2.length[2] = sizeof(Hello_header);
+			mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
+			memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
+			return r;
+		} else {
+			H *p = (H*)rec_received_;
+			memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
+			if(id_length_ = p->h3.session_id_length) {
+				memcpy(session_id_.data(), p->h3.session_id, id_length_);
+				return session_id_;
+			} else return std::array<unsigned char, 32>{};
+		}
+	}
+/*****************
+ClientHello: This message typically begins a TLS handshake negotiation. It is sent with a list of client-supported cipher suites, for the server to pick the best suiting one (preferably the strongest), a list of compression methods, and a list of extensions. It gives also the possibility to the client of restarting a previous session, through the inclusion of a SessionId field.
 
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
-		r.h2.length[2] = sizeof(Hello_header);
-		r.h2.handshake_type = 2;
-		memcpy(r.h3.random, server_random_.data(), 32);
-		memcpy(r.h3.session_id, id.data(), 32);
-		return r;
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+------+----+----------+--------+-----------+----------+
+     |  1 |    |    |    |    |    |32-bit|    |max 32-bit| Cipher |Compression|Extensions|
+     |0x01|    |    |    |  3 |  1 |random|    |session Id| Suites |  methods  |          |
+- ---+----+----+----+----+----+----+------+----+----------+--------+-----------+----------+
+  /  |  \    \---------\    \----\             \       \
+ /       \        \            \                \   SessionId
+record    \     length        SSL/TLS            \
+length     \                  version         SessionId
+            type: 1       (TLS 1.0 here)       length
+
+
+
+CipherSuites
+
++----+----+----+----+----+----+
+|    |    |    |    |    |    |
+|    |    |    |    |    |    |
++----+----+----+----+----+----+
+  \-----\   \-----\    \----\
+     \         \          \
+      length    cipher Id  cipherId
+
+
+Compression methods (no practical implementation uses compression)
+
++----+----+----+
+|    |    |    |
+|  0 |  1 |  0 |
++----+----+----+
+  \-----\    \
+     \        \
+ length: 1    cmp Id: 0
+
+
+Extensions
+
++----+----+----+----+----+----+----- - -
+|    |    |    |    |    |    |
+|    |    |    |    |    |    |...extension data
++----+----+----+----+----+----+----- - -
+  \-----\   \-----\    \----\
+     \         \          \
+    length    Extension  Extension data
+                 Id          length
+
+***************************/
+
+	auto server_hello(std::array<unsigned char, 32> id = {0,}) {
+		struct H {
+			TLS_header h1;
+			Handshake_header h2;
+			Hello_header h3;
+		} r;
+		if constexpr(SV) {
+			r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header);
+			r.h2.length[2] = sizeof(Hello_header);
+			r.h2.handshake_type = 2;
+			mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
+			memcpy(r.h3.random, server_random_.data(), 32);
+			memcpy(r.h3.session_id, id.data(), 32);
+			return r;
+		} else {
+			H *p = (H*)rec_received_;
+			memcpy(server_random_.data(), p->h3.random, 32);
+			memcpy(session_id_.data(), p->h3.session_id, 32);
+		}
 	}
 /**************
 (00,33)DHE-RSA-AES128-SHA : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
@@ -198,8 +285,75 @@ record    \     length        SSL/TLS              \ (if length > 0)  \   method
 length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
+
+	auto server_certificate() {
+		if constexpr(SV) return certificate_;
+		else {
+			struct H {
+				TLS_header h1;
+				Handshake_header h2;
+				uint8_t certificate_length[2][3];
+				unsigned char certificate[];
+			} *p = (H*)rec_received_;
+			std::stringstream ss;
+			uint8_t *q = p->certificate_length[1];
+			for(int i=0; i < *q * 0x10000 + *(q+1) * 0x100 + *(q+2); i++) 
+				ss << std::noskipws << p->certificate[i];//first certificate
+			der2json(ss);
+		}
+	}
+
+/************************
+Structure of this message:
+
+opaque ASN.1Cert<1..2^24-1>;
+
+struct {
+	ASN.1Cert certificate_list<0..2^24-1>;
+} Certificate;
+
+Certificate: The body of this message contains a chain of public key certificates. Certificate chains allows TLS to support certificate hierarchies and PKIs (Public Key Infrastructures).
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+     | 11 |    |    |    |    |    |    |    |    |    |           |
+     |0x0b|    |    |    |    |    |    |    |    |    |certificate| ...more certificate
+- ---+----+----+----+----+----+----+----+----+----+----+-----------+---- - -
+  /  |  \    \---------\    \---------\    \---------\
+ /       \        \              \              \
+record    \     length      Certificate    Certificate
+length     \                   chain         length
+            type: 11           length
+***************************/
+
+
+/************************
+CertificateRequest: It is used when the server requires client identity authentication. Not commonly used in web servers, but very important in some cases. The message not only asks the client for the certificate, it also tells which certificate types are acceptable. In addition, it also indicates which Certificate Authorities are considered trustworthy.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+     | 13 |    |    |    |    |    |           |    |    |    |    |    C.A.   |
+     |0x0d|    |    |    |    |    |           |    |    |    |    |unique name|
+- ---+----+----+----+----+----+----+---- - - --+----+----+----+----+-----------+-- -
+  /  |  \    \---------\    \    \                \----\   \-----\
+ /       \        \          \ Certificate           \        \
+record    \     length        \ Type 1 Id        Certificate   \
+length     \             Certificate         Authorities length \
+            type: 13     Types length                         Certificate Authority
+                                                                      length
+*********************/
 	auto server_key_exchange() {
-		struct {
+		struct H {
 			TLS_header h1;
 			Handshake_header h2;
 			uint8_t p_length[2] = {DH_KEY_SZ / 0x100, DH_KEY_SZ % 0x100}, p[DH_KEY_SZ],
@@ -212,16 +366,24 @@ length     \                  version           SessionId              \
 enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 		} r;
 
-		const int k = 3 * DH_KEY_SZ + 266;
-		r.h1.length[0] = (k + sizeof(Handshake_header)) / 0x100;
-		r.h1.length[1] = (k + sizeof(Handshake_header)) % 0x100;
-		r.h2.length[1] = k / 0x100; r.h2.length[2] = k % 0x100;
-		r.h2.handshake_type = 12;
-		mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
-		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
-		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
-		generate_signature(r.p_length, r.sign);
-		return r;
+		if constexpr(SV) {
+			const int k = 3 * DH_KEY_SZ + 266;
+			r.h1.length[0] = (k + sizeof(Handshake_header)) / 0x100;
+			r.h1.length[1] = (k + sizeof(Handshake_header)) % 0x100;
+			r.h2.length[1] = k / 0x100; r.h2.length[2] = k % 0x100;
+			r.h2.handshake_type = 12;
+			mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
+			mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
+			mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
+			generate_signature(r.p_length, r.sign);
+			return r;
+		} else {
+			H *q = (H*)rec_received_;
+			mpz_class p = bnd2mpz(q->p, q->p + DH_KEY_SZ),
+					  g = bnd2mpz(q->g, q->g + DH_KEY_SZ),
+					  ya = bnd2mpz(q->ya, q->ya + DH_KEY_SZ);
+			diffie_ = DiffieHellman{p, g, ya};
+		}	
 	}
 /************************
 ServerKeyExchange: This message carries the keys exchange algorithm parameters that the client needs from the server in order to get the symmetric encryption working thereafter. It is optional, since not all key exchanges require the server explicitly sending this message. Actually, in most cases, the Certificate message is enough for the client to securely communicate a premaster key with the server. The format of those parameters depends exclusively on the selected CipherSuite, which has been previously set by the server via the ServerHello message.
@@ -321,6 +483,131 @@ length     \
 		for(unsigned char c : x) v.push_back(c);
 		return v;
 	}
+
+	std::array<unsigned char, KEY_SZ> client_key_exchange()//16
+	{//return client_aes_key + server_aes_key
+		struct H {
+			TLS_header h1;
+			Handshake_header h2;
+			uint8_t key_sz[2];
+			uint8_t pub_key[];
+		}__attribute__((packed));
+		H* ph = (H*)rec_received_;;
+		assert(ph->h2.handshake_type == 16);
+
+		unsigned char rand[64], pre[DH_KEY_SZ];
+		int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
+		auto pre_master_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
+		mpz2bnd(pre_master_secret, pre, pre + DH_KEY_SZ);
+		PRF<SHA2> prf;
+		int i = 0;
+		while(!pre[i]) i++;//strip preceding 0s
+		prf.secret(pre + i, pre + DH_KEY_SZ);
+		memcpy(rand, client_random_.data(), 32);
+		memcpy(rand + 32, server_random_.data(), 32);
+		prf.seed(rand, rand + 64);
+		prf.label("master secret");
+		auto master_secret = prf.get_n_byte(48);
+		prf.secret(master_secret.begin(), master_secret.end());
+		memcpy(rand, server_random_.data(), 32);
+		memcpy(rand + 32, client_random_.data(), 32);
+		prf.seed(rand, rand + 64);
+		prf.label("key expansion");
+		return use_key(prf.get_n_byte(KEY_SZ));
+	}
+/*****************************
+ClientKeyExchange: It provides the server with the necessary data to generate the keys for the symmetric encryption. The message format is very similar to ServerKeyExchange, since it depends mostly on the key exchange algorithm picked by the server.
+
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------------+
+     | 16 |    |    |    |   algorithm    |
+     |0x10|    |    |    |   parameters   |
+- ---+----+----+----+----+----------------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 16
+
+until enough output has been generated.
+**********************/
+	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys)
+	{
+		unsigned char *p = keys.data();
+		client_mac_.key(p, p + 20);
+		server_mac_.key(p + 20, p + 40);
+		client_aes_.key(p + 40);//AES128 key size 16
+		server_aes_.key(p + 56);
+	//	client_aes_.iv(p + 72);
+	//	server_aes_.iv(p + 88);
+		return keys;
+	}
+/******
+ Then, the key_block is
+partitioned as follows:
+client_write_MAC_key[SecurityParameters.mac_key_length] 20
+server_write_MAC_key[SecurityParameters.mac_key_length]
+client_write_key[SecurityParameters.enc_key_length] 16
+server_write_key[SecurityParameters.enc_key_length]
+client_write_IV[SecurityParameters.fixed_iv_length] 16
+server_write_IV[SecurityParameters.fixed_iv_length]
+Currently, the client_write_IV and server_write_IV are only generated
+for implicit nonce techniques as described in Section 3.2.1 of
+[AEAD].
+Implementation note: The currently defined cipher suite which
+requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
+byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
+material.
+
+Immediately after sending a ChangeCipherSpec message, the client will send an encrypted Handshake Finished message to ensure the server is able to understand the agreed-upon encryption. The message will contain a hash of all previous handshake messages, along with the string “client finished”. This is very important because it verifies that no part of the handshake has been tampered with by an attacker. It also includes the random bytes that were sent by the client and server, protecting it from replay attacks where the attacker pretends to be one of the parties.
+
+Once received by the server, the server will acknowledge with its own ChangeCipherSpec message, followed immediately by its own Finished message verifying the contents of the handshake.
+
+Note: if you have been following along in Wireshark, there appears to be a bug with Client/Server Finish messages when using AES_GCM that mislabels them.
+Application Data
+
+Finally, we can begin to transmit encrypted data! It may seem like a lot of work, but that is soon to pay off. The only remaining step is to discuss how the data is encrypted with AES_GCM, an AEAD cipher.
+
+First, we generate a MAC, key, and IV for both the client and the server using our master secret and the PRF definition from earlier.
+
+key_data = PRF(master_secret, "key expansion", server_random + client_random);
+
+Since we are using 128-bit AES with SHA-256, we’ll pull out the following key data:
+
+// client_write_MAC_key = key_data[0..31]
+// server_write_MAC_key = key_data[32..63]
+client_write_key = key_data[64..79]
+server_write_key = key_data[80..95]
+client_write_IV = key_data[96..99]
+server_write_IV = key_data[100..103]
+
+For AEAD ciphers like GCM, we don’t need the MAC keys, but we offset them anyways. The client and server also get different keys to prevent a replay attack where a client message it looped back to it.
+
+We also construct additional_data and an 8-byte nonce, both of which are sent with the encrypted data. In the past, it was thought that the nonce could be either random or just a simple session counter. However, recent research found many sites using random nonces for AES_GCM were vulnerable to nonce reuse attacks, so it’s best to just use an incrementing counter tied to the session.
+
+additional_data = sequence_num + record_type + tls_version + length
+nonce = <random_8_bytes>
+
+Finally, we can encrypt our data with AES GCM!
+
+encrypted = AES_GCM(client_write_key, client_write_IV+nonce, <DATA>, additional_data)
+
+and the server can read it with
+
+<DATA> = AES_GCM(client_write_key, client_write_IV+nonce, encrypted, additional_data)
+
+
+******/
+
+	int get_content_type() {
+		return rec_received_->content_type;
+	}
+
 protected:
 	TLS_header *rec_received_;
 	AES server_aes_, client_aes_;
@@ -329,9 +616,40 @@ protected:
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	static std::vector<unsigned char> certificate_;
 	int id_length_;
+
 private:
-	std::array<unsigned char, KEY_SZ> use_key(std::vector<unsigned char> keys);
 	static RSA rsa_;
-	void generate_signature(unsigned char*, unsigned char*);
+
+	void generate_signature(unsigned char* p_length, unsigned char* p) {
+		unsigned char a[64 + 3 * DH_KEY_SZ + 6];
+		memcpy(a, client_random_.data(), 32);
+		memcpy(a + 32, server_random_.data(), 32);
+		memcpy(a + 64, p_length, 6 + 3 * DH_KEY_SZ);
+		//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
+		SHA5 sha;
+		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
+		std::deque<unsigned char> dq{b.begin(), b.end()};
+		unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+			0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04};
+		dq.push_front(dq.size());
+		dq.insert(dq.begin(), d, d + 16);
+		dq.push_front(dq.size());
+		dq.push_front(0x30);
+		dq.push_front(0x00);
+		while(dq.size() < 254) dq.push_front(0xff);
+		dq.push_front(0x01);
+		dq.push_front(0x00);
+		//		3031300d060960864801650304020105000420
+		//		3051300d060960864801650304020305000440		
+		//		1ffff padding should be added in front of b;
+		auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
+		mpz2bnd(z, p, p + 256);
+	}
+	std::array<unsigned char, KEY_SZ> use_key(std::vector<unsigned char> keys)
+	{//just pass to upper function
+		std::array<unsigned char, KEY_SZ> r;
+		for(int i=0; i < KEY_SZ; i++) r[i] = keys[i];
+		return use_key(r);
+	}
 };
 #pragma pack()
