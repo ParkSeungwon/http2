@@ -141,7 +141,7 @@ struct Hello_header {
 	uint8_t session_id[32];
 	uint8_t cipher_suite[2] = {0x00, 0x2f};
 	uint8_t compression = 0;
-	uint8_t extension_length[2] = {0, 0};
+//	uint8_t extension_length[2] = {0, 0};
 } ;
 
 class TLS

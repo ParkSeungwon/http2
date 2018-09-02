@@ -95,9 +95,9 @@ void HTTPS::connected(int client_fd)
 			write(client_fd, e.data(), e.size());
 			cout << "server finished" << endl;
 		} catch(const char* e) {
-			cerr << e << endl; 
+			cerr << "error : " << e << endl; 
 		} catch(const exception& e) {
-			cerr << e.what() << endl;
+			cerr << "error : " << e.what() << endl;
 		} catch(...) {
 			cerr << "error found" << endl;
 		}

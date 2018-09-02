@@ -282,6 +282,8 @@ array<unsigned char, KEY_SZ> TLS::rsa_client_key_exchange()//16
 
 	unsigned char rand[64], pre[48];
 	int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
+	cout << "sent key : ";
+	for(int i=0; i<key_size; i++) cout << hex << +ph->pub_key[i];
 	auto pre_master_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
 	cout << hex << rsa_.decode(bnd2mpz(ph->pub_key, ph->pub_key + key_size)) << endl;
 	cout << "pre master : " << hex << pre_master_secret << endl;
