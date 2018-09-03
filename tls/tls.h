@@ -144,6 +144,7 @@ public:
 	{//buffer = read buffer, buffer2 = write buffer
 		rec_received_ = reinterpret_cast<TLS_header*>(buffer);
 	}
+	bool support_dhe() { return support_dhe_; }
 	std::string decode();
 	std::vector<std::string> encode(std::string s);
 
@@ -302,6 +303,7 @@ length     \                  version           SessionId              \
 			for(int i=0; i < *q * 0x10000 + *(q+1) * 0x100 + *(q+2); i++) 
 				ss << std::noskipws << p->certificate[i];//first certificate
 			auto [K, e, sign] = get_pubkeys(ss);
+			rsa_.K = K; rsa_.e = e;
 		}
 	}
 
@@ -495,21 +497,21 @@ length     \
 			uint8_t pub_key[DH_KEY_SZ];
 		} r;
 
+		mpz_class premaster_secret;
 		if constexpr(SV) {
 			H* ph = (H*)rec_received_;;
 			assert(ph->h2.handshake_type == 16);
-			int key_size = ph->key_sz[0] * 0x100 + ph->key_sz[1];
-			mpz_class premaster_secret;
 			if(support_dhe_) 
-				premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + key_size));
-			else premaster_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + key_size);
+				premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + DH_KEY_SZ));
+			else premaster_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + DH_KEY_SZ));
 			return use_key(derive_keys(premaster_secret));
 		} else {
 			r.h2.handshake_type = 16;
 			if(support_dhe_) mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
 			else {
 				premaster_secret = random_prime(48);
-				mpz2bnd(premaster_secret, r.pub_key, r.pub_key + 48);
+				auto z = rsa_.encode(premaster_secret);
+				mpz2bnd(z, r.pub_key, r.pub_key + DH_KEY_SZ);
 				use_key(derive_keys(premaster_secret));
 				return r;
 			}

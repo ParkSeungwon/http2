@@ -69,9 +69,11 @@ void HTTPS::connected(int client_fd)
 			auto b = t.server_certificate();
 			write(client_fd, b.data(), b.size());
 			cout << "server certificate " << endl;
-			auto c = t.server_key_exchange();
-			write(client_fd, &c, sizeof(c));
-			cout << "server key exchange" << endl;
+			if(t.support_dhe()) {
+				auto c = t.server_key_exchange();
+				write(client_fd, &c, sizeof(c));
+				cout << "server key exchange" << endl;
+			}
 			auto d = t.server_hello_done();
 			write(client_fd, &d, sizeof(d));
 			cout << "server hello done" << endl;

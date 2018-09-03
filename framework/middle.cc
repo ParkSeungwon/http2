@@ -24,10 +24,9 @@ Packet Middle::recv()
 		cout << "receiving " << s << endl;
 		for(int i=0; i<s.size(); i++) cout << hex << setw(2) << setfill('0') << +static_cast<unsigned char>(s[i]) << (i%16 == 15 ? '\n' : ' ');
 	}
-	regex e{R"(Cookie:.*middleID=(\d+))"};
 	int id = 0;
-	smatch m;
-	if(regex_search(s, m, e)) id = stoi(m[1].str());//if already connected
+	if(smatch m; regex_search(s, m, regex{R"(Cookie:.*middleID=(\d+))"}))
+		id = stoi(m[1].str());//if already connected
 	return {client_fd, id, s};
 }
 
