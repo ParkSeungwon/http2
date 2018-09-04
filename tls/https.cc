@@ -8,21 +8,16 @@
 using namespace std;
 
 HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
-	: TlsLayer{outport}, inport_{inport}
+	: Server{outport, t, queue, end}, inport_{inport}
 {//hI = this; 
-	end_string = end;
-	time_out = t;
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	if(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1)
-		cout << "bind() error" << endl;
-	else cout << "binding" << endl;
-	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
-	else cout << "listening" << endl;
-	cout << "opening port " << outport << endl << "opening inner port " << inport << endl;
+	cout << "opening inner port " << inport << endl;
 } 
 	
-HTTPS::~HTTPS() {}
-
+int HTTPS::get_full_length(const string &s) 
+{
+	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
+}
+	
 bool HTTPS::find_id(array<uint8_t, 32> id)
 {
 	return idNchannel_.find(id) != idNchannel_.end();

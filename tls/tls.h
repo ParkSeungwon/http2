@@ -140,20 +140,13 @@ struct Hello_header {
 template<bool SV = true> class TLS
 {//this class just deals with memory structure -> decoupled from underlying algorithm
 public:
-	TLS(unsigned char* buffer = nullptr)
-	{//buffer = read buffer, buffer2 = write buffer
-		rec_received_ = reinterpret_cast<TLS_header*>(buffer);
-	}
-	bool support_dhe() { return support_dhe_; }
+	TLS(unsigned char* buffer = nullptr);
+	bool support_dhe();
+	int get_content_type();
+	void set_buf(void* p);
+	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
 	std::string decode();
 	std::vector<std::string> encode(std::string s);
-
-	int	client_finished();
-	void change_cipher_spec(int);
-
-	void set_buf(void* p) {
-		rec_received_ = (TLS_header*)p;
-	}
 
 	auto client_hello()
 	{//return desired id
@@ -240,7 +233,8 @@ Extensions
                  Id          length
 
 ***************************/
-	auto server_hello(std::array<unsigned char, 32> id = {0,}) {
+	auto server_hello(std::array<unsigned char, 32> id = {0,})
+	{
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
@@ -289,7 +283,8 @@ record    \     length        SSL/TLS              \ (if length > 0)  \   method
 length     \                  version           SessionId              \
             type: 2       (TLS 1.0 here)         length            CipherSuite
 ****************/
-	auto server_certificate() {
+	auto server_certificate()
+	{
 		if constexpr(SV) return certificate_;
 		else {
 			struct H {
@@ -354,7 +349,8 @@ length     \             Certificate         Authorities length \
             type: 13     Types length                         Certificate Authority
                                                                       length
 *********************/
-	auto server_key_exchange() {
+	auto server_key_exchange()
+	{
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
@@ -433,7 +429,8 @@ signed_params
 For non-anonymous key exchanges, a signature over the server’s
 key exchange parameters.
 *********************/
-	auto server_hello_done() {
+	auto server_hello_done()
+	{
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
@@ -462,7 +459,8 @@ record    \     length: 0
 length     \
             type: 14
 *********************/
-	auto change_cipher_spec() {
+	auto change_cipher_spec()
+	{
 		struct {
 			TLS_header h1;
 			uint8_t spec = 1;
@@ -472,7 +470,8 @@ length     \
 		return r;
 	}
 
-	auto server_finished() {
+	auto server_finished()
+	{
 		struct {
 			TLS_header h1;
 			Handshake_header h2;
@@ -538,76 +537,32 @@ length     \
 
 until enough output has been generated.
 **********************/
-	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys)
-	{
-		unsigned char *p = keys.data();
-		client_mac_.key(p, p + 20);
-		server_mac_.key(p + 20, p + 40);
-		client_aes_.key(p + 40);//AES128 key size 16
-		server_aes_.key(p + 56);
-	//	client_aes_.iv(p + 72);
-	//	server_aes_.iv(p + 88);
-		return keys;
+	int	client_finished() {
+		std::string s = decode();
+		for(unsigned char c : s) std::cout << std::noskipws << std::hex << +c << ' ';
+		Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
+		//	assert(ph->handshake_type == 20);
+		return 7;
 	}
-/******
- Then, the key_block is
-partitioned as follows:
-client_write_MAC_key[SecurityParameters.mac_key_length] 20
-server_write_MAC_key[SecurityParameters.mac_key_length]
-client_write_key[SecurityParameters.enc_key_length] 16
-server_write_key[SecurityParameters.enc_key_length]
-client_write_IV[SecurityParameters.fixed_iv_length] 16
-server_write_IV[SecurityParameters.fixed_iv_length]
-Currently, the client_write_IV and server_write_IV are only generated
-for implicit nonce techniques as described in Section 3.2.1 of
-[AEAD].
-Implementation note: The currently defined cipher suite which
-requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
-byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
-material.
+/***********************
+Finished: This message signals that the TLS negotiation is complete and the CipherSuite is activated. It should be sent already encrypted, since the negotiation is successfully done, so a ChangeCipherSpec protocol message must be sent before this one to activate the encryption. The Finished message contains a hash of all previous handshake messages combined, followed by a special number identifying server/client role, the master secret and padding. The resulting hash is different from the CertificateVerify hash, since there have been more handshake messages.
 
-Immediately after sending a ChangeCipherSpec message, the client will send an encrypted Handshake Finished message to ensure the server is able to understand the agreed-upon encryption. The message will contain a hash of all previous handshake messages, along with the string “client finished”. This is very important because it verifies that no part of the handshake has been tampered with by an attacker. It also includes the random bytes that were sent by the client and server, protecting it from replay attacks where the attacker pretends to be one of the parties.
-
-Once received by the server, the server will acknowledge with its own ChangeCipherSpec message, followed immediately by its own Finished message verifying the contents of the handshake.
-
-Note: if you have been following along in Wireshark, there appears to be a bug with Client/Server Finish messages when using AES_GCM that mislabels them.
-Application Data
-
-Finally, we can begin to transmit encrypted data! It may seem like a lot of work, but that is soon to pay off. The only remaining step is to discuss how the data is encrypted with AES_GCM, an AEAD cipher.
-
-First, we generate a MAC, key, and IV for both the client and the server using our master secret and the PRF definition from earlier.
-
-key_data = PRF(master_secret, "key expansion", server_random + client_random);
-
-Since we are using 128-bit AES with SHA-256, we’ll pull out the following key data:
-
-// client_write_MAC_key = key_data[0..31]
-// server_write_MAC_key = key_data[32..63]
-client_write_key = key_data[64..79]
-server_write_key = key_data[80..95]
-client_write_IV = key_data[96..99]
-server_write_IV = key_data[100..103]
-
-For AEAD ciphers like GCM, we don’t need the MAC keys, but we offset them anyways. The client and server also get different keys to prevent a replay attack where a client message it looped back to it.
-
-We also construct additional_data and an 8-byte nonce, both of which are sent with the encrypted data. In the past, it was thought that the nonce could be either random or just a simple session counter. However, recent research found many sites using random nonces for AES_GCM were vulnerable to nonce reuse attacks, so it’s best to just use an incrementing counter tied to the session.
-
-additional_data = sequence_num + record_type + tls_version + length
-nonce = <random_8_bytes>
-
-Finally, we can encrypt our data with AES GCM!
-
-encrypted = AES_GCM(client_write_key, client_write_IV+nonce, <DATA>, additional_data)
-
-and the server can read it with
-
-<DATA> = AES_GCM(client_write_key, client_write_IV+nonce, encrypted, additional_data)
-
-
-******/
-	int get_content_type() {
-		return rec_received_->content_type;
-	}
+     |
+     |
+     |
+     |  Handshake Layer
+     |
+     |
+- ---+----+----+----+----+----------+
+     | 20 |    |    |    |  signed  |
+     |0x14|    |    |    |   hash   |
+- ---+----+----+----+----+----------+
+  /  |  \    \---------\
+ /       \        \
+record    \     length
+length     \
+            type: 20
+*********************/
 
 protected:
 	TLS_header *rec_received_;
@@ -622,53 +577,7 @@ private:
 	static RSA rsa_;
 	bool support_dhe_ = false;
 
-	void generate_signature(unsigned char* p_length, unsigned char* p) {
-		unsigned char a[64 + 3 * DH_KEY_SZ + 6];
-		memcpy(a, client_random_.data(), 32);
-		memcpy(a + 32, server_random_.data(), 32);
-		memcpy(a + 64, p_length, 6 + 3 * DH_KEY_SZ);
-		//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
-		SHA5 sha;
-		auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
-		std::deque<unsigned char> dq{b.begin(), b.end()};
-		unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-			0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04};
-		dq.push_front(dq.size());
-		dq.insert(dq.begin(), d, d + 16);
-		dq.push_front(dq.size());
-		dq.push_front(0x30);
-		dq.push_front(0x00);
-		while(dq.size() < 254) dq.push_front(0xff);
-		dq.push_front(0x01);
-		dq.push_front(0x00);
-		//		3031300d060960864801650304020105000420
-		//		3051300d060960864801650304020305000440		
-		//		1ffff padding should be added in front of b;
-		auto z = rsa_.sign(bnd2mpz(dq.begin(), dq.end()));//SIGPE
-		mpz2bnd(z, p, p + 256);
-	}
-
-	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret) 
-	{
-		unsigned char pre[DH_KEY_SZ], rand[64];
-		int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
-		mpz2bnd(premaster_secret, pre, pre + sz);
-		PRF<SHA2> prf;
-		prf.secret(pre, pre + sz);
-		memcpy(rand, client_random_.data(), 32);
-		memcpy(rand + 32, server_random_.data(), 32);
-		prf.seed(rand, rand + 64);
-		prf.label("master secret");
-		auto master_secret = prf.get_n_byte(48);
-		prf.secret(master_secret.begin(), master_secret.end());
-		memcpy(rand, server_random_.data(), 32);
-		memcpy(rand + 32, client_random_.data(), 32);
-		prf.seed(rand, rand + 64);
-		prf.label("key expansion");
-		std::array<unsigned char, KEY_SZ> r;
-		auto v = prf.get_n_byte(KEY_SZ);
-		for(int i=0; i<KEY_SZ; i++) r[i] = v[i];
-		return r;
-	}
+	void generate_signature(unsigned char* p_length, unsigned char* p);
+	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
 };
 #pragma pack()

@@ -77,7 +77,7 @@ Server::Server(int port, unsigned int t, int queue, string e) : Http(port)
 		cout << "bind() error" << endl;
 	else cout << "binding" << endl;
 	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
-	else cout << "listening" << endl;
+	else cout << "listening port " << port << endl;
 }
 
 void Server::start(function<string(string)> f)
