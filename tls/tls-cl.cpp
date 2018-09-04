@@ -18,8 +18,12 @@ public:
 		s = recv();
 		t.set_buf(s.data());
 		t.server_key_exchange();
+		s = recv();
+		t.server_hello_done();
 		auto b = t.client_key_exchange();
 		write(client_fd, &b, sizeof(b));
+		auto c = t.change_cipher_spec();
+		write(client_fd, &c, sizeof(c));
 	}
 
 protected:
@@ -32,7 +36,8 @@ private:
 };
 
 int main(int ac, char **av) {
-	
+	int port = ac < 2 ? 4430 : atoi(av[1]);
+	TLS_client t{"localhost", port};
 }
 
 

@@ -262,7 +262,8 @@ template<bool SV>
 array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) 
 {
 	unsigned char pre[DH_KEY_SZ], rand[64];
-	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
+	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16) / 2;
+	sz = sz <= 128 ? 128 : 256;
 	mpz2bnd(premaster_secret, pre, pre + sz);
 	PRF<SHA2> prf;
 	prf.secret(pre, pre + sz);
@@ -278,6 +279,9 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	prf.label("key expansion");
 	std::array<unsigned char, KEY_SZ> r;
 	auto v = prf.get_n_byte(KEY_SZ);
-	for(int i=0; i<KEY_SZ; i++) r[i] = v[i];
+	for(int i=0; i<KEY_SZ; i++) {
+		r[i] = v[i];
+		cout << hex << +r[i];
+	}
 	return r;
 }
