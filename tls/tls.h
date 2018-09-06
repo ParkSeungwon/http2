@@ -48,15 +48,15 @@ Application Data Protocol: It takes arbitrary data (application-layer data gener
 *******************/
 
 template<bool SV = true> class TLS
-{//this class just deals with memory structure -> decoupled from underlying algorithm
+{//just deals with memory structure -> decoupled from underlying file-descriptor
 public:
 	TLS(unsigned char* buffer = nullptr);
 	bool support_dhe();
-	int get_content_type(std::string &&s = "");
+	int get_content_type(std::string &&s = "");//"" -> manual set
 	void set_buf(void* p);
 	void session_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
-	std::string decode(std::string &&s = "");
+	std::string decode(std::string &&s = "");//if not rvalue use set_buf
 	std::string encode(std::string &&s = "");
 
 	std::string client_hello(std::string &&s = "");//s != "" -> buffer is set to s

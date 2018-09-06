@@ -645,11 +645,11 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 	mpz_class premaster_secret;
 	if constexpr(SV) {
 		if(s != "") rec_received_ = s.data();
-		H* ph = (H*)rec_received_;;
-		assert(ph->h2.handshake_type == 16);
+		H* p = (H*)rec_received_;;
+		assert(p->h2.handshake_type == 16);
 		if(support_dhe_) 
-			premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + DH_KEY_SZ));
-		else premaster_secret = rsa_.sign(bnd2mpz(ph->pub_key, ph->pub_key + DH_KEY_SZ));
+			premaster_secret = diffie_.set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
+		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
 		auto a = use_key(derive_keys(premaster_secret));
 		return {a.begin(), a.end()};
 	} else {
@@ -664,8 +664,8 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 			auto z = rsa_.encode(premaster_secret);
 			mpz2bnd(z, r.pub_key, r.pub_key + DH_KEY_SZ);
 			use_key(derive_keys(premaster_secret));
-			return struct2str(r);
 		}
+		return struct2str(r);
 	}
 }
 /*****************************
@@ -728,34 +728,38 @@ The mission of this protocol is to properly encapsulate the data coming from the
            length: arbitrary (up to 16k)
 ******************/
 template<bool SV> string TLS<SV>::encode(string &&s)
-{
+{//tomorrow
 	struct {
 		uint8_t seq[8];
-		TLS_header h1;
-		uint8_t iv[16];
+		struct {
+			TLS_header h1;
+			uint8_t iv[16];
+		} h;
 	} r;
-	r.h1.content_type = 0x17;
+	r.h.h1.content_type = 0x17;
 	string t;
 
 	const int chunk_size = (2 << 14) - 1024 - 20;//cut string into 2^14
 	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
 		auto iv = random_prime(16);
-		mpz2bnd(iv, r.iv, r.iv + 16);
-		server_aes_.iv(iv);
+		mpz2bnd(iv, r.h.iv, r.h.iv + 16);
 
 		int len = sq * chunk_size > s.size() ? s.size() % chunk_size : chunk_size;
 		int padding_length = 15 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
-		mpz2bnd(len + 20 + 16 + 1, r.h1.length, r.h1.length + 2);
-		std::string s2 = std::string{sq} + std::string{(const char*)&r.h1, 5} + 
-			s.substr((sq-1) * chunk_size, std::min((int)s.size(), sq*chunk_size));
-		auto verify = server_mac_.hash((uint8_t*)s2.data(),
-				(uint8_t*)s2.data() + s.size());
-		s2 += std::string{verify.begin(), verify.end()};
-		s2 += std::string(padding_length, padding_length + 1);
-		auto v = server_aes_.encrypt((uint8_t*)s2.data()+6,//exclude first 6 bytes
-				(uint8_t*)s2.data() + s2.size());
-		std::string s3 = s2.substr(0, 6) + //string{(const char*)r.random, 16} +
-			std::string{v.begin(), v.end()};
+		mpz2bnd(len + 20 + 16 + 1, r.h.h1.length, r.h.h1.length + 2);
+		string s2 = struct2str(r) + s.substr((sq-1) * chunk_size, min((int)s.size(), sq*chunk_size));
+		auto verify = server_mac_.hash(s2.begin(), s2.end());
+		s2 += string{verify.begin(), verify.end()};
+		s2 += string(padding_length, padding_length + 1);
+		vector<unsigned char> v;
+		if constexpr(SV) {
+			server_aes_.iv(iv);
+			auto v = server_aes_.encrypt(s2.begin() + sizeof(r), s2.end());
+		} else {
+			client_aes_.iv(iv);
+			auto v = client_aes_.encrypt(s2.begin() + sizeof(r), s2.end());
+		}
+		string s3 = struct2str(r.h) + string{v.begin(), v.end()};
 		t += s3;
 	}
 	return t;

@@ -78,9 +78,9 @@ void HTTPS::connected(int client_fd)
 			cerr << "error found" << endl;
 		}
 	} else {//resume connection
+		t.session_id(id);
 		t.use_key(idNchannel_[id]->keys);
-		send(t.server_hello());
-		send(t.finished());
+		send(t.server_hello() + t.finished());
 		t.finished(recv());
 	}
 

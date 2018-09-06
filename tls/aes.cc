@@ -1,4 +1,3 @@
-#include<cassert>
 #include"crypt.h"
 using namespace std;
 
@@ -26,29 +25,4 @@ void AES::iv(const unsigned char* iv)
 {
 	memcpy(iv_, iv, 16);
 }
-
-template<typename It> vector<unsigned char> AES::encrypt(const It begin, const It end) {
-	int sz = end - begin;
-	assert(sz % 16 == 0);
-	vector<unsigned char> result(sz);
-	wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_ENCRYPTION);
-	wc_AesCbcEncrypt(&aes_, result.data(), &*begin, sz);//&* for iterator
-	return result;
-}
-
-template<typename It> vector<unsigned char> AES::decrypt(const It begin, const It end) {
-	int sz = end - begin;
-	assert(sz % 16 == 0);
-	std::vector<unsigned char> result(sz);
-	wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_DECRYPTION);
-	wc_AesCbcDecrypt(&aes_, result.data(), &*begin, sz);
-	return result;
-}
-
-template vector<unsigned char> AES::encrypt(vector<unsigned char>::iterator a,
-		vector<unsigned char>::iterator b);
-template vector<unsigned char> AES::encrypt(unsigned char* a, unsigned char* b);
-template vector<unsigned char> AES::decrypt(vector<unsigned char>::iterator a,
-		vector<unsigned char>::iterator b);
-template vector<unsigned char> AES::decrypt(unsigned char* a, unsigned char* b);
 
