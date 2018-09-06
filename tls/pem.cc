@@ -44,7 +44,11 @@ array<mpz_class, 2> process_bitstring(string s)
 
 array<mpz_class, 3> get_pubkeys(istream& is)
 {//array = {RSA modulus, RSA exponent, sha sign}
-	auto jv = pem2json(is);
+	return get_pubkeys(pem2json(is));
+}
+
+array<mpz_class, 3> get_pubkeys(const Json::Value& jv)
+{
 	auto [a, b] = process_bitstring(jv[0][0][6][1].asString());//asString remove " ";
 	auto c = str2mpz(jv[0][2].asString());//signature
 	return {a, b, c};//K, e, signature

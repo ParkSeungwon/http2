@@ -1,4 +1,3 @@
-#include<unistd.h>
 #include"tls.h"
 #include"framework/server.h"
 using namespace std;
@@ -7,23 +6,14 @@ class TLS_client : public Client
 {
 public:
 	TLS_client(string ip, int port) : Client{ip, port} {
-		auto a = t.client_hello();
-		write(client_fd, &a, sizeof(a));
-		string s = recv();
-		t.set_buf(s.data());
-		t.server_hello();
-		s = recv();
-		t.set_buf(s.data());
-		t.server_certificate();
-		s = recv();
-		t.set_buf(s.data());
-		t.server_key_exchange();
-		s = recv();
-		t.server_hello_done();
-		auto b = t.client_key_exchange();
-		write(client_fd, &b, sizeof(b));
-		auto c = t.change_cipher_spec();
-		write(client_fd, &c, sizeof(c));
+		send(t.client_hello());
+		t.server_hello(recv());
+		t.server_certificate(recv());
+		t.server_key_exchange(recv());
+		t.server_hello_done(recv());
+		send(t.client_key_exchange() + t.change_cipher_spec() + t.finished());
+		t.get_content_type(recv());
+		t.finished(recv());
 	}
 
 protected:

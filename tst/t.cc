@@ -103,3 +103,11 @@ TEST_CASE("certificate func") {
 	REQUIRE(c == 25);
 	REQUIRE(d == 2);
 }
+
+string func() {
+	string k;
+	return k+="cc";
+}
+TEST_CASE("return =") {
+	REQUIRE(func() == "cc");
+}

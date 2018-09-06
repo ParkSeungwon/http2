@@ -52,45 +52,24 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	TLS t;//TLS is decoupled from file descriptor
-	string s = recv();//error
-	t.set_buf(s.data());
-	auto id = t.client_hello();
+	array<unsigned char, 32> id; int i=0;
+	for(unsigned char c : t.client_hello(recv())) id[i++] = c;
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		try {
 			id = new_id();
-			auto a = t.server_hello(id);
-			write(client_fd, &a, sizeof(a));
-			cout << "server hello" << endl;
-			auto b = t.server_certificate();
-			write(client_fd, b.data(), b.size());
-			cout << "server certificate " << endl;
-			if(t.support_dhe()) {
-				auto c = t.server_key_exchange();
-				write(client_fd, &c, sizeof(c));
-				cout << "server key exchange" << endl;
-			}
-			auto d = t.server_hello_done();
-			write(client_fd, &d, sizeof(d));
-			cout << "server hello done" << endl;
-			s = recv();
-			t.set_buf(s.data());
-			idNchannel_[id]->keys = t.client_key_exchange();
+			send(t.server_hello(id) + t.server_certificate());
+			cout << "server hello, server certificate " << endl;
+			if(t.support_dhe())
+				send(t.server_key_exchange()), cout << "server key exchange" << endl;
+			send(t.server_hello_done()); cout << "server hello done" << endl;
+			i = 0;
+			for(unsigned char c : t.client_key_exchange(recv())) 
+				idNchannel_[id]->keys[i++] = c; 
 			cout << "client key exchange" << endl;
-			s = recv();
-			t.set_buf(s.data());
-			if(t.get_content_type() == 20) {
-				cout << "change cipher spec" << endl;
-				s = recv();
-				t.set_buf(s.data());
-//				t.client_finished();
-				cout << "client finished" << endl;
-			}
-			auto f = t.change_cipher_spec();
-			write(client_fd, &f, sizeof(f));
-			cout << "change cipher spec" << endl;
-			auto e = t.server_finished();
-			write(client_fd, e.data(), e.size());
-			cout << "server finished" << endl;
+			t.change_cipher_spec(recv()); cout << "change cipher spec" << endl;
+			t.finished(recv()); cout << "client finished" << endl;
+			send(t.change_cipher_spec()); cout << "change cipher spec" << endl;
+			send(t.finished()); cout << "server finished" << endl;
 		} catch(const char* e) {
 			cerr << e << endl; 
 		} catch(const exception& e) {
@@ -100,22 +79,16 @@ void HTTPS::connected(int client_fd)
 		}
 	} else {//resume connection
 		t.use_key(idNchannel_[id]->keys);
-		auto a = t.server_hello(id);
-		write(client_fd, &a, sizeof(a));
-		auto e = t.server_finished();
-		write(client_fd, &e, sizeof(e));
-		s = recv();
-		t.set_buf(s.data());
-		t.client_finished();
+		send(t.server_hello(id));
+		send(t.finished());
+		t.finished(recv());
 	}
 
 	using clock = std::chrono::system_clock;
 	while(idNchannel_.find(id) != idNchannel_.end())
 	{//data communication until garbage collection 
-		s = recv();
-		t.set_buf(s.data());
-		idNchannel_[id]->send(t.decode());
-		for(const auto& a : t.encode(idNchannel_[id]->recv())) send(a);
+		idNchannel_[id]->send(t.decode(recv()));
+		send(t.encode(idNchannel_[id]->recv()));
 		idNchannel_[id]->clock::time_point::operator=(clock::now());
 	}
 	close(client_fd);
