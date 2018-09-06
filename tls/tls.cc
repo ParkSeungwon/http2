@@ -209,6 +209,8 @@ struct TLS_header {
 	uint8_t content_type = 0x16;  // 0x17 for Application Data, 0x16 handshake
 	uint8_t version[2] = {0x03, 0x03};      // 0x0303 for TLS 1.2
 	uint8_t length[2] = {0, 4};       //length of encrypted_data, 4 : handshake size
+	void set_length(int k) { length[0] = k / 0x100; length[1] = k % 0x100; }
+	int get_length() { return length[0] * 0x100 + length[1]; }
 } ;
 /*********************************
 Record Protocol format
@@ -251,6 +253,12 @@ The TLS Record header comprises three fields, necessary to allow the higher laye
 struct Handshake_header {
 	uint8_t handshake_type;
 	uint8_t length[3] = {0,0,0};
+	void set_length(int k) {
+		length[0] = k / 0x10000;
+		length[1] = (k % 0x10000) / 0x100;
+		length[2] = k % 0x100;
+	}
+	int get_length() { return length[0] * 0x10000 + length[1] * 0x100 + length[0]; }
 } ;
 /***********************
 Handshake Protocol format
@@ -520,9 +528,8 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 
 	if constexpr(SV) {
 		const int k = 3 * DH_KEY_SZ + 266;
-		r.h1.length[0] = (k + sizeof(Handshake_header)) / 0x100;
-		r.h1.length[1] = (k + sizeof(Handshake_header)) % 0x100;
-		r.h2.length[1] = k / 0x100; r.h2.length[2] = k % 0x100;
+		r.h1.set_length(k + sizeof(Handshake_header));
+		r.h2.set_length(k);
 		r.h2.handshake_type = 12;
 		mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
 		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
@@ -654,10 +661,8 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 		return {a.begin(), a.end()};
 	} else {
 		r.h2.handshake_type = 16;
-		r.h1.length[0] = (sizeof(Handshake_header) + DH_KEY_SZ + 2) / 0x100;
-		r.h1.length[1] = (sizeof(Handshake_header) + DH_KEY_SZ + 2) % 0x100;
-		r.h2.length[1] = (DH_KEY_SZ + 2) / 0x100;
-		r.h2.length[2] = (DH_KEY_SZ + 2) % 0x100;
+		r.h1.set_length(sizeof(Handshake_header) + DH_KEY_SZ + 2);
+		r.h2.set_length(DH_KEY_SZ + 2);
 		if(support_dhe_) mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
 		else {
 			premaster_secret = random_prime(48);
@@ -691,19 +696,31 @@ until enough output has been generated.
 **********************/
 template<bool SV> string TLS<SV>::decode(string &&s)
 {
-	//	assert(rec_received_->content_type == 0x17);
+	struct H {
+		TLS_header h1;
+		uint8_t iv[16];
+		unsigned char m[];
+	};
 	if(s != "") rec_received_ = s.data();
-	unsigned char* p = (unsigned char*)rec_received_;
-	p += sizeof(TLS_header);
-	TLS_header *q = (TLS_header*)rec_received_;
-	client_aes_.iv(p);
-	auto v = client_aes_.decrypt(p + 16, p + q->length[0] * 0x100 + q->length[1]);
-	cout << "v size " << v.size() << ", back " << +v.back() << endl;
-	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-	auto a = client_mac_.hash(v.begin(), v.end() - 20);
-	for(int i=0; i<20; i++)
-		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
-	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
+	H* p = (H*)rec_received_;
+//	array<unsigned char, 20> a;
+	vector<unsigned char> v;
+	if constexpr(SV) {
+		client_aes_.iv(p->iv);
+		v = client_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
+		cout << "v size " << v.size() << ", back " << +v.back() << endl;
+		for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
+//		a = client_mac_.hash(v.begin(), v.end() - 20);
+	} else {
+		server_aes_.iv(p->iv);
+		v = server_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
+		cout << "v size " << v.size() << ", back " << +v.back() << endl;
+		for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
+//		a = server_mac_.hash(v.begin(), v.end() - 20);
+	}
+//	for(int i=0; i<20; i++)
+//		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
+	return {v.begin(), v.end() - 20};//v.back() == padding length
 }
 /***********************
 ApplicationData Protocol format
@@ -730,37 +747,45 @@ The mission of this protocol is to properly encapsulate the data coming from the
 template<bool SV> string TLS<SV>::encode(string &&s)
 {//tomorrow
 	struct {
-		uint8_t seq[8];
-		struct {
-			TLS_header h1;
-			uint8_t iv[16];
-		} h;
+		TLS_header h1;
+		uint8_t iv[16];
 	} r;
-	r.h.h1.content_type = 0x17;
+	struct M {
+		uint8_t seq;
+		TLS_header h1;
+	} m;
+	r.h1.content_type = 0x17;
+	m.h1.content_type = 0x17;
 	string t;
 
-	const int chunk_size = (2 << 14) - 1024 - 20;//cut string into 2^14
+	const int chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
-		auto iv = random_prime(16);
-		mpz2bnd(iv, r.h.iv, r.h.iv + 16);
-
 		int len = sq * chunk_size > s.size() ? s.size() % chunk_size : chunk_size;
-		int padding_length = 15 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
-		mpz2bnd(len + 20 + 16 + 1, r.h.h1.length, r.h.h1.length + 2);
-		string s2 = struct2str(r) + s.substr((sq-1) * chunk_size, min((int)s.size(), sq*chunk_size));
-		auto verify = server_mac_.hash(s2.begin(), s2.end());
-		s2 += string{verify.begin(), verify.end()};
-		s2 += string(padding_length, padding_length + 1);
+		m.seq = sq;
+		string frag = s.substr((sq-1) * chunk_size, (sq-1) * chunk_size + len);
+		m.h1.set_length(len);
+		string s2 = struct2str(m) + frag;
+		array<unsigned char, 20> verify;
+		if constexpr(SV) verify = server_mac_.hash(s2.begin(), s2.end());
+		else verify = client_mac_.hash(s2.begin(), s2.end());
+
+		int padding_length = 16 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
+		if(!padding_length) padding_length = 16;
+		frag += string{verify.begin(), verify.end()};
+		for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
+		auto iv = random_prime(16);
+		mpz2bnd(iv, r.iv, r.iv + 16);
 		vector<unsigned char> v;
 		if constexpr(SV) {
 			server_aes_.iv(iv);
-			auto v = server_aes_.encrypt(s2.begin() + sizeof(r), s2.end());
+			v = server_aes_.encrypt(frag.begin(), frag.end());
 		} else {
 			client_aes_.iv(iv);
-			auto v = client_aes_.encrypt(s2.begin() + sizeof(r), s2.end());
+			v = client_aes_.encrypt(frag.begin(), frag.end());
 		}
-		string s3 = struct2str(r.h) + string{v.begin(), v.end()};
-		t += s3;
+		r.h1.set_length(16 + len + 20 + padding_length);
+		s2 = struct2str(r) + string{v.begin(), v.end()};
+		t += s2;
 	}
 	return t;
 }
@@ -794,10 +819,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	} else {
 		Handshake_header h;
 		h.handshake_type = 20;
-		char *p = (char*)&h; std::string s;
-		for(int i=0; i<sizeof(Handshake_header); i++) s += *p++;
-		set_buf(s.data());
-		string r = encode();
+		string r = encode(struct2str(h));
 		r[0] = 0x16;
 		return r;
 	}
