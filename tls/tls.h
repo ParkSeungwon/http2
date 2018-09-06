@@ -54,17 +54,18 @@ public:
 	bool support_dhe();
 	int get_content_type(std::string &&s = "");
 	void set_buf(void* p);
+	void session_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
 	std::string decode(std::string &&s = "");
-	std::string encode(std::string &&s);
+	std::string encode(std::string &&s = "");
 
 	std::string client_hello(std::string &&s = "");//s != "" -> buffer is set to s
-	std::string server_hello(std::array<unsigned char, 32> id = {0,});
-	std::string server_certificate(std::string &&s = "");//s == "" -> manual buffer set
+	std::string server_hello(std::string &&s = "");//s == "" -> manual buffer set
+	std::string server_certificate(std::string &&s = "");
 	std::string server_key_exchange(std::string &&s = "");
 	std::string server_hello_done(std::string &&s = "");
 	std::string client_key_exchange(std::string &&s = "");
-	std::string change_cipher_spec(std::string &&s = "");
+	std::string change_cipher_spec(std::string &&s = "");//if s=="" send, else recv
 	std::string finished(std::string &&s = "");//if s=="" send, else recv
 
 protected:

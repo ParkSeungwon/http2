@@ -12,7 +12,7 @@ public:
 		t.server_key_exchange(recv());
 		t.server_hello_done(recv());
 		send(t.client_key_exchange() + t.change_cipher_spec() + t.finished());
-		t.get_content_type(recv());
+		t.change_cipher_spec(recv());
 		t.finished(recv());
 	}
 

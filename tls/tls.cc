@@ -67,12 +67,16 @@ template<bool SV> bool TLS<SV>::support_dhe()
 template<bool SV> int TLS<SV>::get_content_type(string &&s)
 {
 	if(s != "") rec_received_ = s.data();
-	uint8_t *p = rec_received_;
+	uint8_t *p = (uint8_t*)rec_received_;
 	return p[0];
 }
 template<bool SV> void TLS<SV>::set_buf(void* p)
 {
 	rec_received_ = p;
+}
+template<bool SV> void TLS<SV>::session_id(array<unsigned char, 32> id)
+{
+	session_id_ = id;
 }
 template<bool SV>
 void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
@@ -310,7 +314,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		return struct2str(r);
 	} else {//server
 		if(s != "") rec_received_ = s.data();
-		H *p = rec_received_;
+		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
 		for(int i=0; i<len; i++)
@@ -376,7 +380,7 @@ Extensions
                  Id          length
 
 ***************************/
-template<bool SV> string TLS<SV>::server_hello(std::array<unsigned char, 32> id)
+template<bool SV> string TLS<SV>::server_hello(string &&s)
 {
 	struct H {
 		TLS_header h1;
@@ -393,10 +397,11 @@ template<bool SV> string TLS<SV>::server_hello(std::array<unsigned char, 32> id)
 		r.h2.handshake_type = 2;
 		mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 		memcpy(r.h3.random, server_random_.data(), 32);
-		memcpy(r.h3.session_id, id.data(), 32);
+		memcpy(r.h3.session_id, session_id_.data(), 32);
 		return struct2str(r);
 	} else {
-		H *p = rec_received_;
+		if(s != "") rec_received_ = s.data();
+		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
 		memcpy(session_id_.data(), p->h3.session_id, 32);
 		if(p->cipher_suite[1] == 0x33) support_dhe_ = true;
@@ -437,7 +442,7 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 			Handshake_header h2;
 			uint8_t certificate_length[2][3];
 			unsigned char certificate[];
-		} *p = rec_received_;
+		} *p = (H*)rec_received_;
 		std::stringstream ss;
 		uint8_t *q = p->certificate_length[1];
 		for(int i=0; i < *q * 0x10000 + *(q+1) * 0x100 + *(q+2); i++) 
@@ -526,7 +531,7 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		return struct2str(r);
 	} else {
 		if(s != "") rec_received_ = s.data();
-		H *q = rec_received_;
+		H *q = (H*)rec_received_;
 		mpz_class p = bnd2mpz(q->p, q->p + DH_KEY_SZ),
 				  g = bnd2mpz(q->g, q->g + DH_KEY_SZ),
 				  ya = bnd2mpz(q->ya, q->ya + DH_KEY_SZ);
@@ -640,7 +645,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 	mpz_class premaster_secret;
 	if constexpr(SV) {
 		if(s != "") rec_received_ = s.data();
-		H* ph = rec_received_;;
+		H* ph = (H*)rec_received_;;
 		assert(ph->h2.handshake_type == 16);
 		if(support_dhe_) 
 			premaster_secret = diffie_.set_yb(bnd2mpz(ph->pub_key, ph->pub_key + DH_KEY_SZ));
@@ -688,15 +693,16 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 {
 	//	assert(rec_received_->content_type == 0x17);
 	if(s != "") rec_received_ = s.data();
-	unsigned char* p = rec_received_ + sizeof(TLS_header);
-	TLS_header *q = rec_received_;
+	unsigned char* p = (unsigned char*)rec_received_;
+	p += sizeof(TLS_header);
+	TLS_header *q = (TLS_header*)rec_received_;
 	client_aes_.iv(p);
 	auto v = client_aes_.decrypt(p + 16, p + q->length[0] * 0x100 + q->length[1]);
-	std::cout << "v size " << v.size() << ", back " << +v.back() << std::endl;
+	cout << "v size " << v.size() << ", back " << +v.back() << endl;
 	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
 	auto a = client_mac_.hash(v.begin(), v.end() - 20);
 	for(int i=0; i<20; i++)
-		std::cout << std::hex << +a[i] << ':' << std::hex << +v[v.size() - 20 + i] << std::endl;
+		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
 	return {v.data(), v.data() + v.size() - 20};//v.back() == padding length
 }
 /***********************
@@ -729,7 +735,7 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 		uint8_t iv[16];
 	} r;
 	r.h1.content_type = 0x17;
-	string r;
+	string t;
 
 	const int chunk_size = (2 << 14) - 1024 - 20;//cut string into 2^14
 	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
@@ -750,9 +756,9 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 				(uint8_t*)s2.data() + s2.size());
 		std::string s3 = s2.substr(0, 6) + //string{(const char*)r.random, 16} +
 			std::string{v.begin(), v.end()};
-		r += s3;
+		t += s3;
 	}
-	return r;
+	return t;
 }
 /***************
 The MAC is generated as:
@@ -770,7 +776,7 @@ struct {
 	};
 } GenericBlockCipher;
 *********************/
-template<bool SV> void TLS<SV>::finished(string &&s)
+template<bool SV> string TLS<SV>::finished(string &&s)
 {//finished message to send(s == "") and receive(s == recv())
 	if(s != "") {
 		rec_received_ = s.data();
@@ -786,7 +792,8 @@ template<bool SV> void TLS<SV>::finished(string &&s)
 		h.handshake_type = 20;
 		char *p = (char*)&h; std::string s;
 		for(int i=0; i<sizeof(Handshake_header); i++) s += *p++;
-		string r = encode(s)[0];
+		set_buf(s.data());
+		string r = encode();
 		r[0] = 0x16;
 		return r;
 	}

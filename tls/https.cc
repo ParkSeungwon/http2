@@ -56,8 +56,8 @@ void HTTPS::connected(int client_fd)
 	for(unsigned char c : t.client_hello(recv())) id[i++] = c;
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		try {
-			id = new_id();
-			send(t.server_hello(id) + t.server_certificate());
+			t.session_id(id = new_id());
+			send(t.server_hello() + t.server_certificate());
 			cout << "server hello, server certificate " << endl;
 			if(t.support_dhe())
 				send(t.server_key_exchange()), cout << "server key exchange" << endl;
@@ -79,7 +79,7 @@ void HTTPS::connected(int client_fd)
 		}
 	} else {//resume connection
 		t.use_key(idNchannel_[id]->keys);
-		send(t.server_hello(id));
+		send(t.server_hello());
 		send(t.finished());
 		t.finished(recv());
 	}
