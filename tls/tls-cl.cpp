@@ -1,3 +1,5 @@
+#include<functional>
+#include<framework/asyncqueue.h>
 #include<iostream>
 #include"tls.h"
 #include"framework/server.h"
@@ -10,7 +12,7 @@ public:
 		send(t.client_hello());
 		t.server_hello(recv());
 		t.server_certificate(recv());
-		t.server_key_exchange(recv());
+		if(t.support_dhe()) t.server_key_exchange(recv());
 		t.server_hello_done(recv());
 		send(t.client_key_exchange() + t.change_cipher_spec() + t.finished());
 		t.change_cipher_spec(recv());
@@ -30,10 +32,9 @@ int main(int ac, char **av) {
 	int port = ac < 2 ? 4430 : atoi(av[1]);
 	TLS_client t{"localhost", port};
 	string s;
-	while(cin >> s) {
-		t.send(t.t.encode(move(s)));
-		cout << t.t.decode(t.recv());
-	}
+	AsyncQueue<string> aq{bind(&TLS_client::recv, &t), [&](string s) {
+		cout << t.t.decode(move(s)); }};
+	while(getline(cin, s)) t.send(t.t.encode(move(s)));
 }
 
 

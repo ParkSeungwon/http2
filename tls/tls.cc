@@ -722,8 +722,8 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	array<unsigned char, 20> a;
 	if constexpr(SV) a = client_mac_.hash(t.begin(), t.end());
 	else a = server_mac_.hash(t.begin(), t.end());
-	for(int i=0; i<20; i++)
-		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
+	for(int i=0; i<20; i++) cout << hex << +a[i]; cout << endl;
+	for(int i=0; i<20; i++) cout << hex << +v[v.size() - 20 + i]; cout << endl;
 	return {v.begin(), v.end() - 20};//v.back() == padding length
 }
 /***********************
@@ -811,14 +811,10 @@ struct {
 template<bool SV> string TLS<SV>::finished(string &&s)
 {//finished message to send(s == "") and receive(s == recv())
 	if(s != "") {
-		rec_received_ = s.data();
-		struct H {
-			TLS_header h1;
-			Handshake_header h2;
-		} r;
-		std::string s = decode();
-		for(unsigned char c : s) std::cout << std::noskipws << std::hex << +c << ' ';
-		Handshake_header* ph = (Handshake_header*)(rec_received_ + 1);
+		Handshake_header h;
+		h.handshake_type = 20;
+		assert(struct2str(h) == decode(move(s)));
+		return "";
 	} else {
 		Handshake_header h;
 		h.handshake_type = 20;
