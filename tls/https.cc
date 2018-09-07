@@ -68,8 +68,8 @@ void HTTPS::connected(int client_fd)
 			cout << "client key exchange" << endl;
 			t.change_cipher_spec(recv()); cout << "change cipher spec" << endl;
 			t.finished(recv()); cout << "client finished" << endl;
-			send(t.change_cipher_spec()); cout << "change cipher spec" << endl;
-			send(t.finished()); cout << "server finished" << endl;
+			send(t.change_cipher_spec() + t.finished()); 
+			cout << "change cipher spec, server finished" << endl;
 		} catch(const char* e) {
 			cerr << e << endl; 
 		} catch(const exception& e) {

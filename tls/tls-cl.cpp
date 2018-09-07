@@ -1,3 +1,4 @@
+#include<iostream>
 #include"tls.h"
 #include"framework/server.h"
 using namespace std;
@@ -15,9 +16,9 @@ public:
 		t.change_cipher_spec(recv());
 		t.finished(recv());
 	}
+	TLS<false> t;
 
 protected:
-	TLS<false> t;
 
 private:
 	int get_full_length(const string &s) {
@@ -28,6 +29,11 @@ private:
 int main(int ac, char **av) {
 	int port = ac < 2 ? 4430 : atoi(av[1]);
 	TLS_client t{"localhost", port};
+	string s;
+	while(cin >> s) {
+		t.send(t.t.encode(move(s)));
+		cout << t.t.decode(t.recv());
+	}
 }
 
 

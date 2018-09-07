@@ -701,25 +701,29 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		uint8_t iv[16];
 		unsigned char m[];
 	};
+	struct {
+		uint8_t seq = 1;
+		TLS_header h1;
+	} m;
 	if(s != "") rec_received_ = s.data();
 	H* p = (H*)rec_received_;
-//	array<unsigned char, 20> a;
 	vector<unsigned char> v;
 	if constexpr(SV) {
 		client_aes_.iv(p->iv);
 		v = client_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
-		cout << "v size " << v.size() << ", back " << +v.back() << endl;
-		for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-//		a = client_mac_.hash(v.begin(), v.end() - 20);
 	} else {
 		server_aes_.iv(p->iv);
 		v = server_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
-		cout << "v size " << v.size() << ", back " << +v.back() << endl;
-		for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-//		a = server_mac_.hash(v.begin(), v.end() - 20);
 	}
-//	for(int i=0; i<20; i++)
-//		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
+	cout << "v size " << v.size() << ", back " << +v.back() << endl;
+	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
+	m.h1 = p->h1;
+	string t = struct2str(m) + string{v.begin(), v.end() - 20};
+	array<unsigned char, 20> a;
+	if constexpr(SV) a = client_mac_.hash(t.begin(), t.end());
+	else a = server_mac_.hash(t.begin(), t.end());
+	for(int i=0; i<20; i++)
+		cout << hex << +a[i] << ':' << hex << +v[v.size() - 20 + i] << endl;
 	return {v.begin(), v.end() - 20};//v.back() == padding length
 }
 /***********************
@@ -754,8 +758,7 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 		uint8_t seq;
 		TLS_header h1;
 	} m;
-	r.h1.content_type = 0x17;
-	m.h1.content_type = 0x17;
+	m.h1.content_type = r.h1.content_type = 0x17;
 	string t;
 
 	const int chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
@@ -783,7 +786,7 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 			client_aes_.iv(iv);
 			v = client_aes_.encrypt(frag.begin(), frag.end());
 		}
-		r.h1.set_length(16 + len + 20 + padding_length);
+		r.h1.set_length(16 + v.size());
 		s2 = struct2str(r) + string{v.begin(), v.end()};
 		t += s2;
 	}
