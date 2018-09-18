@@ -30,10 +30,13 @@ private:
 
 int main(int ac, char **av) {
 	int port = ac < 2 ? 4430 : atoi(av[1]);
-	TLS_client t{"localhost", port};
+	string ip = ac < 3 ? "localhost" : av[2];
+	TLS_client t{ip, port};
 	string s;
-	AsyncQueue<string> aq{bind(&TLS_client::recv, &t), [&](string s) {
-		cout << t.t.decode(move(s)); }};
+	AsyncQueue<string> aq {
+		bind(&TLS_client::recv, &t),
+		[&](string s) { cout << t.t.decode(move(s)); }
+	};
 	while(getline(cin, s)) t.send(t.t.encode(move(s)));
 }
 

@@ -11,16 +11,17 @@ public:
 	void start();
 
 protected:
-	struct Channel : public Client, std::chrono::system_clock::time_point {
+	struct Channel : public Client {
 		Channel(int port);
 		std::array<unsigned char, KEY_SZ> keys;
+		std::chrono::system_clock::time_point last_transmission;
 	};
 	std::map<std::array<unsigned char, 32>, HTTPS::Channel*> idNchannel_;
-	int inport_, time_out;
-	std::string end_string;
+	int inport_;
+	bool debug_ = false;
 
 private:
-	void connected(int client_fd);
+	void connected(int client_fd), garbage_collection(), conn(), free(std::array<unsigned char, 32> id);
 	bool find_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, 32> new_id();
 	int get_full_length(const std::string &s);
