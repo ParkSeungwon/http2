@@ -88,6 +88,7 @@ void Server::start(function<string(string)> f)
 		if(client_fd == -1) cout << "accept() error" << endl;
 		else if(!fork()) {
 			for(string s; (s = recv()) != end_string; send(f(s)));
+			send(end_string);
 			break;//forked process ends here
 		}
 	}

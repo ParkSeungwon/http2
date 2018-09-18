@@ -774,7 +774,7 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 
 		int padding_length = 16 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
 		if(!padding_length) padding_length = 16;
-		frag += string{verify.begin(), verify.end()};
+		frag += string{verify.begin(), verify.end()};//add authentication, padding
 		for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
 		auto iv = random_prime(16);
 		mpz2bnd(iv, r.iv, r.iv + 16);
