@@ -715,6 +715,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 
 	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	header_for_mac.h1 = p->h1;
+	header_for_mac.h1.set_length(header_for_mac.h1.get_length() - 16);
 	string t = struct2str(header_for_mac) + string{decrypted.begin(), decrypted.end()};
 	array<unsigned char, 20> a = mac_[!SV].hash(t.begin(), t.end());
 
@@ -762,7 +763,9 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
 	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
-	header_for_mac.h1.set_length(len);
+	int l = len + 21;
+	while(l % 16) l++;
+	header_for_mac.h1.set_length(l);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());

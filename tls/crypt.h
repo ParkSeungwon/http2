@@ -125,9 +125,9 @@ protected:
 	Sha512 sha_;
 };
 
-template<class C> static void hexprint(const C &c)
+template<class C> void hexprint(const C &c)
 {
-	for(auto a : c) std::cout << std::hex << +a;
+	for(auto a : c) std::cout << std::setw(2) << std::setfill('0') << std::hex << +a;
 	std::cout << std::endl;
 }
 
