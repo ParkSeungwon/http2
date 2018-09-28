@@ -111,3 +111,8 @@ string func() {
 TEST_CASE("return =") {
 	REQUIRE(func() == "cc");
 }
+TEST_CASE("bool []") {
+	char c[2] = {'a', 'c'};
+	REQUIRE(c[true] == 'c');
+}
+

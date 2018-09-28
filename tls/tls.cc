@@ -139,10 +139,10 @@ template<bool SV>
 array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 {
 	unsigned char *p = keys.data();
-	client_mac_.key(p, p + 20);
-	server_mac_.key(p + 20, p + 40);
-	client_aes_.key(p + 40);//AES128 key size 16
-	server_aes_.key(p + 56);
+	mac_[0].key(p, p + 20);
+	mac_[1].key(p + 20, p + 40);
+	aes_[0].key(p + 40);//AES128 key size 16
+	aes_[1].key(p + 56);
 	//	client_aes_.iv(p + 72);
 	//	server_aes_.iv(p + 88);
 	return keys;
@@ -702,29 +702,29 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		unsigned char m[];
 	};
 	struct {
-		uint8_t seq = 1;
+		uint8_t seq[8];
 		TLS_header h1;
-	} m;
+	} header_for_mac;
 	if(s != "") rec_received_ = s.data();
 	H* p = (H*)rec_received_;
-	vector<unsigned char> v;
-	if constexpr(SV) {
-		client_aes_.iv(p->iv);
-		v = client_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
-	} else {
-		server_aes_.iv(p->iv);
-		v = server_aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);
-	}
-	cout << "v size " << v.size() << ", back " << +v.back() << endl;
-	for(int i=v.back(); i>=0; i--) v.pop_back();//remove padding
-	m.h1 = p->h1;
-	string t = struct2str(m) + string{v.begin(), v.end() - 20};
-	array<unsigned char, 20> a;
-	if constexpr(SV) a = client_mac_.hash(t.begin(), t.end());
-	else a = server_mac_.hash(t.begin(), t.end());
+	
+	aes_[!SV].iv(p->iv);
+	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
+
+	assert(decrypted.size() > decrypted.back());
+	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
+
+	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
+	header_for_mac.h1 = p->h1;
+	unsigned char auth[20];
+	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
+
+	string t = struct2str(header_for_mac) + string{decrypted.begin(), decrypted.end()};
+	array<unsigned char, 20> a = mac_[!SV].hash(t.begin(), t.end());
+
 	for(int i=0; i<20; i++) cout << hex << +a[i]; cout << endl;
-	for(int i=0; i<20; i++) cout << hex << +v[v.size() - 20 + i]; cout << endl;
-	return {v.begin(), v.end() - 20};//v.back() == padding length
+	for(int i=0; i<20; i++) cout << hex << +auth[i]; cout << endl;
+	return {decrypted.begin(), decrypted.end()};//v.back() == padding length
 }
 /***********************
 ApplicationData Protocol format
@@ -753,44 +753,35 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 	struct {
 		TLS_header h1;
 		uint8_t iv[16];
-	} r;
-	struct M {
-		uint8_t seq;
+	} header_to_send;
+	struct {
+		uint8_t seq[8];
 		TLS_header h1;
-	} m;
-	m.h1.content_type = r.h1.content_type = 0x17;
-	string t;
+	} header_for_mac;
+	header_for_mac.h1.content_type = header_to_send.h1.content_type = 0x17;
 
-	const int chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
-	for(int sq = 1; chunk_size * (sq - 1) < s.size(); sq++) {
-		int len = sq * chunk_size > s.size() ? s.size() % chunk_size : chunk_size;
-		m.seq = sq;
-		string frag = s.substr((sq-1) * chunk_size, (sq-1) * chunk_size + len);
-		m.h1.set_length(len);
-		string s2 = struct2str(m) + frag;
-		array<unsigned char, 20> verify;
-		if constexpr(SV) verify = server_mac_.hash(s2.begin(), s2.end());
-		else verify = client_mac_.hash(s2.begin(), s2.end());
+	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
+	int len = min(s.size(), chunk_size);
+	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
+	header_for_mac.h1.set_length(len);
+	string frag = s.substr(0, len);
+	string s2 = struct2str(header_for_mac) + frag;
+	array<unsigned char, 20> verify;
+	verify = mac_[SV].hash(s2.begin(), s2.end());
+	frag += string{verify.begin(), verify.end()};//add authentication
 
-		int padding_length = 16 - (len + 20) % 16;//20 = sha1 digest, 16 block sz
-		if(!padding_length) padding_length = 16;
-		frag += string{verify.begin(), verify.end()};//add authentication, padding
-		for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
-		auto iv = random_prime(16);
-		mpz2bnd(iv, r.iv, r.iv + 16);
-		vector<unsigned char> v;
-		if constexpr(SV) {
-			server_aes_.iv(iv);
-			v = server_aes_.encrypt(frag.begin(), frag.end());
-		} else {
-			client_aes_.iv(iv);
-			v = client_aes_.encrypt(frag.begin(), frag.end());
-		}
-		r.h1.set_length(16 + v.size());
-		s2 = struct2str(r) + string{v.begin(), v.end()};
-		t += s2;
-	}
-	return t;
+	int padding_length = 16 - frag.size() % 16;//20 = sha1 digest, 16 block sz
+	if(!padding_length) padding_length = 16;//add padding below
+	for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
+
+	auto iv = random_prime(16);
+	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
+	aes_[SV].iv(iv);
+	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
+	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
+	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
+	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
+	return s2;
 }
 /***************
 The MAC is generated as:

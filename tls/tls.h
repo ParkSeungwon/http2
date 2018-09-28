@@ -70,12 +70,13 @@ public:
 
 protected:
 	void *rec_received_;
-	AES server_aes_, client_aes_;
-	HMAC<SHA1> server_mac_, client_mac_;
+	AES aes_[2];//0 client 1 server
+	HMAC<SHA1> mac_[2];
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	static std::string certificate_;
 	int id_length_;
+	mpz_class enc_seq_num_ = 0, dec_seq_num_ = 0;
 
 private:
 	static RSA rsa_;
