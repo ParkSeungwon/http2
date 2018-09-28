@@ -143,8 +143,6 @@ array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 	mac_[1].key(p + 20, p + 40);
 	aes_[0].key(p + 40);//AES128 key size 16
 	aes_[1].key(p + 56);
-	//	client_aes_.iv(p + 72);
-	//	server_aes_.iv(p + 88);
 	return keys;
 }
 /******
@@ -696,34 +694,35 @@ until enough output has been generated.
 **********************/
 template<bool SV> string TLS<SV>::decode(string &&s)
 {
+	if(s != "") rec_received_ = s.data();
 	struct H {
 		TLS_header h1;
 		uint8_t iv[16];
 		unsigned char m[];
-	};
+	} *p = (H*)rec_received_;
 	struct {
 		uint8_t seq[8];
 		TLS_header h1;
 	} header_for_mac;
-	if(s != "") rec_received_ = s.data();
-	H* p = (H*)rec_received_;
 	
 	aes_[!SV].iv(p->iv);
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
 
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
+	array<unsigned char, 20> auth;
+	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
 
 	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	header_for_mac.h1 = p->h1;
-	unsigned char auth[20];
-	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
-
 	string t = struct2str(header_for_mac) + string{decrypted.begin(), decrypted.end()};
 	array<unsigned char, 20> a = mac_[!SV].hash(t.begin(), t.end());
 
-	for(int i=0; i<20; i++) cout << hex << +a[i]; cout << endl;
-	for(int i=0; i<20; i++) cout << hex << +auth[i]; cout << endl;
+	cout << "hashing : "; hexprint(t);
+	cout << "result : "; hexprint(a);
+
+	assert(auth == a);//fail!!!
+
 	return {decrypted.begin(), decrypted.end()};//v.back() == padding length
 }
 /***********************
@@ -766,9 +765,11 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 	header_for_mac.h1.set_length(len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
-	array<unsigned char, 20> verify;
-	verify = mac_[SV].hash(s2.begin(), s2.end());
+	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
 	frag += string{verify.begin(), verify.end()};//add authentication
+
+	cout << "hashing : "; hexprint(s2);
+	cout << "result : "; hexprint(verify);
 
 	int padding_length = 16 - frag.size() % 16;//20 = sha1 digest, 16 block sz
 	if(!padding_length) padding_length = 16;//add padding below
@@ -810,7 +811,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 		Handshake_header h;
 		h.handshake_type = 20;
 		string r = encode(struct2str(h));
-		r[0] = 0x16;
+	//	r[0] = 0x16;
 		return r;
 	}
 }

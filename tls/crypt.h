@@ -125,6 +125,11 @@ protected:
 	Sha512 sha_;
 };
 
+template<class C> static void hexprint(const C &c)
+{
+	for(auto a : c) std::cout << std::hex << +a;
+	std::cout << std::endl;
+}
 
 template<class H> class HMAC
 {//hmac using sha1
@@ -147,6 +152,8 @@ public:
 	}
 	template<typename It> auto hash(const It begin, const It end)
 	{
+		hexprint(o_key_pad_);
+		hexprint(i_key_pad_);
 		std::vector<unsigned char> v;
 		v.insert(v.begin(), std::begin(i_key_pad_), std::end(i_key_pad_));
 		v.insert(v.end(), begin, end);
