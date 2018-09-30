@@ -712,19 +712,14 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;
 	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
+	string content{decrypted.begin(), decrypted.end()};
 
 	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	header_for_mac.h1 = p->h1;
 	header_for_mac.h1.set_length(header_for_mac.h1.get_length() - 16);
-	string t = struct2str(header_for_mac) + string{decrypted.begin(), decrypted.end()};
-	array<unsigned char, 20> a = mac_[!SV].hash(t.begin(), t.end());
-
-	hexprint("hashing : ", t);
- 	hexprint("result : ", a);
-
-	assert(auth == a);//fail!!!
-
-	return {decrypted.begin(), decrypted.end()};//v.back() == padding length
+	string t = struct2str(header_for_mac) + content;
+	assert(auth == mac_[!SV].hash(t.begin(), t.end()));
+	return content;//v.back() == padding length
 }
 /***********************
 ApplicationData Protocol format
@@ -749,7 +744,7 @@ The mission of this protocol is to properly encapsulate the data coming from the
            length: arbitrary (up to 16k)
 ******************/
 template<bool SV> string TLS<SV>::encode(string &&s, int type)
-{//tomorrow
+{
 	struct {
 		TLS_header h1;
 		uint8_t iv[16];
@@ -764,17 +759,12 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
 	int block_len = ((len + 20) / 16 + 1) * 16;//20 = sha1 digest, 16 block sz
-	int padding_length = block_len - len;
 	header_for_mac.h1.set_length(block_len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
 	frag += string{verify.begin(), verify.end()};//add authentication
-
- 	hexprint("hashing : ", s2);
- 	hexprint("result : ", verify);
-
-	for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
+	while(frag.size() != block_len) frag += (char)(block_len - len - 21);//padding
 
 	auto iv = random_prime(16);
 	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
