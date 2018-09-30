@@ -760,12 +760,12 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	} header_for_mac;
 	header_for_mac.h1.content_type = header_to_send.h1.content_type = type;
 
+	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
-	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
-	int l = len + 21;
-	while(l % 16) l++;
-	header_for_mac.h1.set_length(l);
+	int block_len = ((len + 20) / 16 + 1) * 16;//20 = sha1 digest, 16 block sz
+	int padding_length = block_len - len;
+	header_for_mac.h1.set_length(block_len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
@@ -774,8 +774,6 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
  	hexprint("hashing : ", s2);
  	hexprint("result : ", verify);
 
-	int padding_length = 16 - frag.size() % 16;//20 = sha1 digest, 16 block sz
-	if(!padding_length) padding_length = 16;//add padding below
 	for(int i=0; i<padding_length; i++) frag += (char)(padding_length - 1);
 
 	auto iv = random_prime(16);
