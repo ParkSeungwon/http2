@@ -710,16 +710,16 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
-	array<unsigned char, 20> auth;
+	array<unsigned char, 20> auth;//get auth
 	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
 	string content{decrypted.begin(), decrypted.end()};
 
 	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	header_for_mac.h1 = p->h1;
-	header_for_mac.h1.set_length(header_for_mac.h1.get_length() - 16);
+	header_for_mac.h1.set_length(content.size());
 	string t = struct2str(header_for_mac) + content;
-	assert(auth == mac_[!SV].hash(t.begin(), t.end()));
-	return content;//v.back() == padding length
+	assert(auth == mac_[!SV].hash(t.begin(), t.end()));//verify auth
+	return content;
 }
 /***********************
 ApplicationData Protocol format
@@ -759,7 +759,7 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
 	int block_len = ((len + 20) / 16 + 1) * 16;//20 = sha1 digest, 16 block sz
-	header_for_mac.h1.set_length(block_len);
+	header_for_mac.h1.set_length(len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
