@@ -57,7 +57,7 @@ public:
 	void session_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
 	std::string decode(std::string &&s = "");//if not rvalue use set_buf
-	std::string encode(std::string &&s = "");
+	std::string encode(std::string &&s = "", int type = 0x17);
 
 	std::string client_hello(std::string &&s = "");//s != "" -> buffer is set to s
 	std::string server_hello(std::string &&s = "");//s == "" -> manual buffer set

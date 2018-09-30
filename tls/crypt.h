@@ -125,8 +125,9 @@ protected:
 	Sha512 sha_;
 };
 
-template<class C> void hexprint(const C &c)
+template<class C> void hexprint(const char *p, const C &c)
 {
+	std::cout << p;
 	for(auto a : c) std::cout << std::setw(2) << std::setfill('0') << std::hex << +a;
 	std::cout << std::endl;
 }
@@ -152,8 +153,8 @@ public:
 	}
 	template<typename It> auto hash(const It begin, const It end)
 	{
-		hexprint(o_key_pad_);
-		hexprint(i_key_pad_);
+		hexprint("o_key_pad : ", o_key_pad_);
+		hexprint("i_key_pad : ", i_key_pad_);
 		std::vector<unsigned char> v;
 		v.insert(v.begin(), std::begin(i_key_pad_), std::end(i_key_pad_));
 		v.insert(v.end(), begin, end);

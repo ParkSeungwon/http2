@@ -719,8 +719,8 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	string t = struct2str(header_for_mac) + string{decrypted.begin(), decrypted.end()};
 	array<unsigned char, 20> a = mac_[!SV].hash(t.begin(), t.end());
 
-	cout << "hashing : "; hexprint(t);
-	cout << "result : "; hexprint(a);
+	hexprint("hashing : ", t);
+ 	hexprint("result : ", a);
 
 	assert(auth == a);//fail!!!
 
@@ -748,7 +748,7 @@ The mission of this protocol is to properly encapsulate the data coming from the
                 /
            length: arbitrary (up to 16k)
 ******************/
-template<bool SV> string TLS<SV>::encode(string &&s)
+template<bool SV> string TLS<SV>::encode(string &&s, int type)
 {//tomorrow
 	struct {
 		TLS_header h1;
@@ -758,7 +758,7 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 		uint8_t seq[8];
 		TLS_header h1;
 	} header_for_mac;
-	header_for_mac.h1.content_type = header_to_send.h1.content_type = 0x17;
+	header_for_mac.h1.content_type = header_to_send.h1.content_type = type;
 
 	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
@@ -771,8 +771,8 @@ template<bool SV> string TLS<SV>::encode(string &&s)
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
 	frag += string{verify.begin(), verify.end()};//add authentication
 
-	cout << "hashing : "; hexprint(s2);
-	cout << "result : "; hexprint(verify);
+ 	hexprint("hashing : ", s2);
+ 	hexprint("result : ", verify);
 
 	int padding_length = 16 - frag.size() % 16;//20 = sha1 digest, 16 block sz
 	if(!padding_length) padding_length = 16;//add padding below
@@ -813,8 +813,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	} else {
 		Handshake_header h;
 		h.handshake_type = 20;
-		string r = encode(struct2str(h));
-	//	r[0] = 0x16;
+		string r = encode(struct2str(h),  0x16);
 		return r;
 	}
 }
