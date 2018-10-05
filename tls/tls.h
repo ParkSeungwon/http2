@@ -83,5 +83,5 @@ private:
 	bool support_dhe_ = false;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);
-	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
+	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret) const;
 };

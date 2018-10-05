@@ -107,7 +107,7 @@ void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
 }
 
 template<bool SV>
-array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) 
+array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) const
 {
 	unsigned char pre[DH_KEY_SZ], rand[64];
 	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
@@ -121,6 +121,7 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
 	auto master_secret = prf.get_n_byte(48);
+	hexprint("master secret", master_secret);//ok
 	prf.secret(master_secret.begin(), master_secret.end());
 	memcpy(rand, server_random_.data(), 32);
 	memcpy(rand + 32, client_random_.data(), 32);
@@ -128,10 +129,8 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	prf.label("key expansion");
 	std::array<unsigned char, KEY_SZ> r;
 	auto v = prf.get_n_byte(KEY_SZ);
-	for(int i=0; i<KEY_SZ; i++) {
-		r[i] = v[i];
-		cout << hex << +r[i];
-	}
+	for(int i=0; i<KEY_SZ; i++) r[i] = v[i];
+	hexprint("expanded keys", r);
 	return r;
 }
 
@@ -308,13 +307,14 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		Hello_header h3;
 		uint8_t cipher_suite_length[2] = {0, 4};
 		uint8_t cipher_suite[4] = {0x00, 0x33, 0x00, 0x2f};
-		uint8_t compression = 0;
+		uint8_t compression_length = 1;
+		uint8_t compression_method = 0;//none
 		uint8_t extension_length[2] = {0, 0};
 	} r;
 	if constexpr(!SV) {//if client
 		r.h2.handshake_type = 1;
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 9;
-		r.h2.length[2] = sizeof(Hello_header) + 9;
+		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 10;
+		r.h2.length[2] = sizeof(Hello_header) + 10;
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 		return struct2str(r);
