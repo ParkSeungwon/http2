@@ -111,6 +111,7 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) co
 {
 	unsigned char pre[DH_KEY_SZ], rand[64];
 	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
+	cout << "premaster : 0x" << hex << premaster_secret << endl;
 	if(sz % 2) sz++;
 	sz /= 2;
 	mpz2bnd(premaster_secret, pre, pre + sz);
@@ -133,7 +134,29 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) co
 	hexprint("expanded keys", r);
 	return r;
 }
-
+/*********
+To generate the key material, compute
+key_block = PRF(SecurityParameters.master_secret,
+"key expansion",
+SecurityParameters.server_random +
+SecurityParameters.client_random);
+until enough output has been generated.
+ Then, the key_block is
+partitioned as follows:
+client_write_MAC_key[SecurityParameters.mac_key_length]
+server_write_MAC_key[SecurityParameters.mac_key_length]
+client_write_key[SecurityParameters.enc_key_length]
+server_write_key[SecurityParameters.enc_key_length]
+client_write_IV[SecurityParameters.fixed_iv_length]
+server_write_IV[SecurityParameters.fixed_iv_length]
+Currently, the client_write_IV and server_write_IV are only generated
+for implicit nonce techniques as described in Section 3.2.1 of
+[AEAD].
+Implementation note: The currently defined cipher suite which
+requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
+byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
+material.
+************/
 template<bool SV>
 array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 {
