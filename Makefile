@@ -1,5 +1,4 @@
 all : 
-	incltouch.x
 	make -C src/
 	make -C framework/
 	make -C database/
