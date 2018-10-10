@@ -65,6 +65,12 @@ void DnDD::pg()
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", sq[0]["title"].asString());
+	if(page == "0") swap("MAINTEXT", level2txt(allow));
+	else {
+		string s = sq[0]["contents"].asString();
+		if(s.substr(0, 15) != "data:text/html;") swap("MAINTEXT", s);
+		else swap("srcdoc=\"MAINTEXT\"", "src=" + s);
+	}
 	swap("MAINTEXT", page == "0" ? 
 			level2txt(allow) : quote_encode(sq[0]["contents"].asString()));
 	tmp = sq[0];//5 date

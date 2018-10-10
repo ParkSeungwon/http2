@@ -217,5 +217,5 @@ Output = e3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b30179
 
 TEST_CASE("mpz_sizeinbase") {
 	mpz_class a{"0x123213"};
-	cout <<"123213 size is " << mpz_sizeinbase(a.get_mpz_t(), 16) << endl;
+//	cout <<"123213 size is " << mpz_sizeinbase(a.get_mpz_t(), 16) << endl;
 }

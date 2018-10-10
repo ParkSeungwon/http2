@@ -128,7 +128,7 @@ protected:
 template<class C> void hexprint(const char *p, const C &c)
 {
 	std::cout << p << " : 0x";
-	for(auto a : c) fmt::print("{:02x}", a);
+	for(unsigned char a : c) fmt::print("{:02x}", a);
 	std::cout << std::endl;
 }
 

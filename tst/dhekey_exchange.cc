@@ -60,7 +60,7 @@ TEST_CASE("get_pubkey") {
 	cout << "pubkey : "  << hex << K << endl << e << endl << sign << endl;
 	auto z = powm(sign, e, K);
 	auto ss = get_padding(z);
-	cout << z << endl << der2json(ss);
+//	cout << z << endl << der2json(ss);
 }
 
 array<mpz_class, 2> process_bitstring(string s);
@@ -92,7 +92,7 @@ TEST_CASE("DHA-RSA server key exchange signature verify") {
 	REQUIRE(signature_decode % mpz_class{s} == h);
 
 	auto ss2 = get_padding(signature_decode);
-	cout << signature_decode << endl << der2json(ss2) << endl;
+//	cout << signature_decode << endl << der2json(ss2) << endl;
 //First of all, I compute signature^e mod n (e and n coming from the server Certificate). The result looks OK as its looks properly encoded (01FFFF...FF00...<hash>).
 }
 

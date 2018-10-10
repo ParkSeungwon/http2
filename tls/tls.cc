@@ -70,10 +70,6 @@ template<bool SV> int TLS<SV>::get_content_type(string &&s)
 	uint8_t *p = (uint8_t*)rec_received_;
 	return p[0];
 }
-template<bool SV> void TLS<SV>::set_buf(void* p)
-{
-	rec_received_ = p;
-}
 template<bool SV> void TLS<SV>::session_id(array<unsigned char, 32> id)
 {
 	session_id_ = id;
@@ -107,7 +103,7 @@ void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
 }
 
 template<bool SV>
-array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) const
+array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 {
 	unsigned char pre[DH_KEY_SZ], rand[64];
 	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
@@ -121,9 +117,9 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret) co
 	memcpy(rand + 32, server_random_.data(), 32);
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
-	auto master_secret = prf.get_n_byte(48);
-	hexprint("master secret", master_secret);//ok
-	prf.secret(master_secret.begin(), master_secret.end());
+	master_secret_ = prf.get_n_byte(48);
+	hexprint("master secret", master_secret_);//ok
+	prf.secret(master_secret_.begin(), master_secret_.end());
 	memcpy(rand, server_random_.data(), 32);
 	memcpy(rand + 32, client_random_.data(), 32);
 	prf.seed(rand, rand + 64);
@@ -322,6 +318,27 @@ struct Hello_header {
 	uint8_t session_id_length = 32;
 	uint8_t session_id[32];
 };
+template<bool SV> void TLS<SV>::set_buf(void* p)
+{
+	rec_received_ = p;
+	char *cp = (char*)p;
+	TLS_header *hp = (TLS_header*)p;
+	accumulate(string{cp, cp + hp->get_length()});
+}
+template<bool SV> void TLS<SV>::set_buf(const string &s)
+{
+	rec_received_ = s.data();
+	accumulate(s);
+}
+template<bool SV> string TLS<SV>::accumulate(const string &s)
+{
+	static int k = 0;
+	char p[] = "accumulating  ";
+	p[13] = k++ + '0';
+	accumulated_handshakes_ += s;
+	hexprint(p, s);
+	return s;
+}
 template<bool SV> string TLS<SV>::client_hello(string&& s)
 {//return desired id
 	struct H {
@@ -340,9 +357,9 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		r.h2.length[2] = sizeof(Hello_header) + 10;
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
-		return struct2str(r);
+		return accumulate(struct2str(r));
 	} else {//server
-		if(s != "") rec_received_ = s.data();
+		if(s != "") set_buf(s);
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
@@ -427,9 +444,9 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 		memcpy(r.h3.random, server_random_.data(), 32);
 		memcpy(r.h3.session_id, session_id_.data(), 32);
-		return struct2str(r);
+		return accumulate(struct2str(r));
 	} else {
-		if(s != "") rec_received_ = s.data();
+		if(s != "") set_buf(s);
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
 		memcpy(session_id_.data(), p->h3.session_id, 32);
@@ -463,9 +480,10 @@ length     \                  version           SessionId              \
 ****************/
 template<bool SV> string TLS<SV>::server_certificate(string&& s)
 {
-	if constexpr(SV) return certificate_;
-	else {
-		if(s != "") rec_received_ = s.data();
+	if constexpr(SV) {
+		return accumulate(certificate_);
+	} else {
+		if(s != "") set_buf(s);
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
@@ -479,7 +497,7 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 		auto jv = der2json(ss);
 		auto [K, e, sign] = get_pubkeys(jv);
 		std::cout << std::hex << K << std::endl << e << std::endl << sign << std::endl;
-		std::cout << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
+		//std::cout << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
 		rsa_.K = K; rsa_.e = e;
 		return "";
 	}
@@ -556,9 +574,9 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
 		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
 		generate_signature(r.p_length, r.sign);
-		return struct2str(r);
+		return accumulate(struct2str(r));
 	} else {
-		if(s != "") rec_received_ = s.data();
+		if(s != "") set_buf(s);
 		H *q = (H*)rec_received_;
 		mpz_class p = bnd2mpz(q->p, q->p + DH_KEY_SZ),
 				  g = bnd2mpz(q->g, q->g + DH_KEY_SZ),
@@ -621,9 +639,9 @@ template<bool SV> string TLS<SV>::server_hello_done(string&& s)
 	} r;
 	if constexpr(SV) {
 		r.h2.handshake_type = 14;
-		return struct2str(r);
+		return accumulate(struct2str(r));
 	} else {
-		if(s != "") rec_received_ = s.data();
+		if(s != "") set_buf(s);
 		return "";
 	}
 }
@@ -655,10 +673,8 @@ template<bool SV> string TLS<SV>::change_cipher_spec(string &&s)
 		} r;
 		r.h1.content_type = 20;
 		r.h1.length[1] = 1;
-		return struct2str(r);
-	} else {
-		if(s != "") rec_received_ = s.data();
-	}
+		return accumulate(struct2str(r));
+	} else set_buf(s);
 }
 
 template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
@@ -672,7 +688,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 
 	mpz_class premaster_secret;
 	if constexpr(SV) {
-		if(s != "") rec_received_ = s.data();
+		if(s != "") set_buf(s);
 		H* p = (H*)rec_received_;;
 		assert(p->h2.handshake_type == 16);
 		if(support_dhe_) 
@@ -691,7 +707,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 			mpz2bnd(z, r.pub_key, r.pub_key + DH_KEY_SZ);
 			use_key(derive_keys(premaster_secret));
 		}
-		return struct2str(r);
+		return accumulate(struct2str(r)); 
 	}
 }
 /*****************************
@@ -816,16 +832,25 @@ struct {
 *********************/
 template<bool SV> string TLS<SV>::finished(string &&s)
 {//finished message to send(s == "") and receive(s == recv())
-	if(s != "") {
-		Handshake_header h;
-		h.handshake_type = 20;
-		assert(struct2str(h) == decode(move(s)));
+	PRF<SHA2> prf; SHA2 sha;
+	prf.secret(master_secret_.begin(), master_secret_.end());
+	unsigned char *p = (unsigned char*)accumulated_handshakes_.data();
+	auto h = sha.hash(p, p + accumulated_handshakes_.size());
+	prf.seed(h.begin(), h.end());
+	const char *label[2] = {"client finished", "server finished"};
+	if(s != "") {//if receiving
+		prf.label(label[!SV]);
+		auto v = prf.get_n_byte(12);
+		hexprint("accum", accumulated_handshakes_);
+		hexprint("finished", v);
+		assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
 		return "";
-	} else {
-		Handshake_header h;
-		h.handshake_type = 20;
-		string r = encode(struct2str(h),  0x16);
-		return r;
+	} else {//if sending
+		prf.label(label[SV]);
+		auto v = prf.get_n_byte(12);
+		hexprint("accum", accumulated_handshakes_);
+		hexprint("finished", v);
+		return accumulate(encode(string{v.begin(), v.end()}, 0x16));
 	}
 }
 /***********************
@@ -846,5 +871,12 @@ Finished: This message signals that the TLS negotiation is complete and the Ciph
 record    \     length
 length     \
 type: 20
+
+change cipher spec after
+The Finished messages have contents which are computed with, again, the PRF.
+The contents of the Finished message are 12 bytes obtained by invoking the PRF with, as "secret" input, the master secret; the "seed" is the hash of all previous handshake messages.
+The "label" differs depending on who, between the client and the server, sends that specific Finished message.
+Since the Finished messages are sent after the ChangeCipherSpec, they are encrypted and MACed, using the algorithms and keys which have just been negotiated.
+In that sense, the keys and nonces (the client and server randoms) are involved multiple times.
  *********************/
 #pragma pack()

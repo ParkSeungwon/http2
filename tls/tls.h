@@ -69,11 +69,13 @@ public:
 	std::string finished(std::string &&s = "");//if s=="" send, else recv
 
 protected:
-	void *rec_received_;
+	const void *rec_received_;
 	AES aes_[2];//0 client 1 server
 	HMAC<SHA1> mac_[2];
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
+	std::vector<unsigned char> master_secret_;
+	std::string accumulated_handshakes_;
 	static std::string certificate_;
 	int id_length_;
 	mpz_class enc_seq_num_ = 0, dec_seq_num_ = 0;
@@ -83,5 +85,7 @@ private:
 	bool support_dhe_ = false;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);
-	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret) const;
+	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
+	void set_buf(const std::string &s);
+	std::string accumulate(const std::string &s);
 };

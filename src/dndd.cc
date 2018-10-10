@@ -123,6 +123,7 @@ void DnDD::add()
 	else content_ = "<script>alert('your level does not qualify.')</script>";
 }
 
+vector<unsigned char> base64_decode(string s);
 void DnDD::edit()
 {
 	if(page == "0") 
@@ -131,7 +132,12 @@ void DnDD::edit()
 		content_ = "<script>alert('your level does not qualify')</script>";
 	else if(id == tmp["email"].asString()) {
 		swap("TITLE", tmp["title"].asString());
-		swap("CONTENT", tmp["contents"].asString());
+		string s = tmp["contents"].asString();
+		if(s.substr(0, 15) == "data:text/html;") {
+			auto v = base64_decode(s.substr(22));
+			s = string{v.begin(), v.end()};
+		}
+		swap("CONTENT", s);
 	} else content_ = "<script>alert('you do not own this page');</script>";
 }
 

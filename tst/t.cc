@@ -79,12 +79,6 @@ TEST_CASE("regex") {
 	REQUIRE(s.substr(0, s.size()) == s);
 }
 	
-TEST_CASE("http recv") {
-	string s;
-	char c = 1;
-	s += c;
-	cout << "string " << s << endl;
-}
 TEST_CASE("array init") {
 	array<int, 10> a{};
 	array<int, 10> b;
@@ -114,5 +108,10 @@ TEST_CASE("return =") {
 TEST_CASE("bool []") {
 	char c[2] = {'a', 'c'};
 	REQUIRE(c[true] == 'c');
+}
+
+TEST_CASE("substr index") {
+	string s = "data:text/html;base,";
+	REQUIRE(s.substr(0, 15) == "data:text/html;");
 }
 
