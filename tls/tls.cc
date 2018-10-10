@@ -838,20 +838,20 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	auto h = sha.hash(p, p + accumulated_handshakes_.size());
 	prf.seed(h.begin(), h.end());
 	const char *label[2] = {"client finished", "server finished"};
-	if(s != "") {//if receiving
-		prf.label(label[!SV]);
-		auto v = prf.get_n_byte(12);
-		hexprint("accum", accumulated_handshakes_);
-		hexprint("finished", v);
-		assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
-		return "";
-	} else {//if sending
-		prf.label(label[SV]);
-		auto v = prf.get_n_byte(12);
-		hexprint("accum", accumulated_handshakes_);
-		hexprint("finished", v);
-		return accumulate(encode(string{v.begin(), v.end()}, 0x16));
+	static int k = 0;
+	prf.label(label[k++]);
+	auto v = prf.get_n_byte(12);
+	hexprint("accum", accumulated_handshakes_);
+	hexprint("finished", v);
+
+	if constexpr(SV) {
+		if(!k) assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
+		else return accumulate(encode(string{v.begin(), v.end()}, 0x16));
+	} else {
+		if(!k) return accumulate(encode(string{v.begin(), v.end()}, 0x16));
+		else assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
 	}
+	return "";
 }
 /***********************
 Finished: This message signals that the TLS negotiation is complete and the CipherSuite is activated. It should be sent already encrypted, since the negotiation is successfully done, so a ChangeCipherSpec protocol message must be sent before this one to activate the encryption. The Finished message contains a hash of all previous handshake messages combined, followed by a special number identifying server/client role, the master secret and padding. The resulting hash is different from the CertificateVerify hash, since there have been more handshake messages.

@@ -115,3 +115,14 @@ TEST_CASE("substr index") {
 	REQUIRE(s.substr(0, 15) == "data:text/html;");
 }
 
+int f() {
+	cout << 1 << ' ';
+	return 1;
+}
+int g() {
+	cout << 2 << ' ';
+	return 2;
+}
+TEST_CASE("which is front") {
+	f() + g();
+}

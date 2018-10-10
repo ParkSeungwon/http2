@@ -17,7 +17,10 @@ public:
 		if(t.support_dhe()) t.server_key_exchange(recv());
 		t.server_hello_done(recv());
 		cout << "server hello done" << endl;
-		send(t.client_key_exchange() + t.change_cipher_spec() + t.finished());
+		string a = t.client_key_exchange();
+		string b = t.change_cipher_spec();
+		string c = t.finished();
+		send(a + b + c);
 		cout << "client key exchange, change cipher spec, finished" << endl;
 		t.change_cipher_spec(recv());
 		cout << "server change cipher spec" << endl;

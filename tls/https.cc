@@ -106,7 +106,9 @@ void HTTPS::connected(int client_fd)
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		t.session_id(id = new_id());
 		hexprint("session id", id);
-		send(t.server_hello() + t.server_certificate());
+		string a = t.server_hello();
+		string b = t.server_certificate();
+		send(a + b);
 		cout << "server hello, server certificate " << endl;
 		if(t.support_dhe())
 			send(t.server_key_exchange()), cout << "server key exchange" << endl;
