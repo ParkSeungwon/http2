@@ -674,7 +674,7 @@ template<bool SV> string TLS<SV>::change_cipher_spec(string &&s)
 		r.h1.content_type = 20;
 		r.h1.length[1] = 1;
 		return accumulate(struct2str(r));
-	} else set_buf(s);
+	} else accumulate(s);
 }
 
 template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
