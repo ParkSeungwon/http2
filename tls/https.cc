@@ -101,30 +101,27 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	TLS t;//TLS is decoupled from file descriptor
-	array<unsigned char, 32> id; int i=0;
+	array<unsigned char, 32> id; int i=0; string s;
 	for(unsigned char c : t.client_hello(recv())) id[i++] = c;
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		t.session_id(id = new_id());
 		hexprint("session id", id);
-		string a = t.server_hello();
-		string b = t.server_certificate();
-		send(a + b);
+		send((s = t.server_hello(), s + t.server_certificate()));
 		cout << "server hello, server certificate " << endl;
 		if(t.support_dhe())
 			send(t.server_key_exchange()), cout << "server key exchange" << endl;
 		send(t.server_hello_done()); cout << "server hello done" << endl;
-		i = 0;
 		for(unsigned char c : t.client_key_exchange(recv())) 
 			idNchannel_[id]->keys[i++] = c; 
 		cout << "client key exchange" << endl;
 		t.change_cipher_spec(recv()); cout << "change cipher spec" << endl;
 		t.finished(recv()); cout << "client finished" << endl;
-		send(t.change_cipher_spec() + t.finished()); 
+		send((s = t.change_cipher_spec(), s + t.finished()));
 		cout << "change cipher spec, server finished" << endl;
 	} else {//resume connection
 		t.session_id(id);
 		t.use_key(idNchannel_[id]->keys);
-		send(t.server_hello() + t.finished());
+		send((s = t.server_hello(), s + t.finished()));
 		t.finished(recv());
 	}
 

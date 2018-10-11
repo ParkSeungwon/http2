@@ -325,7 +325,7 @@ template<bool SV> void TLS<SV>::set_buf(void* p)
 	TLS_header *hp = (TLS_header*)p;
 	accumulate(string{cp, cp + hp->get_length()});
 }
-template<bool SV> void TLS<SV>::set_buf(const string &s)
+template<bool SV> void TLS<SV>::set_buf(const string &s)//buggy?
 {
 	rec_received_ = s.data();
 	accumulate(s);
@@ -838,19 +838,15 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	auto h = sha.hash(p, p + accumulated_handshakes_.size());
 	prf.seed(h.begin(), h.end());
 	const char *label[2] = {"client finished", "server finished"};
-	static int k = 0;
-	prf.label(label[k++]);
+	static int k = -1;
+	prf.label(label[++k]);
 	auto v = prf.get_n_byte(12);
-	hexprint("accum", accumulated_handshakes_);
+//	hexprint("accum", accumulated_handshakes_);
 	hexprint("finished", v);
 
-	if constexpr(SV) {
-		if(!k) assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
-		else return accumulate(encode(string{v.begin(), v.end()}, 0x16));
-	} else {
-		if(!k) return accumulate(encode(string{v.begin(), v.end()}, 0x16));
-		else assert(decode(move(s)) == accumulate(string{v.begin(), v.end()}));
-	}
+	if(SV == k) return accumulate(encode(string{v.begin(), v.end()}, 0x16));
+	accumulate(s);
+	assert(decode(move(s)) == (string{v.begin(), v.end()}));
 	return "";
 }
 /***********************

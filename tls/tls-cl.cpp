@@ -42,11 +42,11 @@ int main(int ac, char **av) {
 	string ip = ac < 3 ? "localhost" : av[2];
 	cout << "usage : " << av[0] << " port(4430) ip(www.msn.com)" << endl;
 	TLS_client t{ip, port};
-	string s;
 	AsyncQueue<string> aq {
 		bind(&TLS_client::recv, &t),
 		[&t](string s) { cout << t.t.decode(move(s)); }
 	};
+	string s;
 	while(getline(cin, s)) t.send(t.t.encode(move(s)));
 }
 
