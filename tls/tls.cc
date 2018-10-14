@@ -2,6 +2,8 @@
 #include<cstring>
 #include<cassert>
 #include<fstream>
+#include<plog/Log.h>
+#include<plog/Appenders/ColorConsoleAppender.h>
 #include"tls.h"
 using namespace std;
 
@@ -21,8 +23,15 @@ template<class S> static std::string struct2str(const S &s)
 {
 	return std::string{(const char*)&s, sizeof(s)};
 }
-static string init_certificate()
+static void init_plog()
 {
+	static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
+	plog::init(plog::verbose, &consoleAppender);
+	plog::init<1>(plog::debug, "/tmp/tls.log");
+}
+static string init_certificate()
+{//this will run before main -> use for initialization
+	init_plog();
 	ifstream f2("key.pem");//generated with openssl genrsa 2048 > key.pem
 	ifstream f("cert.pem");//openssl req -x509 -days 1000 -new -key key.pem -out cert.pem
 	auto [K, e, d] = get_keys(f2);
@@ -496,8 +505,8 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 			ss << std::noskipws << p->certificate[i];//first certificate
 		auto jv = der2json(ss);
 		auto [K, e, sign] = get_pubkeys(jv);
-		std::cout << std::hex << K << std::endl << e << std::endl << sign << std::endl;
-		//std::cout << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
+		LOGI << std::hex << K << std::endl << e << std::endl << sign << std::endl;
+		LOGD_(1) << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
 		rsa_.K = K; rsa_.e = e;
 		return "";
 	}
@@ -674,7 +683,9 @@ template<bool SV> string TLS<SV>::change_cipher_spec(string &&s)
 		r.h1.content_type = 20;
 		r.h1.length[1] = 1;
 		return accumulate(struct2str(r));
-	} else accumulate(s);
+	} 
+	accumulate(s);
+	return "";
 }
 
 template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
