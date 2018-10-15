@@ -1,3 +1,4 @@
+#include<plog/Log.h>
 #include"crypt.h"
 using namespace std;
 
@@ -17,6 +18,11 @@ DiffieHellman::DiffieHellman(mpz_class p, mpz_class g, mpz_class ya)
 	else xb = random_prime(256);
 	yb = powm(g, xb, p);
 	K = powm(ya, xb, p);
+	LOGD << "p : " << hex << p;
+	LOGD << "g : " << hex << g;
+	LOGD << "ya : " << hex << ya;
+	LOGD << "yb : " << hex << yb;
+	LOGD << "K : " << hex << K;
 }
 mpz_class DiffieHellman::set_yb(mpz_class pub_key)
 {//set client pub key

@@ -1,6 +1,5 @@
 //http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session
 #include<cstring>
-#include<cassert>
 #include<fstream>
 #include<plog/Log.h>
 #include<plog/Appenders/ColorConsoleAppender.h>
@@ -170,6 +169,8 @@ array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 	mac_[1].key(p + 20, p + 40);
 	aes_[0].key(p + 40);//AES128 key size 16
 	aes_[1].key(p + 56);
+//	aes_[0].iv(p + 72);
+//	aes_[1].iv(p + 88);
 	return keys;
 }
 /******
@@ -345,7 +346,7 @@ template<bool SV> string TLS<SV>::accumulate(const string &s)
 	char p[] = "accumulating  ";
 	p[13] = k++ + '0';
 	accumulated_handshakes_ += s;
-	hexprint(p, s);
+	LOGD_(1) << p << s;
 	return s;
 }
 template<bool SV> string TLS<SV>::client_hello(string&& s)
@@ -489,9 +490,8 @@ length     \                  version           SessionId              \
 ****************/
 template<bool SV> string TLS<SV>::server_certificate(string&& s)
 {
-	if constexpr(SV) {
-		return accumulate(certificate_);
-	} else {
+	if constexpr(SV) return accumulate(certificate_);
+	else {
 		if(s != "") set_buf(s);
 		struct H {
 			TLS_header h1;
@@ -505,7 +505,9 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 			ss << std::noskipws << p->certificate[i];//first certificate
 		auto jv = der2json(ss);
 		auto [K, e, sign] = get_pubkeys(jv);
-		LOGI << std::hex << K << std::endl << e << std::endl << sign << std::endl;
+		LOGI << "K : " << hex << K << endl;
+		LOGI << "e : " << e << endl;
+		LOGI << "sign : " << sign << endl;
 		LOGD_(1) << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
 		rsa_.K = K; rsa_.e = e;
 		return "";
@@ -586,11 +588,13 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s);
-		H *q = (H*)rec_received_;
-		mpz_class p = bnd2mpz(q->p, q->p + DH_KEY_SZ),
-				  g = bnd2mpz(q->g, q->g + DH_KEY_SZ),
-				  ya = bnd2mpz(q->ya, q->ya + DH_KEY_SZ);
-		diffie_ = DiffieHellman{p, g, ya};
+		const uint8_t *ptr_keys = static_cast<const H*>(rec_received_)->p_length;
+		mpz_class pgya[3];
+		for(int i=0, key_length; i<3; ptr_keys += key_length + 2, i++) {
+			key_length = *ptr_keys * 0x100 + *(ptr_keys + 1);
+			pgya[i] = bnd2mpz(ptr_keys + 2, ptr_keys + 2 + key_length);
+		}
+		diffie_ = DiffieHellman{pgya[0], pgya[1], pgya[2]};
 		use_key(derive_keys(diffie_.K));
 		return "";
 	}	
@@ -758,6 +762,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	aes_[!SV].iv(p->iv);
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
 
+	LOGD << "decrypted back : " << +decrypted.back();
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
