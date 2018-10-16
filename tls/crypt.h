@@ -98,7 +98,7 @@ public:
 	template<typename It>
 	std::array<unsigned char, output_size> hash(const It begin, const It end) {
 		std::array<unsigned char, output_size> r;
-		wc_Sha256Update(&sha_, &*begin, end - begin);
+		wc_Sha256Update(&sha_, (const byte*)&*begin, end - begin);
 		wc_Sha256Final(&sha_, r.data());
 		return r;
 	}
@@ -193,14 +193,18 @@ template<class H> class PRF
 {//H is hash function usually sha256
 public:
 	template<class It> void secret(const It begin, const It end) {
+		secret_.clear();
 		for(It it = begin; it != end; it++) secret_.push_back(*it);
 		hmac_.key(secret_.begin(), secret_.end());
 	}
 	void label(const char* p) {
+		label_.clear();
 		while(*p) label_.push_back(*p++);
 	}
 	template<class It> void seed(const It begin, const It end) {
+		seed_.clear();
 		for(It it = begin; it != end; it++) seed_.push_back(*it);
+		hexprint("seed", seed_);
 	}
 	std::vector<unsigned char> get_n_byte(int n) {
 		auto seed = label_;//seed = label + seed_

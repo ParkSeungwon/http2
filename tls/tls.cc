@@ -131,6 +131,8 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	memcpy(rand, server_random_.data(), 32);
 	memcpy(rand + 32, client_random_.data(), 32);
 	prf.seed(rand, rand + 64);
+	hexprint("server random", server_random_);
+	hexprint("client random", client_random_);
 	prf.label("key expansion");
 	std::array<unsigned char, KEY_SZ> r;
 	auto v = prf.get_n_byte(KEY_SZ);
@@ -850,8 +852,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 {//finished message to send(s == "") and receive(s == recv())
 	PRF<SHA2> prf; SHA2 sha;
 	prf.secret(master_secret_.begin(), master_secret_.end());
-	unsigned char *p = (unsigned char*)accumulated_handshakes_.data();
-	auto h = sha.hash(p, p + accumulated_handshakes_.size());
+	auto h = sha.hash(accumulated_handshakes_.cbegin(), accumulated_handshakes_.cend());
 	prf.seed(h.begin(), h.end());
 	const char *label[2] = {"client finished", "server finished"};
 	static int k = -1;
