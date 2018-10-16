@@ -347,7 +347,7 @@ template<bool SV> string TLS<SV>::accumulate(const string &s)
 	static int k = 0;
 	char p[] = "accumulating  ";
 	p[13] = k++ + '0';
-	accumulated_handshakes_ += s;
+	accumulated_handshakes_ += s.substr(sizeof(TLS_header));
 	LOGD_(1) << p << s;
 	return s;
 }
@@ -688,9 +688,8 @@ template<bool SV> string TLS<SV>::change_cipher_spec(string &&s)
 		} r;
 		r.h1.content_type = 20;
 		r.h1.length[1] = 1;
-		return accumulate(struct2str(r));
+		return struct2str(r);
 	} 
-	accumulate(s);
 	return "";
 }
 
@@ -861,7 +860,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 //	hexprint("accum", accumulated_handshakes_);
 	hexprint("finished", v);
 
-	if(SV == k) return accumulate(encode(string{v.begin(), v.end()}, 0x16));
+	if(SV == k) return accumulate(encode({v.begin(), v.end()}, 0x16));
 	accumulate(s);
 	assert(decode(move(s)) == (string{v.begin(), v.end()}));
 	return "";
