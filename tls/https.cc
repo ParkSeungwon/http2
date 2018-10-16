@@ -134,10 +134,10 @@ void HTTPS::connected(int client_fd)
 		}
 	}};
 	cout << time_out << 's' << endl;
-	while(idNchannel_[id]->last_transmission > clock::now() - time_out * 1s + 45s) {
-		cout << "sleeping for 30s" << endl;
+	while(idNchannel_[id]->last_transmission > clock::now() - time_out * 1s + 45s)
 		this_thread::sleep_for(30s);//data communication until garbage collection 
-	}
+//	shutdown(client_fd, SHUT_RDWR);
+//	th.join();
 	close(client_fd);
 }
 
