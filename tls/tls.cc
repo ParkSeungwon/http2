@@ -335,7 +335,6 @@ template<bool SV> void TLS<SV>::set_buf(void* p)
 	rec_received_ = p;
 	char *cp = (char*)p;
 	TLS_header *hp = (TLS_header*)p;
-	accumulate(string{cp, cp + hp->get_length()});
 }
 template<bool SV> void TLS<SV>::set_buf(const string &s)//buggy?
 {
@@ -350,6 +349,13 @@ template<bool SV> string TLS<SV>::accumulate(const string &s)
 	accumulated_handshakes_ += s.substr(sizeof(TLS_header));
 	LOGD_(1) << p << s;
 	return s;
+}
+template<bool SV> void TLS<SV>::accumulate()
+{//working with buffer version
+	TLS_header *p = (TLS_header*)rec_received_;
+	char *q = (char*)rec_received_;
+	accumulated_handshakes_ += string{q + sizeof(TLS_header),
+									q + sizeof(TLS_header) + p->get_length()};
 }
 template<bool SV> string TLS<SV>::client_hello(string&& s)
 {//return desired id
@@ -372,6 +378,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		return accumulate(struct2str(r));
 	} else {//server
 		if(s != "") set_buf(s);
+		else accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
@@ -459,6 +466,7 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s);
+		else accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
 		memcpy(session_id_.data(), p->h3.session_id, 32);
@@ -495,6 +503,7 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 	if constexpr(SV) return accumulate(certificate_);
 	else {
 		if(s != "") set_buf(s);
+		else accumulate();
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
@@ -590,6 +599,7 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s);
+		else accumulate();
 		const uint8_t *ptr_keys = static_cast<const H*>(rec_received_)->p_length;
 		mpz_class pgya[3];
 		for(int i=0, key_length; i<3; ptr_keys += key_length + 2, i++) {
@@ -657,6 +667,7 @@ template<bool SV> string TLS<SV>::server_hello_done(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s);
+		else accumulate();
 		return "";
 	}
 }
@@ -705,6 +716,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 	mpz_class premaster_secret;
 	if constexpr(SV) {
 		if(s != "") set_buf(s);
+		else accumulate();
 		H* p = (H*)rec_received_;;
 		assert(p->h2.handshake_type == 16);
 		if(support_dhe_) 
@@ -762,6 +774,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	
 	aes_[!SV].iv(p->iv);
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
+	hexprint("decrypted", decrypted);
 
 	LOGD << "decrypted back : " << +decrypted.back();
 	assert(decrypted.size() > decrypted.back());
@@ -812,7 +825,7 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	header_for_mac.h1.content_type = header_to_send.h1.content_type = type;
 
 	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
-	const size_t chunk_size = (2 << 14) - 1024 - 20 - 1;//cut string into 2^14
+	const size_t chunk_size = (2 << 14) - 20 - 1;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
 	int block_len = ((len + 20) / 16 + 1) * 16;//20 = sha1 digest, 16 block sz
 	header_for_mac.h1.set_length(len);
@@ -859,10 +872,12 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	auto v = prf.get_n_byte(12);
 //	hexprint("accum", accumulated_handshakes_);
 	hexprint("finished", v);
-
-	if(SV == k) return accumulate(encode({v.begin(), v.end()}, 0x16));
+	Handshake_header hh;
+	hh.handshake_type = 0x14;//finished
+	hh.set_length(12);
+	if(SV == k) return accumulate(encode(struct2str(hh)+string{v.begin(),v.end()}, 0x16));
 	accumulate(s);
-	assert(decode(move(s)) == (string{v.begin(), v.end()}));
+	assert(decode(move(s)) == (struct2str(hh) + string{v.begin(), v.end()}));
 	return "";
 }
 /***********************

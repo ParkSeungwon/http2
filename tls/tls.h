@@ -88,4 +88,5 @@ private:
 	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
 	void set_buf(const std::string &s);
 	std::string accumulate(const std::string &s);
+	void accumulate();
 };
