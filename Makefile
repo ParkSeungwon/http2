@@ -4,6 +4,7 @@ all :
 	make -C framework/
 	make -C database/
 	make -C tls/
+	make -C options/
 	make -C tst/
 	make -C obj/
 	./catch.x

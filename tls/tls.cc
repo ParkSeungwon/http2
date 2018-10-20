@@ -692,16 +692,13 @@ length     \
 *********************/
 template<bool SV> string TLS<SV>::change_cipher_spec(string &&s)
 {
-	if(s == "") {
-		struct {
-			TLS_header h1;
-			uint8_t spec = 1;
-		} r;
-		r.h1.content_type = 20;
-		r.h1.length[1] = 1;
-		return struct2str(r);
-	} 
-	return "";
+	struct {
+		TLS_header h1;
+		uint8_t spec = 1;
+	} r;
+	r.h1.content_type = 20;
+	r.h1.length[1] = 1;
+	return struct2str(r);
 }
 
 template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
@@ -870,14 +867,14 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	static int k = -1;
 	prf.label(label[++k]);
 	auto v = prf.get_n_byte(12);
-//	hexprint("accum", accumulated_handshakes_);
 	hexprint("finished", v);
 	Handshake_header hh;
 	hh.handshake_type = 0x14;//finished
 	hh.set_length(12);
-	if(SV == k) return accumulate(encode(struct2str(hh)+string{v.begin(),v.end()}, 0x16));
-	accumulate(s);
-	assert(decode(move(s)) == (struct2str(hh) + string{v.begin(), v.end()}));
+	string msg = struct2str(hh) + string{v.begin(), v.end()};
+	accumulated_handshakes_ += msg;
+	if(SV == k) return encode(move(msg), 0x16);
+	assert(decode(move(s)) == msg);
 	return "";
 }
 /***********************

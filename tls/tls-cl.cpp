@@ -3,6 +3,7 @@
 #include"tls.h"
 #include"framework/asyncqueue.h"
 #include"framework/server.h"
+#include"options/option.h"
 using namespace std;
 
 class TLS_client : public Client
@@ -38,10 +39,12 @@ private:
 };
 
 int main(int ac, char **av) {
-	int port = ac < 2 ? 4433 : atoi(av[1]);
-	string ip = ac < 3 ? "localhost" : av[2];
-	cout << "usage : " << av[0] << " port(4430) ip(www.msn.com)" << endl;
-	TLS_client t{ip, port};
+	CMDoption co{
+		{"port", "port of the host", 4433},
+		{"ip", "ip address of the host", "localhost"}
+	};
+	if(!co.args(ac, av)) return 0;
+	TLS_client t{co.get<const char*>("ip"), co.get<int>("port")};
 	AsyncQueue<string> aq {
 		bind(&TLS_client::recv, &t),
 		[&t](string s) { cout << t.t.decode(move(s)); }
