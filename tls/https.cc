@@ -106,17 +106,20 @@ void HTTPS::connected(int client_fd)
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		t.session_id(id = new_id());
 		hexprint("session id", id);
-		send((s = t.server_hello(), s + t.server_certificate()));
-		cout << "server hello, server certificate " << endl;
+		s = t.server_hello(); cout << "server hello" <<  endl;
+		s += t.server_certificate(); cout << "server certificate" << endl;
 		if(t.support_dhe())
-			send(t.server_key_exchange()), cout << "server key exchange" << endl;
-		send(t.server_hello_done()); cout << "server hello done" << endl;
+			s += t.server_key_exchange(), cout << "server key exchange" << endl;
+		s += t.server_hello_done(); cout << "server hello done" << endl;
+		send(move(s));
 		for(unsigned char c : t.client_key_exchange(recv())) 
 			idNchannel_[id]->keys[i++] = c; 
 		cout << "client key exchange" << endl;
 		t.change_cipher_spec(recv()); cout << "change cipher spec" << endl;
 		t.finished(recv()); cout << "client finished" << endl;
-		send((s = t.change_cipher_spec(), s + t.finished()));
+		s = t.change_cipher_spec();
+		s += t.finished();
+		send(move(s));
 		cout << "change cipher spec, server finished" << endl;
 	} else {//resume connection
 		t.session_id(id);

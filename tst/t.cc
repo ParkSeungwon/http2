@@ -125,4 +125,5 @@ int g() {
 }
 TEST_CASE("which is front") {
 	f() + g();
+	cout << __LINE__ << ' ' << __FILE__ << __func__ << endl;
 }

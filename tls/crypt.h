@@ -1,17 +1,18 @@
 #pragma once
 #include<valarray>
 #include<array>
+#include<iomanip>
 #include<iostream>
 #include<sstream>
 #include<cassert>
 #include<gmpxx.h>
+#include<cstdio>
 #include<wolfssl/wolfcrypt/aes.h>
 #include<wolfssl/wolfcrypt/sha.h>
 #include<wolfssl/wolfcrypt/sha256.h>
 #define WOLFSSL_SHA512
 #include<wolfssl/wolfcrypt/sha512.h>
 #include<json/json.h>
-#include<fmt/format.h>
 
 Json::Value pem2json(std::istream& is);
 Json::Value der2json(std::istream& is);
@@ -30,7 +31,8 @@ template<typename It> void mpz2bnd(mpz_class n, It begin, It end)
 template<typename It> mpz_class bnd2mpz(It begin, It end)
 {//big endian to mpz
 	std::stringstream ss; ss << "0x";
-	for(It i=begin; i!=end; i++) ss << fmt::format("{:02x}", *i);
+	for(It i=begin; i!=end; i++)
+		ss << std::hex << std::setfill('0') << std::setw(2) << +*i;
 	return mpz_class{ss.str()};
 }
 void print(unsigned char* r, const char* c);
@@ -128,7 +130,7 @@ protected:
 template<class C> void hexprint(const char *p, const C &c)
 {
 	std::cout << p << " : 0x";
-	for(unsigned char a : c) fmt::print("{:02x}", a);
+	for(unsigned char a : c) printf("%02x", a);
 	std::cout << std::endl;
 }
 

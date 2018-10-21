@@ -1,8 +1,7 @@
 //http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session
 #include<cstring>
 #include<fstream>
-#include<plog/Log.h>
-#include<plog/Appenders/ColorConsoleAppender.h>
+#include"options/log.h"
 #include"tls.h"
 using namespace std;
 
@@ -22,15 +21,8 @@ template<class S> static std::string struct2str(const S &s)
 {
 	return std::string{(const char*)&s, sizeof(s)};
 }
-static void init_plog()
-{
-	static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-	plog::init(plog::verbose, &consoleAppender);
-	plog::init<1>(plog::debug, "/tmp/tls.log");
-}
 static string init_certificate()
 {//this will run before main -> use for initialization
-	init_plog();
 	ifstream f2("key.pem");//generated with openssl genrsa 2048 > key.pem
 	ifstream f("cert.pem");//openssl req -x509 -days 1000 -new -key key.pem -out cert.pem
 	auto [K, e, d] = get_keys(f2);
@@ -343,11 +335,7 @@ template<bool SV> void TLS<SV>::set_buf(const string &s)//buggy?
 }
 template<bool SV> string TLS<SV>::accumulate(const string &s)
 {
-	static int k = 0;
-	char p[] = "accumulating  ";
-	p[13] = k++ + '0';
 	accumulated_handshakes_ += s.substr(sizeof(TLS_header));
-	LOGD_(1) << p << s;
 	return s;
 }
 template<bool SV> void TLS<SV>::accumulate()
@@ -516,10 +504,11 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 			ss << std::noskipws << p->certificate[i];//first certificate
 		auto jv = der2json(ss);
 		auto [K, e, sign] = get_pubkeys(jv);
-		LOGI << "K : " << hex << K << endl;
-		LOGI << "e : " << e << endl;
-		LOGI << "sign : " << sign << endl;
-		LOGD_(1) << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
+
+		LOG << "K : " << K << endl;
+		LOG << "e : " << e << endl;
+		LOG << "sign : " << sign << endl;
+//		*plog << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
 		rsa_.K = K; rsa_.e = e;
 		return "";
 	}
@@ -773,7 +762,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
 	hexprint("decrypted", decrypted);
 
-	LOGD << "decrypted back : " << +decrypted.back();
+	LOG << "decrypted back : " << +decrypted.back() << endl;
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
