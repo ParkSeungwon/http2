@@ -1,6 +1,6 @@
 #include<fstream>
 #include<iostream>
-#define LOG (*Log::get_instance()<<'['<<__FILE__<<"] {"<<__func__<<"} L"<<__LINE__<<" : ")
+#define LOG (*Log::get_instance()<<'['<<__FILE__<<"] {"<<__func__<<"} L"<<__LINE__<<" | ")
 
 class Log
 {

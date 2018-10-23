@@ -128,7 +128,7 @@ protected:
 };
 
 template<class C> void hexprint(const char *p, const C &c)
-{
+{//log container specialization
 	std::cout << p << " : 0x";
 	for(unsigned char a : c) printf("%02x", a);
 	std::cout << std::endl;
