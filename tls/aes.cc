@@ -1,4 +1,5 @@
 #include"crypt.h"
+#include"options/log.h"
 using namespace std;
 
 AES::AES(unsigned short bit) : key_size_{bit / 8} 
@@ -13,9 +14,7 @@ void AES::key(const mpz_class key)
 
 void AES::key(const unsigned char* key)
 {
-	cout << "setting key : ";
-	for(int i=0; i<16; i++) printf("%02x", *(key + i));
-	cout << endl;
+	LOGT << hexprint("setting key", vector<unsigned char>{key, key + 16}) << endl;
 	memcpy(key_, key, key_size_);
 }
 
@@ -26,9 +25,7 @@ void AES::iv(const mpz_class iv)
 
 void AES::iv(const unsigned char* iv)
 {
-	cout << "setting iv : ";
-	for(int i=0; i<16; i++) printf("%02x", *(iv + i));
-	cout << endl;
+	LOGT << hexprint("setting iv", vector<unsigned char>{iv, iv + 16}) << endl;
 	memcpy(iv_, iv, 16);
 }
 

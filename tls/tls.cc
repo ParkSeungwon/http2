@@ -107,7 +107,7 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 {
 	unsigned char pre[DH_KEY_SZ], rand[64];
 	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
-	cout << "premaster : 0x" << hex << premaster_secret << endl;
+	LOGD << "premaster : 0x" << hex << premaster_secret << endl;
 	if(sz % 2) sz++;
 	sz /= 2;
 	mpz2bnd(premaster_secret, pre, pre + sz);
@@ -118,18 +118,18 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	prf.seed(rand, rand + 64);
 	prf.label("master secret");
 	master_secret_ = prf.get_n_byte(48);
-	hexprint("master secret", master_secret_);//ok
+	LOGD << hexprint("master secret", master_secret_) << endl;//ok
 	prf.secret(master_secret_.begin(), master_secret_.end());
 	memcpy(rand, server_random_.data(), 32);
 	memcpy(rand + 32, client_random_.data(), 32);
 	prf.seed(rand, rand + 64);
-	hexprint("server random", server_random_);
-	hexprint("client random", client_random_);
+	LOGD << hexprint("server random", server_random_) << endl;
+	LOGD << hexprint("client random", client_random_) << endl;
 	prf.label("key expansion");
 	std::array<unsigned char, KEY_SZ> r;
 	auto v = prf.get_n_byte(KEY_SZ);
 	for(int i=0; i<KEY_SZ; i++) r[i] = v[i];
-	hexprint("expanded keys", r);
+	LOGD << hexprint("expanded keys", r) << endl;
 	return r;
 }
 /*********
@@ -505,9 +505,9 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 		auto jv = der2json(ss);
 		auto [K, e, sign] = get_pubkeys(jv);
 
-		LOG << "K : " << K << endl;
-		LOG << "e : " << e << endl;
-		LOG << "sign : " << sign << endl;
+		LOGD << "K : " << K << endl;
+		LOGD << "e : " << e << endl;
+		LOGD << "sign : " << sign << endl;
 //		*plog << jv << std::endl << std::hex << powm(sign, e, K) << std::endl;
 		rsa_.K = K; rsa_.e = e;
 		return "";
@@ -760,9 +760,9 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	
 	aes_[!SV].iv(p->iv);
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
-	hexprint("decrypted", decrypted);
+	LOGD << hexprint("decrypted", decrypted) << endl;
 
-	LOG << "decrypted back : " << +decrypted.back() << endl;
+	LOGD << "decrypted back : " << +decrypted.back() << endl;
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
@@ -856,7 +856,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	static int k = -1;
 	prf.label(label[++k]);
 	auto v = prf.get_n_byte(12);
-	hexprint("finished", v);
+	LOGD << hexprint("finished", v) << endl;
 	Handshake_header hh;
 	hh.handshake_type = 0x14;//finished
 	hh.set_length(12);

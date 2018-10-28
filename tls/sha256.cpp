@@ -11,7 +11,10 @@ int main(int ac, char **av)
 	};
 	if(!co.args(ac, av)) return 0;
 	mpz_class z{co.get<const char*>("hex")};
+	Log::get_instance()->set_log_filter("d");
+	Log::get_instance()->set_log_level(Log::DEBUG);
 	LOG << "you entered " << showbase << hex << z << endl;
+	LOG << "this will not be printed" << endl;
 	unsigned char ar[5000];
 	int k = mpz_sizeinbase(z.get_mpz_t(), 16);
 	if(k % 2) k++;

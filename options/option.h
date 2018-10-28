@@ -18,5 +18,5 @@ protected:
 	//					   parameter	description	 default value
 	
 private:
-	void print_help();
+	bool print_help(char *av0);
 };

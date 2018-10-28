@@ -127,11 +127,12 @@ protected:
 	Sha512 sha_;
 };
 
-template<class C> void hexprint(const char *p, const C &c)
+template<class C> std::string hexprint(const char *p, const C &c)
 {//log container specialization
-	std::cout << p << " : 0x";
-	for(unsigned char a : c) printf("%02x", a);
-	std::cout << std::endl;
+	std::stringstream ss;
+	ss << p << " : 0x";
+	for(unsigned char a : c) ss << std::hex << std::setw(2) << std::setfill('0')<< +a;
+	return ss.str();
 }
 
 template<class H> class HMAC

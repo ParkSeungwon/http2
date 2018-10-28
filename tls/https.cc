@@ -5,6 +5,7 @@
 #include<thread>
 #include"https.h"
 #include"crypt.h"
+#include"options/log.h"
 using namespace std;
 
 HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
@@ -105,22 +106,21 @@ void HTTPS::connected(int client_fd)
 	for(unsigned char c : t.client_hello(recv())) id[i++] = c;
 	if(id == array<unsigned char, 32>{} || !find_id(id)) {//new connection handshake
 		t.session_id(id = new_id());
-		hexprint("session id", id);
-		s = t.server_hello(); cout << "server hello" <<  endl;
-		s += t.server_certificate(); cout << "server certificate" << endl;
+		LOGD << hexprint("session id", id) << endl;
+		s = t.server_hello(); LOGI << "server hello" <<  endl;
+		s += t.server_certificate(); LOGI << "server certificate" << endl;
 		if(t.support_dhe())
-			s += t.server_key_exchange(), cout << "server key exchange" << endl;
-		s += t.server_hello_done(); cout << "server hello done" << endl;
+			s += t.server_key_exchange(), LOGI << "server key exchange" << endl;
+		s += t.server_hello_done(); LOGI << "server hello done" << endl;
 		send(move(s));
 		for(unsigned char c : t.client_key_exchange(recv())) 
 			idNchannel_[id]->keys[i++] = c; 
-		cout << "client key exchange" << endl;
-		t.change_cipher_spec(recv()); cout << "change cipher spec" << endl;
-		t.finished(recv()); cout << "client finished" << endl;
-		s = t.change_cipher_spec();
-		s += t.finished();
+		LOGI << "client key exchange" << endl;
+		t.change_cipher_spec(recv()); LOGI << "change cipher spec" << endl;
+		t.finished(recv()); LOGI << "client finished" << endl;
+		s = t.change_cipher_spec(); LOGI << "change cipher spec" << endl;
+		s += t.finished(); LOGI << "server finished" << endl;
 		send(move(s));
-		cout << "change cipher spec, server finished" << endl;
 	} else {//resume connection
 		t.session_id(id);
 		t.use_key(idNchannel_[id]->keys);

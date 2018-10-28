@@ -13,7 +13,7 @@ template<typename T> WaitQueue<T>::WaitQueue(function<void(T)> consumer)
 {
 	this->consumer = consumer;
 	tho = thread(&WaitQueue::consume, this);
-//	tho.detach();//blocking functions cannot be joined
+	tho.detach();//blocking functions cannot be joined
 }
 
 template<typename T> WaitQueue<T>::WaitQueue(WaitQueue&& r)
@@ -50,7 +50,7 @@ AsyncQueue<T>::AsyncQueue(function<T()> provider, function<void(T)> consumer)
 {
 	this->provider = provider;
 	thi = thread(&AsyncQueue::provide, this);
-//	thi.detach();
+	thi.detach();
 }
 
 template <typename T> AsyncQueue<T>::AsyncQueue(AsyncQueue&& r) : WaitQueue<T>{move(r)}
