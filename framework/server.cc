@@ -13,10 +13,10 @@ using namespace std;
 Vrecv::Vrecv(int port) : Tcpip{port}
 { }
 
-string Vrecv::recv()
+string Vrecv::recv(int fd)
 {
 	string s;
-	if(trailing_string_ == "") s = Tcpip::recv();
+	if(trailing_string_ == "") s = Tcpip::recv(fd);
 	s = trailing_string_ + s;
 	trailing_string_ = "";
 	int len = get_full_length(s);

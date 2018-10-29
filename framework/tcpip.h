@@ -9,9 +9,9 @@ class Tcpip
 public:
 	Tcpip(int port = 2001);
 	virtual ~Tcpip();
-	void send(const std::string& s);
+	void send(const std::string& s, int fd = 0);
 //	void send(int n);
-	std::string recv();
+	std::string recv(int fd = 0);
 
 protected:
 	int server_fd;///<server_fd입니다.

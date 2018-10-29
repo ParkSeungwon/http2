@@ -46,7 +46,7 @@ int main(int ac, char **av) {
 	if(!co.args(ac, av)) return 0;
 	TLS_client t{co.get<const char*>("ip"), co.get<int>("port")};
 	AsyncQueue<string> aq {
-		bind(&TLS_client::recv, &t),
+		bind(&TLS_client::recv, &t, 0),
 		[&t](string s) { cout << t.t.decode(move(s)); }
 	};
 	string s;

@@ -325,13 +325,6 @@ struct Hello_header {
 template<bool SV> void TLS<SV>::set_buf(void* p)
 {
 	rec_received_ = p;
-	char *cp = (char*)p;
-	TLS_header *hp = (TLS_header*)p;
-}
-template<bool SV> void TLS<SV>::set_buf(const string &s)//buggy?
-{
-	rec_received_ = s.data();
-	accumulate(s);
 }
 template<bool SV> string TLS<SV>::accumulate(const string &s)
 {
@@ -365,13 +358,14 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 		return accumulate(struct2str(r));
 	} else {//server
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
-		for(int i=0; i<len; i++)
-			if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
+		for(int i=0; i<len; i++) if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
+		if(support_dhe_) LOGI << "using TLS_DHE_RSA_AES128_SHA" << endl;
+		else LOGI << "using TLS_RSA_AES128_SHA" << endl;
 		if(id_length_ = p->h3.session_id_length) {
 			memcpy(session_id_.data(), p->h3.session_id, id_length_);
 			return string{session_id_.begin(), session_id_.end()};
@@ -453,8 +447,8 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		memcpy(r.h3.session_id, session_id_.data(), 32);
 		return accumulate(struct2str(r));
 	} else {
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
 		memcpy(session_id_.data(), p->h3.session_id, 32);
@@ -490,8 +484,8 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 {
 	if constexpr(SV) return accumulate(certificate_);
 	else {
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		struct H {
 			TLS_header h1;
 			Handshake_header h2;
@@ -587,8 +581,8 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		generate_signature(r.p_length, r.sign);
 		return accumulate(struct2str(r));
 	} else {
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		const uint8_t *ptr_keys = static_cast<const H*>(rec_received_)->p_length;
 		mpz_class pgya[3];
 		for(int i=0, key_length; i<3; ptr_keys += key_length + 2, i++) {
@@ -655,8 +649,8 @@ template<bool SV> string TLS<SV>::server_hello_done(string&& s)
 		r.h2.handshake_type = 14;
 		return accumulate(struct2str(r));
 	} else {
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		return "";
 	}
 }
@@ -701,13 +695,13 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 
 	mpz_class premaster_secret;
 	if constexpr(SV) {
-		if(s != "") set_buf(s);
-		else accumulate();
+		if(s != "") set_buf(s.data());
+		accumulate();
 		H* p = (H*)rec_received_;;
 		assert(p->h2.handshake_type == 16);
 		if(support_dhe_) 
 			premaster_secret = diffie_.set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
-		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
+		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + p->key_sz[0] * 0x100 + p->key_sz[1]));
 		auto a = use_key(derive_keys(premaster_secret));
 		return {a.begin(), a.end()};
 	} else {
@@ -854,8 +848,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	auto h = sha.hash(accumulated_handshakes_.cbegin(), accumulated_handshakes_.cend());
 	prf.seed(h.begin(), h.end());
 	const char *label[2] = {"client finished", "server finished"};
-	static int k = -1;
-	prf.label(label[++k]);
+	prf.label(label[++k_]);
 	auto v = prf.get_n_byte(12);
 	LOGD << hexprint("finished", v) << endl;
 
@@ -866,7 +859,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	string msg = struct2str(hh) + string{v.begin(), v.end()};
 	accumulated_handshakes_ += msg;
 	
-	if(SV == k) return encode(move(msg), 0x16);
+	if(SV == k_) return encode(move(msg), 0x16);
 	assert(decode(move(s)) == msg);
 	return "";
 }
