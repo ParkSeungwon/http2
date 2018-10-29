@@ -81,10 +81,10 @@ void HTTPS::start()
 			for(unsigned char c : id) cout << hex << +c; cout << endl;
 			cout << (chrono::system_clock::now() - ch->last_transmission).count()
 				/ 1'000'000'000 << " seconds passed since last communication" << endl;
-		} else if(s == "help" || s == "?") 
+		} else if(s == "help" || s == "?") {
 			cout << "time, end, timeout [sec], kill [last 2 hex digit of id]" << endl
 				<< "current timeout " << time_out << endl;
-		else if(s == "timeout") {
+		} else if(s == "timeout") {
 			cin >> time_out;
 			cout << "time out set " << time_out << endl;
 		} else if(s == "kill") {//can cause hang if not careful

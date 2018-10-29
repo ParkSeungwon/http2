@@ -909,25 +909,24 @@ template<bool SV> string TLS<SV>::alert(uint8_t level, uint8_t desc)
 	h.h1.set_length(2);
 	return struct2str(h);
 }
-template<bool SV> void TLS<SV>::alert(string &&t)
+template<bool SV> void TLS<SV>::alert(string &&s)
 {//alert received
-	if(t != "") rec_received_ = t.data();
+	if(s != "") rec_received_ = s.data();
 	struct H {
 		TLS_header h1;
 		uint8_t alert_level;
 		uint8_t alert_desc;
 	} *p = (H*)rec_received_;
 	int level, desc;
-	if(p->h1.get_length() != 2) {//encrypted
+	if(p->h1.get_length() == 2) {
+		level = p->alert_level;
+		desc = p->alert_desc;
+	} else {//encrypted
 		string s = decode();//already set data to buffer -> decode has no argument
 		level = static_cast<uint8_t>(s[0]);
 		desc = static_cast<uint8_t>(s[1]);
-	} else {
-		level = p->alert_level;
-		desc = p->alert_desc;
 	}
-	string s;
-	switch(desc) {
+	switch(desc) {//s reuse
 		case 0: s = "close_notify(0)"; break;
 		case 10: s = "unexpected_message(10)"; break;
 		case 20: s = "bad_record_mac(20)"; break;
