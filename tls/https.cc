@@ -1,4 +1,3 @@
-#include<cstring>
 #include<iostream>
 #include<unistd.h>
 #include<cassert>
@@ -48,7 +47,7 @@ void HTTPS::start()
 	while(cin >> s) {
 		if(s == "end") break;
 		else if(s == "help" || s == "?") {
-			cout << "time, end, timeout [sec], kill [last 2 hex digit of id]" << endl
+			cout << "end, timeout [sec]" << endl
 				<< "current timeout " << time_out << endl;
 		} else if(s == "timeout") {
 			cin >> time_out;
@@ -80,19 +79,21 @@ void HTTPS::connected(int client_fd)
 	t.alert(recv()); LOGI << "alert received" << endl;
 	send(t.encode(t.alert(1, 40).substr(5), 0x15));
 		
-	Client cl{"localhost", inport_};
-	chrono::system_clock::time_point last_transmission = chrono::system_clock::now();
-	thread th{[&]() {
-		while(1) {
-			cl.send(t.decode(recv()));
-			send(t.encode(cl.recv()));
-			last_transmission = chrono::system_clock::now();
-		}
-	}};
-	th.detach();
-	LOGI << "timeout " << time_out << 's' << endl;
-	while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
-		this_thread::sleep_for(30s);//data communication until garbage collection 
+	if(t.ok()) {
+		Client cl{"localhost", inport_};
+		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
+		thread th{[&]() {
+			while(1) {
+				cl.send(t.decode(recv()));
+				send(t.encode(cl.recv()));
+				last_transmission = chrono::system_clock::now();
+			}
+		}};
+		th.detach();
+		LOGI << "timeout " << time_out << 's' << endl;
+		while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
+			this_thread::sleep_for(30s);//data communication until garbage collection 
+	}
 	close(client_fd);
 }
 

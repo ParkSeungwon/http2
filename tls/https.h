@@ -15,7 +15,7 @@ protected:
 	bool debug_ = false;
 
 private:
-	void connected(int client_fd), garbage_collection(), conn(), free(std::array<unsigned char, 32> id);
+	void connected(int client_fd), conn();
 	std::array<unsigned char, 32> new_id();
 	int get_full_length(const std::string &s);
 };

@@ -911,6 +911,7 @@ template<bool SV> string TLS<SV>::alert(uint8_t level, uint8_t desc)
 }
 template<bool SV> void TLS<SV>::alert(string &&s)
 {//alert received
+	ok_ = false;
 	if(s != "") rec_received_ = s.data();
 	struct H {
 		TLS_header h1;
@@ -955,5 +956,10 @@ template<bool SV> void TLS<SV>::alert(string &&s)
 	}
 	if(level == 1) LOGW << s << endl;
 	else if(level == 2) LOGF << s << endl;
+}
+
+template<bool SV> bool TLS<SV>::ok()
+{
+	return ok_;
 }
 #pragma pack()
