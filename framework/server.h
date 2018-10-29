@@ -6,7 +6,7 @@ class Vrecv : public Tcpip
 {//virtual class that provide interface to get recv work just as expected
 public:
 	Vrecv(int port);
-	std::string recv(int fd=0);//check content length header and get one full request
+	std::string recv(int fd = 0);//check content length header and get one full request
 protected:
 	std::string trailing_string_;
 	virtual int get_full_length(const std::string& s);//define this to make recv adapt to environment
@@ -45,8 +45,11 @@ public:
 			std::string end_string = "end");
 	void start(std::function<std::string(std::string)> f);
 	void nokeep_start(std::function<std::string(std::string)> f);
+	std::string recv();
+	void send(const std::string &s);
 
 protected:
+	thread_local static int thread_local_fd;
 	std::string end_string;
 	int time_out;
 };

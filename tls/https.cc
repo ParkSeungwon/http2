@@ -56,37 +56,40 @@ void HTTPS::start()
 	}
 }
 
-void HTTPS::connected(int client_fd)
+void HTTPS::connected(int fd)
 {//will be used in parallel
+	thread_local_fd = fd;
+	LOGD << "local fd " << thread_local_fd << endl;
 	TLS t;//TLS is decoupled from file descriptor
-	t.client_hello(recv(client_fd)); LOGI << "client hello" << endl;
+	t.client_hello(recv()); LOGI << "client hello" << endl;
 	t.session_id(new_id());
 	string s = t.server_hello(); LOGI << "server hello" << endl;
 	s += t.server_certificate(); LOGI << "server certificate" << endl;
 	if(t.support_dhe())
 		s += t.server_key_exchange(), LOGI << "server key exchange" << endl;
 	s += t.server_hello_done(); LOGI << "server hello done" << endl;
-	send(move(s), client_fd);
-	t.client_key_exchange(recv(client_fd)); LOGI << "client key exchange" << endl;
-	t.change_cipher_spec(recv(client_fd)); LOGI << "change cipher spec" << endl;
-	t.finished(recv(client_fd)); LOGI << "client finished" << endl;
+	send(move(s));
+	t.client_key_exchange(recv()); LOGI << "client key exchange" << endl;
+	t.change_cipher_spec(recv()); LOGI << "change cipher spec" << endl;
+	t.finished(recv()); LOGI << "client finished" << endl;
 	s = t.change_cipher_spec(); LOGI << "change cipher spec" << endl;
 	s += t.finished(); LOGI << "server finished" << endl;
-	send(move(s), client_fd);
+	send(move(s));
 
 	if(t.ok()) {
 		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
 		thread th{[&]() {
+			thread_local_fd = fd;
 			Client cl{"localhost", inport_};
 			while(1) {
-				string s = recv(client_fd);
+				string s = recv();
 				t.set_buf(s.data());
 				if(t.get_content_type() == 0x15) {
 					t.alert();
-					send(t.encode(t.alert(1, 0).substr(5), 0x15), client_fd);
+					send(t.encode(t.alert(1, 0).substr(5), 0x15));
 					break;
 				} else cl.send(t.decode());
-				send(t.encode(cl.recv()), client_fd);
+				send(t.encode(cl.recv()));
 				last_transmission = chrono::system_clock::now();
 			}
 		}};
@@ -95,7 +98,7 @@ void HTTPS::connected(int client_fd)
 		while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
 			this_thread::sleep_for(30s);//data communication until garbage collection 
 	}
-	close(client_fd);
+	close(thread_local_fd);
 	LOGI << "closing connection" << endl;
 }
 

@@ -23,9 +23,9 @@ Tcpip::~Tcpip()
 	close(server_fd);
 	cout << "destroying Tcpip" << endl;
 }
-void Tcpip::send(const string& s, int fd) 
+void Tcpip::send(const string& s) 
 {
-	write(!fd ? client_fd : fd, s.data(), s.size());
+	write(client_fd, s.data(), s.size());
 }
 
 //void Tcpip::send(int n)
@@ -35,7 +35,7 @@ void Tcpip::send(const string& s, int fd)
 
 string Tcpip::recv(int fd)
 {
-	int i = read(!fd ? client_fd : fd, buffer, BUF_SIZE);//error
+	int i = read(fd ? fd : client_fd, buffer, BUF_SIZE);//error
 	return string(buffer, i);
 }
 

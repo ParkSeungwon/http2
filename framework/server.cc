@@ -16,7 +16,7 @@ Vrecv::Vrecv(int port) : Tcpip{port}
 string Vrecv::recv(int fd)
 {
 	string s;
-	if(trailing_string_ == "") s = Tcpip::recv(fd);
+	if(trailing_string_ == "") s = Tcpip::recv();
 	s = trailing_string_ + s;
 	trailing_string_ = "";
 	int len = get_full_length(s);
@@ -25,7 +25,7 @@ string Vrecv::recv(int fd)
 		s = s.substr(0, len);
 	} else if(len > s.size()) {//more to come
 		for(int n; s.size() < len; s += string(buffer, n))
-			n = read(client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
+			n = read(fd ? fd : client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
 	}
 	return s;
 }
@@ -68,6 +68,16 @@ string Client::get_addr(string host)
 	return inet_ntoa(*(struct in_addr*)a->h_addr);
 }
 
+thread_local int Server::thread_local_fd = 0;
+void Server::send(const string &s)
+{
+	write(thread_local_fd ? thread_local_fd : client_fd, s.data(), s.size());
+}
+
+string Server::recv()
+{
+	Vrecv::recv(thread_local_fd ? thread_local_fd : client_fd);
+}
 Server::Server(int port, unsigned int t, int queue, string e) : Http(port) 
 {
 	end_string = e;
