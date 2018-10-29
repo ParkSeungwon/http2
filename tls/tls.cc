@@ -909,7 +909,7 @@ template<bool SV> string TLS<SV>::alert(uint8_t level, uint8_t desc)
 	h.h1.set_length(2);
 	return struct2str(h);
 }
-template<bool SV> void TLS<SV>::alert(string &&s)
+template<bool SV> int TLS<SV>::alert(string &&s)
 {//alert received
 	ok_ = false;
 	if(s != "") rec_received_ = s.data();
@@ -956,6 +956,7 @@ template<bool SV> void TLS<SV>::alert(string &&s)
 	}
 	if(level == 1) LOGW << s << endl;
 	else if(level == 2) LOGF << s << endl;
+	return desc;
 }
 
 template<bool SV> bool TLS<SV>::ok()

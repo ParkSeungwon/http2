@@ -61,30 +61,30 @@ void HTTPS::connected(int client_fd)
 	string s; TLS t;//TLS is decoupled from file descriptor
 	t.client_hello(recv());
 	t.session_id(new_id());
-
 	s = t.server_hello();
 	s += t.server_certificate();
 	if(t.support_dhe()) s += t.server_key_exchange();
 	s += t.server_hello_done();
 	send(move(s));
-
 	t.client_key_exchange(recv());
 	t.change_cipher_spec(recv());
 	t.finished(recv());
-
 	s = t.change_cipher_spec();
 	s += t.finished();
 	send(move(s));
 
-	t.alert(recv()); LOGI << "alert received" << endl;
-	send(t.encode(t.alert(1, 40).substr(5), 0x15));
-		
 	if(t.ok()) {
-		Client cl{"localhost", inport_};
 		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
 		thread th{[&]() {
+			Client cl{"localhost", inport_};
 			while(1) {
-				cl.send(t.decode(recv()));
+				string s = recv();
+				t.set_buf(s.data());
+				if(t.get_content_type() == 0x15) {
+					t.alert();
+					send(t.encode(t.alert(1, 0).substr(5), 0x15));
+					break;
+				} else cl.send(t.decode());
 				send(t.encode(cl.recv()));
 				last_transmission = chrono::system_clock::now();
 			}
@@ -95,5 +95,6 @@ void HTTPS::connected(int client_fd)
 			this_thread::sleep_for(30s);//data communication until garbage collection 
 	}
 	close(client_fd);
+	LOGI << "closing connection" << endl;
 }
 

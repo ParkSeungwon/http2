@@ -67,7 +67,7 @@ public:
 	std::string client_key_exchange(std::string &&s = "");
 	std::string change_cipher_spec(std::string &&s = "");//if s=="" send, else recv
 	std::string finished(std::string &&s = "");//if s=="" send, else recv
-	void alert(std::string &&s);
+	int alert(std::string &&s = "");
 	std::string alert(uint8_t level, uint8_t desc);
 	bool ok();
 
