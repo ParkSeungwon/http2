@@ -52,7 +52,7 @@ template<bool SV = true> class TLS
 public:
 	TLS(unsigned char* buffer = nullptr);
 	bool support_dhe();
-	int get_content_type(std::string &&s = "");//"" -> manual set
+	int get_content_type(const std::string &s = "");//"" -> manual set
 	void set_buf(void* p);
 	void session_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
@@ -67,6 +67,8 @@ public:
 	std::string client_key_exchange(std::string &&s = "");
 	std::string change_cipher_spec(std::string &&s = "");//if s=="" send, else recv
 	std::string finished(std::string &&s = "");//if s=="" send, else recv
+	void alert(std::string &&s);
+	std::string alert(uint8_t level, uint8_t desc);
 
 protected:
 	const void *rec_received_;

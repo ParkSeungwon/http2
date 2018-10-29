@@ -121,6 +121,8 @@ void HTTPS::connected(int client_fd)
 		s = t.change_cipher_spec(); LOGI << "change cipher spec" << endl;
 		s += t.finished(); LOGI << "server finished" << endl;
 		send(move(s));
+		t.alert(recv()); LOGI << "alert received" << endl;
+		send(t.encode(t.alert(1, 40).substr(5), 0x15));
 	} else {//resume connection
 		t.session_id(id);
 		t.use_key(idNchannel_[id]->keys);

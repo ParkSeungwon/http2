@@ -64,7 +64,7 @@ template<bool SV> bool TLS<SV>::support_dhe()
 {
 	return support_dhe_;
 }
-template<bool SV> int TLS<SV>::get_content_type(string &&s)
+template<bool SV> int TLS<SV>::get_content_type(const string &s)
 {
 	if(s != "") rec_received_ = s.data();
 	uint8_t *p = (uint8_t*)rec_received_;
@@ -774,6 +774,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	header_for_mac.h1.set_length(content.size());
 	string t = struct2str(header_for_mac) + content;
 	assert(auth == mac_[!SV].hash(t.begin(), t.end()));//verify auth
+	LOGI << "mac verified" << endl;
 	return content;
 }
 /***********************
@@ -857,11 +858,14 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	prf.label(label[++k]);
 	auto v = prf.get_n_byte(12);
 	LOGD << hexprint("finished", v) << endl;
+
 	Handshake_header hh;
 	hh.handshake_type = 0x14;//finished
 	hh.set_length(12);
+	
 	string msg = struct2str(hh) + string{v.begin(), v.end()};
 	accumulated_handshakes_ += msg;
+	
 	if(SV == k) return encode(move(msg), 0x16);
 	assert(decode(move(s)) == msg);
 	return "";
@@ -892,4 +896,65 @@ The "label" differs depending on who, between the client and the server, sends t
 Since the Finished messages are sent after the ChangeCipherSpec, they are encrypted and MACed, using the algorithms and keys which have just been negotiated.
 In that sense, the keys and nonces (the client and server randoms) are involved multiple times.
  *********************/
+template<bool SV> string TLS<SV>::alert(uint8_t level, uint8_t desc)
+{//encrypted send => encode(alert(2, 20).substr(sizeof(TLS_header)), 0x15)
+	struct {
+		TLS_header h1;
+		uint8_t alert_level;
+		uint8_t alert_desc;
+	} h;
+	h.h1.content_type = 0x15;
+	h.alert_level = level;
+	h.alert_desc = desc;
+	h.h1.set_length(2);
+	return struct2str(h);
+}
+template<bool SV> void TLS<SV>::alert(string &&t)
+{//alert received
+	if(t != "") rec_received_ = t.data();
+	struct H {
+		TLS_header h1;
+		uint8_t alert_level;
+		uint8_t alert_desc;
+	} *p = (H*)rec_received_;
+	int level, desc;
+	if(p->h1.get_length() != 2) {//encrypted
+		string s = decode();//already set data to buffer -> decode has no argument
+		level = static_cast<uint8_t>(s[0]);
+		desc = static_cast<uint8_t>(s[1]);
+	} else {
+		level = p->alert_level;
+		desc = p->alert_desc;
+	}
+	string s;
+	switch(desc) {
+		case 0: s = "close_notify(0)"; break;
+		case 10: s = "unexpected_message(10)"; break;
+		case 20: s = "bad_record_mac(20)"; break;
+		case 21: s = "decryption_failed_RESERVED(21)"; break;
+		case 22: s = "record_overflow(22)"; break;
+		case 30: s = "decompression_failure(30)"; break;
+		case 40: s = "handshake_failure(40)"; break;
+		case 41: s = "no_certificate_RESERVED(41)"; break;
+		case 42: s = "bad_certificate(42)"; break;
+		case 43: s = "unsupported_certificate(43)"; break;
+		case 44: s = "certificate_revoked(44)"; break;
+		case 45: s = "certificate_expired(45)"; break;
+		case 46: s = "certificate_unknown(46)"; break;
+		case 47: s = "illegal_parameter(47)"; break;
+		case 48: s = "unknown_ca(48)"; break;
+		case 49: s = "access_denied(49)"; break;
+		case 50: s = "decode_error(50)"; break;
+		case 51: s = "decrypt_error(51)"; break;
+		case 60: s = "export_restriction_RESERVED(60)"; break;
+		case 70: s = "protocol_version(70)"; break;
+		case 71: s = "insufficient_security(71)"; break;
+		case 80: s = "internal_error(80)"; break;
+		case 90: s = "user_canceled(90)"; break;
+		case 100: s = "no_renegotiation(100)"; break;
+		case 110: s = "unsupported_extension(110)"; break;
+	}
+	if(level == 1) LOGW << s << endl;
+	else if(level == 2) LOGF << s << endl;
+}
 #pragma pack()

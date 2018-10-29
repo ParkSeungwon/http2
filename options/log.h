@@ -4,12 +4,12 @@
 #include<memory>
 #include<iostream>
 #define LOG (*Log::get_instance()<<Log::get_instance()->log_level()<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | ")
-#define LOGT Log::get_instance()->set_log_level(Log::TRACE);*Log::get_instance()<<'T'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
-#define LOGD Log::get_instance()->set_log_level(Log::DEBUG);*Log::get_instance()<<'D'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
-#define LOGI Log::get_instance()->set_log_level(Log::INFO);*Log::get_instance()<<'I'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
-#define LOGW Log::get_instance()->set_log_level(Log::WARNING);*Log::get_instance()<<'W'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
-#define LOGE Log::get_instance()->set_log_level(Log::ERROR);*Log::get_instance()<<'E'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
-#define LOGF Log::get_instance()->set_log_level(Log::FATAL);*Log::get_instance()<<'F'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGT Log::get_instance()->set_log_level(Log::TRACE),*Log::get_instance()<<'T'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGD Log::get_instance()->set_log_level(Log::DEBUG),*Log::get_instance()<<'D'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGI Log::get_instance()->set_log_level(Log::INFO),*Log::get_instance()<<'I'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGW Log::get_instance()->set_log_level(Log::WARNING),*Log::get_instance()<<'W'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGE Log::get_instance()->set_log_level(Log::ERROR),*Log::get_instance()<<'E'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
+#define LOGF Log::get_instance()->set_log_level(Log::FATAL),*Log::get_instance()<<'F'<<Log::time()<<','<<__FILE__<<':'<<std::dec<<__LINE__<<','<<__func__<<" | "
 
 class Log
 {
