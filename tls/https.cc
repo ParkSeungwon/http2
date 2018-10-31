@@ -18,13 +18,6 @@ int HTTPS::get_full_length(const string &s)
 	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
 }
 	
-array<unsigned char, 32> HTTPS::new_id()
-{
-	array<unsigned char, 32> r;
-	mpz2bnd(random_prime(32), r.begin(), r.end());
-	return r;
-}
-
 void HTTPS::conn()
 {
 	int cl_size = sizeof(client_addr);
@@ -59,19 +52,18 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	TLS t;//TLS is decoupled from file descriptor
-	t.client_hello(recv(client_fd)); LOGI << "client hello" << endl;
-	t.session_id(new_id());
-	string s = t.server_hello(); LOGI << "server hello" << endl;
-	s += t.server_certificate(); LOGI << "server certificate" << endl;
+	t.client_hello(recv(client_fd)); 		LOGI << "client hello" << endl;
+	string s = t.server_hello(); 			LOGI << "server hello" << endl;
+	s += t.server_certificate(); 			LOGI << "server certificate" << endl;
 	if(t.support_dhe())
-		s += t.server_key_exchange(), LOGI << "server key exchange" << endl;
-	s += t.server_hello_done(); LOGI << "server hello done" << endl;
+		s += t.server_key_exchange(), 		LOGI << "server key exchange" << endl;
+	s += t.server_hello_done(); 			LOGI << "server hello done" << endl;
 	send(move(s), client_fd);
 	t.client_key_exchange(recv(client_fd)); LOGI << "client key exchange" << endl;
-	t.change_cipher_spec(recv(client_fd)); LOGI << "change cipher spec" << endl;
-	t.finished(recv(client_fd)); LOGI << "client finished" << endl;
-	s = t.change_cipher_spec(); LOGI << "change cipher spec" << endl;
-	s += t.finished(); LOGI << "server finished" << endl;
+	t.change_cipher_spec(recv(client_fd)); 	LOGI << "change cipher spec" << endl;
+	t.finished(recv(client_fd)); 			LOGI << "client finished" << endl;
+	s = t.change_cipher_spec(); 			LOGI << "change cipher spec" << endl;
+	s += t.finished(); 						LOGI << "server finished" << endl;
 	send(move(s), client_fd);
 
 	if(t.ok()) {

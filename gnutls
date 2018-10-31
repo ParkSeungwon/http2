@@ -1,0 +1,2 @@
+gnutls-cli -d 9999 localhost -p 4433 --no-ca-verification
+

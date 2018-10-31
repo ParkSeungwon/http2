@@ -1,0 +1,2 @@
+require_cert_revocation_info = false
+minimum_dh_group_size = 1024

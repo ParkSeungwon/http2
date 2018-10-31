@@ -59,6 +59,7 @@ template class TLS<false>;//client
 template<bool SV> TLS<SV>::TLS(unsigned char* buffer)
 {//buffer = read buffer, buffer2 = write buffer
 	rec_received_ = buffer;
+	mpz2bnd(random_prime(32), session_id_.begin(), session_id_.end());
 }
 template<bool SV> bool TLS<SV>::support_dhe()
 {
@@ -69,10 +70,6 @@ template<bool SV> int TLS<SV>::get_content_type(const string &s)
 	if(s != "") rec_received_ = s.data();
 	uint8_t *p = (uint8_t*)rec_received_;
 	return p[0];
-}
-template<bool SV> void TLS<SV>::session_id(array<unsigned char, 32> id)
-{
-	session_id_ = id;
 }
 template<bool SV>
 void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
@@ -348,12 +345,12 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		uint8_t cipher_suite[4] = {0x00, 0x33, 0x00, 0x2f};
 		uint8_t compression_length = 1;
 		uint8_t compression_method = 0;//none
-		uint8_t extension_length[2] = {0, 0};
+		//uint8_t extension_length[2] = {0, 0};
 	} r;
 	if constexpr(!SV) {//if client
 		r.h2.handshake_type = 1;
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 10;
-		r.h2.length[2] = sizeof(Hello_header) + 10;
+		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 8;
+		r.h2.length[2] = sizeof(Hello_header) + 8;
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 		return accumulate(struct2str(r));
@@ -366,10 +363,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		for(int i=0; i<len; i++) if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
 		if(support_dhe_) LOGI << "using TLS_DHE_RSA_AES128_SHA" << endl;
 		else LOGI << "using TLS_RSA_AES128_SHA" << endl;
-		if(id_length_ = p->h3.session_id_length) {
-			memcpy(session_id_.data(), p->h3.session_id, id_length_);
-			return string{session_id_.begin(), session_id_.end()};
-		} else return "";
+		return "";
 	}
 }
 /*****************
@@ -435,12 +429,12 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		Hello_header h3;
 		uint8_t cipher_suite[2] = {0x00, 0x2f};
 		uint8_t compression = 0;
-		uint8_t extension_length[2] = {0, 0};
+		//uint8_t extension_length[2] = {0, 0};
 	} r;
 	if constexpr(SV) {
 		if(support_dhe_) r.cipher_suite[1] = 0x33;
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 5;
-		r.h2.length[2] = sizeof(Hello_header) + 5;
+		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 3;
+		r.h2.length[2] = sizeof(Hello_header) + 3;
 		r.h2.handshake_type = 2;
 		mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 		memcpy(r.h3.random, server_random_.data(), 32);

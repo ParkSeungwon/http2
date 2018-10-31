@@ -16,7 +16,6 @@ protected:
 
 private:
 	void connected(int client_fd), conn();
-	std::array<unsigned char, 32> new_id();
 	int get_full_length(const std::string &s);
 };
 
