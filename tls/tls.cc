@@ -102,11 +102,12 @@ void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
 template<bool SV>
 array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 {
-	unsigned char pre[DH_KEY_SZ], rand[64];
+	unsigned char pre[DH_KEY_SZ * 2], rand[64];
 	int sz = mpz_sizeinbase(premaster_secret.get_mpz_t(), 16);
 	LOGD << "premaster : 0x" << hex << premaster_secret << endl;
 	if(sz % 2) sz++;
 	sz /= 2;
+	assert(DH_KEY_SZ * 2 >= sz);
 	mpz2bnd(premaster_secret, pre, pre + sz);
 	PRF<SHA2> prf;
 	prf.secret(pre, pre + sz);
@@ -816,6 +817,8 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
+	LOGD << hexprint("encrypted", encrypted) << endl;
+	LOGD << hexprint("s2", s2) << endl;
 	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
 	return s2;
 }
