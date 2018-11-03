@@ -762,6 +762,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	header_for_mac.h1 = p->h1;
 	header_for_mac.h1.set_length(content.size());
 	string t = struct2str(header_for_mac) + content;
+	LOGD << hexprint("mac src", t) << endl;
 	assert(auth == mac_[!SV].hash(t.begin(), t.end()));//verify auth
 	LOGI << "mac verified" << endl;
 	return content;
@@ -807,13 +808,17 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	header_for_mac.h1.set_length(len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
+	LOGD << hexprint("in", s2) << endl;
 	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
+	LOGD << hexprint("mac verify", verify) << endl;
 	frag += string{verify.begin(), verify.end()};//add authentication
 	while(frag.size() != block_len) frag += (char)(block_len - len - 21);//padding
 
 	auto iv = random_prime(16);
 	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
 	aes_[SV].iv(iv);
+	LOGD << hexprint("iv : ", vector<uint8_t>{header_to_send.iv, header_to_send.iv+16}) << endl;
+	LOGD << hexprint("src : ", frag) << endl;
 	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};

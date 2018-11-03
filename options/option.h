@@ -1,7 +1,9 @@
+#pragma once
 #include<cstring>
 #include<vector>
 #include<tuple>
 #include<any>
+#include<experimental/filesystem>
 
 class CMDoption
 {
@@ -19,4 +21,17 @@ protected:
 	
 private:
 	bool print_help(char *av0);
+};
+
+class FileExpansion
+{//for *.jpg
+public:
+	FileExpansion& operator+(const char* r) {
+		v.push_back(r);
+		return *this;
+	}
+	auto begin() { return v.begin(); }
+	auto end() { return v.end(); }
+protected:
+	std::vector<std::experimental::filesystem::path> v;
 };

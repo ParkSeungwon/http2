@@ -10,7 +10,7 @@ using namespace std;
 HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
 	: Server{outport, t, queue, end}, inport_{inport}
 {//hI = this; 
-	cout << "opening inner port " << inport << endl;
+	LOGI << "opening inner port " << inport << endl;
 } 
 	
 int HTTPS::get_full_length(const string &s) 
@@ -24,7 +24,7 @@ void HTTPS::conn()
 	vector<thread> v;
 	while(1) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
-		if(client_fd == -1) cout << "accept() error" << endl;
+		if(client_fd == -1) LOGF << "accept() error" << endl;
 		else {
 			v.emplace_back(thread{&HTTPS::connected, this, client_fd});
 			v.back().detach();

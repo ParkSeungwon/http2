@@ -4,29 +4,25 @@
 #include"framework/asyncqueue.h"
 #include"framework/server.h"
 #include"options/option.h"
+#include"options/log.h"
 using namespace std;
 
 class TLS_client : public Client
 {
 public:
 	TLS_client(string ip, int port) : Client{ip, port} {
-		send(t.client_hello());
-		t.server_hello(recv());
-		cout << "server hello" << endl;
-		t.server_certificate(recv());
-		cout << "server certificate" << endl;
-		if(t.support_dhe()) t.server_key_exchange(recv());
-		t.server_hello_done(recv());
-		cout << "server hello done" << endl;
-		string a = t.client_key_exchange();
-		string b = t.change_cipher_spec();
-		string c = t.finished();
+		send(t.client_hello()); 			LOGI << "client hello" << endl;
+		t.server_hello(recv()); 			LOGI << "server hello" << endl;
+		t.server_certificate(recv()); 		LOGI << "server certificate" << endl;
+		if(t.support_dhe()) 
+			t.server_key_exchange(recv()), 	LOGI << "server key exchange" << endl;
+		t.server_hello_done(recv()); 		LOGI << "server hello done" << endl;
+		string a = t.client_key_exchange(); LOGI << "client key exchange" << endl;
+		string b = t.change_cipher_spec(); 	LOGI << "change cipher spec" << endl;
+		string c = t.finished(); 			LOGI << "client finished" << endl;
 		send(a + b + c);
-		cout << "client key exchange, change cipher spec, finished" << endl;
-		t.change_cipher_spec(recv());
-		cout << "server change cipher spec" << endl;
-		t.finished(recv());
-		cout << "server finished" << endl;
+		t.change_cipher_spec(recv()); 		LOGI << "change cipher spec" << endl;
+		t.finished(recv()); 				LOGI << "server finished" << endl;
 	}
 	TLS<false> t;
 

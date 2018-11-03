@@ -116,14 +116,6 @@ TEST_CASE("hmac-sha1") {
 	REQUIRE(bnd2mpz(a.begin(), a.end()) == mpz_class{"0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d"});
 
 }
-
-TEST_CASE("hmac_sha256") {
-	HMAC<SHA2> hmac;
-	hmac.key(c, c);
-	auto a  = hmac.hash(c, c);
-	REQUIRE(bnd2mpz(a.begin(), a.end()) == mpz_class{"0xb613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad"});
-}
-
 /********************
 Here are some empty HMAC values:
 
@@ -145,6 +137,9 @@ TEST_CASE("hmac-sha256-2") {
 	hmac.key(key, key+4);
 	auto ar = hmac.hash(data, data+28);
 	REQUIRE(bnd2mpz(ar.begin(), ar.end()) == mpz_class{"0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"});
+	hmac.key(key, key);
+	auto a = hmac.hash(data, data);
+	REQUIRE(bnd2mpz(a.begin(), a.end()) == mpz_class{"0xb613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad"});
 }
 /***********************
 Key =          4a656665                          ("Jefe")
