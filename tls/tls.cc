@@ -65,11 +65,12 @@ template<bool SV> bool TLS<SV>::support_dhe()
 {
 	return support_dhe_;
 }
-template<bool SV> int TLS<SV>::get_content_type(const string &s)
+template<bool SV>
+pair<int, int> TLS<SV>::get_content_type(const string &s)
 {
 	if(s != "") rec_received_ = s.data();
 	uint8_t *p = (uint8_t*)rec_received_;
-	return p[0];
+	return {p[0], p[5]};
 }
 template<bool SV>
 void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
@@ -357,6 +358,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		return accumulate(struct2str(r));
 	} else {//server
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, CLIENT_HELLO}) return alert(2, 10);
 		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
@@ -443,6 +445,7 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, SERVER_HELLO}) return "error";
 		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
@@ -480,6 +483,7 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 	if constexpr(SV) return accumulate(certificate_);
 	else {
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, CERTIFICATE}) return "error";
 		accumulate();
 		struct H {
 			TLS_header h1;
@@ -577,6 +581,7 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, SERVER_KEY_EXCHANGE}) return "error";
 		accumulate();
 		const uint8_t *ptr_keys = static_cast<const H*>(rec_received_)->p_length;
 		mpz_class pgya[3];
@@ -645,6 +650,7 @@ template<bool SV> string TLS<SV>::server_hello_done(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, SERVER_DONE}) return "error";
 		accumulate();
 		return "";
 	}
@@ -691,6 +697,8 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 	mpz_class premaster_secret;
 	if constexpr(SV) {
 		if(s != "") set_buf(s.data());
+		if(get_content_type() != pair{HANDSHAKE, CLIENT_KEY_EXCHANGE}) 
+			return alert(2, 10);
 		accumulate();
 		H* p = (H*)rec_received_;;
 		assert(p->h2.handshake_type == 16);
@@ -698,7 +706,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 			premaster_secret = diffie_.set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
 		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + p->key_sz[0] * 0x100 + p->key_sz[1]));
 		auto a = use_key(derive_keys(premaster_secret));
-		return {a.begin(), a.end()};
+		return "";
 	} else {
 		r.h2.handshake_type = 16;
 		r.h1.set_length(sizeof(Handshake_header) + DH_KEY_SZ + 2);
@@ -850,7 +858,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	auto h = sha.hash(accumulated_handshakes_.cbegin(), accumulated_handshakes_.cend());
 	prf.seed(h.begin(), h.end());
 	const char *label[2] = {"client finished", "server finished"};
-	prf.label(label[++k_]);
+	prf.label(label[++finish_msg_count_]);
 	auto v = prf.get_n_byte(12);
 	LOGD << hexprint("finished", v) << endl;
 
@@ -861,7 +869,7 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	string msg = struct2str(hh) + string{v.begin(), v.end()};
 	accumulated_handshakes_ += msg;
 	
-	if(SV == k_) return encode(move(msg), 0x16);
+	if(SV == finish_msg_count_) return encode(move(msg), 0x16);
 	assert(decode(move(s)) == msg);
 	return "";
 }

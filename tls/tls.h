@@ -47,12 +47,31 @@ Alert Protocol: Used for communicating exceptions and indicate potential problem
 Application Data Protocol: It takes arbitrary data (application-layer data generally), and feeds it through the secure channel.
 *******************/
 
+const int 
+	CHANGE_CIPHER_SPEC = 0x14,
+	ALERT = 0x15,
+	HANDSHAKE = 0x16,
+	APPLICATION_DATA = 0x17
+;
+const int 
+	HELLO_REQUEST = 0x00,
+	CLIENT_HELLO = 0x01,
+	SERVER_HELLO = 0x02,
+	CERTIFICATE = 0x0b,
+	SERVER_KEY_EXCHANGE = 0x0c,
+	CERTIFICATE_REQUEST = 0x0d,
+	SERVER_DONE = 0x0e,
+	CERTIFICATE_VERIFY = 0x0f,
+	CLIENT_KEY_EXCHANGE = 0x10,
+	FINISHED = 0x14
+;
+
 template<bool SV = true> class TLS
 {//just deals with memory structure -> decoupled from underlying file-descriptor
 public:
 	TLS(unsigned char* buffer = nullptr);
 	bool support_dhe();
-	int get_content_type(const std::string &s = "");//"" -> manual set
+	std::pair<int, int> get_content_type(const std::string &s = "");//"" -> manual set
 	void set_buf(void* p);
 	void session_id(std::array<unsigned char, 32> id);
 	std::array<unsigned char, KEY_SZ> use_key(std::array<unsigned char, KEY_SZ> keys);
@@ -82,11 +101,11 @@ protected:
 	static std::string certificate_;
 	int id_length_;
 	mpz_class enc_seq_num_ = 0, dec_seq_num_ = 0;
-
+		
 private:
 	static RSA rsa_;
 	bool support_dhe_ = false, ok_ = true;
-	int k_ = -1;
+	int finish_msg_count_ = -1;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);
 	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
