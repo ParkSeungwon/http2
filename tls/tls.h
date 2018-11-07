@@ -88,7 +88,6 @@ public:
 	std::string finished(std::string &&s = "");//if s=="" send, else recv
 	int alert(std::string &&s = "");
 	std::string alert(uint8_t level, uint8_t desc);
-	bool ok();
 
 protected:
 	const void *rec_received_;
@@ -104,7 +103,7 @@ protected:
 		
 private:
 	static RSA rsa_;
-	bool support_dhe_ = false, ok_ = true;
+	bool support_dhe_ = false;
 	int finish_msg_count_ = -1;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);

@@ -445,7 +445,8 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
-		if(get_content_type() != pair{HANDSHAKE, SERVER_HELLO}) return "error";
+		if(get_content_type() != pair{HANDSHAKE, SERVER_HELLO}) 
+			return alert(2, 10);
 		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
@@ -483,7 +484,8 @@ template<bool SV> string TLS<SV>::server_certificate(string&& s)
 	if constexpr(SV) return accumulate(certificate_);
 	else {
 		if(s != "") set_buf(s.data());
-		if(get_content_type() != pair{HANDSHAKE, CERTIFICATE}) return "error";
+		if(get_content_type() != pair{HANDSHAKE, CERTIFICATE}) 
+			return alert(2, 10);
 		accumulate();
 		struct H {
 			TLS_header h1;
@@ -581,7 +583,8 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
-		if(get_content_type() != pair{HANDSHAKE, SERVER_KEY_EXCHANGE}) return "error";
+		if(get_content_type() != pair{HANDSHAKE, SERVER_KEY_EXCHANGE})
+			return alert(2, 10);
 		accumulate();
 		const uint8_t *ptr_keys = static_cast<const H*>(rec_received_)->p_length;
 		mpz_class pgya[3];
@@ -825,13 +828,13 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	auto iv = random_prime(16);
 	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
 	aes_[SV].iv(iv);
-	LOGD << hexprint("iv : ", vector<uint8_t>{header_to_send.iv, header_to_send.iv+16}) << endl;
-	LOGD << hexprint("src : ", frag) << endl;
+	LOGD << hexprint("iv", vector<uint8_t>{header_to_send.iv, header_to_send.iv+16}) << endl;
+	LOGD << hexprint("message before encrypt", frag) << endl;
 	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
-	LOGD << hexprint("encrypted", encrypted) << endl;
-	LOGD << hexprint("s2", s2) << endl;
+	LOGD << hexprint("after encrypted", encrypted) << endl;
+	LOGD << hexprint("sending", s2) << endl;
 	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
 	return s2;
 }
@@ -870,8 +873,8 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	accumulated_handshakes_ += msg;
 	
 	if(SV == finish_msg_count_) return encode(move(msg), 0x16);
-	assert(decode(move(s)) == msg);
-	return "";
+	if(decode(move(s)) != msg) return alert(2, 51);
+	else return "";
 }
 /***********************
 Finished: This message signals that the TLS negotiation is complete and the CipherSuite is activated. It should be sent already encrypted, since the negotiation is successfully done, so a ChangeCipherSpec protocol message must be sent before this one to activate the encryption. The Finished message contains a hash of all previous handshake messages combined, followed by a special number identifying server/client role, the master secret and padding. The resulting hash is different from the CertificateVerify hash, since there have been more handshake messages.
@@ -914,7 +917,6 @@ template<bool SV> string TLS<SV>::alert(uint8_t level, uint8_t desc)
 }
 template<bool SV> int TLS<SV>::alert(string &&s)
 {//alert received
-	ok_ = false;
 	if(s != "") rec_received_ = s.data();
 	struct H {
 		TLS_header h1;
@@ -962,8 +964,4 @@ template<bool SV> int TLS<SV>::alert(string &&s)
 	return desc;
 }
 
-template<bool SV> bool TLS<SV>::ok()
-{
-	return ok_;
-}
 #pragma pack()

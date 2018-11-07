@@ -51,15 +51,13 @@ void HTTPS::start()
 
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
-	TLS t;//TLS is decoupled from file descriptor
-	string s;
+	string s; TLS t;//TLS is decoupled from file descriptor
 	switch(CLIENT_HELLO) {
 	case CLIENT_HELLO:
-		if(s = t.client_hello(recv(client_fd)); s != "") {
-			send(move(s));
-			LOGE << "handshake failed" << endl;
+		if(s = t.client_hello(recv(client_fd)); s != "") {//error -> alert return
+			send(move(s));					LOGE << "handshake failed" << endl;
 			break;
-		} else LOGI << "client hello" << endl;
+		} else 								LOGI << "client hello" << endl;
 	case SERVER_HELLO:
 		s = t.server_hello(); 				LOGI << "server hello" << endl;
 		s += t.server_certificate(); 		LOGI << "server certificate" << endl;
@@ -69,14 +67,17 @@ void HTTPS::connected(int client_fd)
 		send(move(s), client_fd);
 	case CLIENT_KEY_EXCHANGE:
 		if(s = t.client_key_exchange(recv(client_fd)); s != "") {
-			send(move(s));
+			send(move(s)); 					LOGE<<"client key exchange failed"<<endl;
 			break;
-		} else LOGI << "client key exchange" << endl;
+		} else 								LOGI << "client key exchange" << endl;
 		t.change_cipher_spec(recv(client_fd)); 	LOGI << "change cipher spec" << endl;
-		t.finished(recv(client_fd)); 			LOGI << "client finished" << endl;
+		if(s = t.finished(recv(client_fd)); s != "") {
+			send(move(s)); 					LOGE << "decrypt error" << endl;
+			break;
+		} else 								LOGI << "client finished" << endl;
 	case CHANGE_CIPHER_SPEC:
-		s = t.change_cipher_spec(); 			LOGI << "change cipher spec" << endl;
-		s += t.finished(); 						LOGI << "server finished" << endl;
+		s = t.change_cipher_spec(); 		LOGI << "change cipher spec" << endl;
+		s += t.finished(); 					LOGI << "server finished" << endl;
 		send(move(s), client_fd);
 	case APPLICATION_DATA:
 		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
@@ -99,7 +100,6 @@ void HTTPS::connected(int client_fd)
 		while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
 			this_thread::sleep_for(30s);//data communication until garbage collection 
 	}
-	close(client_fd);
-	LOGI << "closing connection" << endl;
+	close(client_fd); 		LOGI << "closing connection " << client_fd << endl;
 }
 
