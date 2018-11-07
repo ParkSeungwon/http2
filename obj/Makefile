@@ -3,7 +3,7 @@ OBJ = $(wildcard *.o)
 TOBJ = $(wildcard *.t)
 EXE = $(patsubst %.x, ../%.x, $(wildcard *.x))
 gtkmmLIB = $(shell pkg-config gtkmm-3.0 --libs)
-LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl -lstdc++fs
+LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl -lstdc++fs -lbotan-2 -fstack-protector -m64
 
 all : $(EXE) ../catch.x
 

@@ -1,5 +1,6 @@
 #pragma once
 #include<valarray>
+#include<vector>
 #include<array>
 #include<iomanip>
 #include<iostream>
@@ -13,6 +14,7 @@
 #define WOLFSSL_SHA512
 #include<wolfssl/wolfcrypt/sha512.h>
 #include<json/json.h>
+#include <botan/cipher_mode.h>
 
 Json::Value pem2json(std::istream& is);
 Json::Value der2json(std::istream& is);
@@ -41,7 +43,7 @@ std::string get_certificate_core(std::istream& is);
 class AES
 {
 public:
-	AES(unsigned short bit = 128);
+	AES();
 	void key(const mpz_class key);
 	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
@@ -49,25 +51,25 @@ public:
 	template<typename It>
 	std::vector<unsigned char> encrypt(const It begin, const It end) {
 		int sz = end - begin;
-		assert(sz % 16 == 0);
-		std::vector<unsigned char> result(sz);
-		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_ENCRYPTION);
-		wc_AesCbcEncrypt(&aes_, result.data(), (const byte*)&*begin, sz);//&* for iterator
-		return result;
+		Botan::secure_vector<unsigned char> result(sz);
+		unsigned char *p = result.data();
+		for(auto it = begin; it !=  end; it++) *p++ = *it;
+		enc_->finish(result);
+		return {result.begin(), result.end()};
 	}
 	template<typename It>
 	std::vector<unsigned char> decrypt(const It begin, const It end) {
 		int sz = end - begin;
 		assert(sz % 16 == 0);
-		std::vector<unsigned char> result(sz);
-		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_DECRYPTION);
-		wc_AesCbcDecrypt(&aes_, result.data(), (const byte*)&*begin, sz);
-		return result;
+		Botan::secure_vector<unsigned char> result(sz);
+		unsigned char *p = result.data();
+		for(auto it = begin; it !=  end; it++) *p++ = *it;
+		dec_->finish(result);
+		return {result.begin(), result.end()};
 	}
 protected:
-	unsigned char key_[32], iv_[16];
-	Aes aes_;
-	unsigned char key_size_;
+	Botan::secure_vector<uint8_t> key_, iv_;
+	std::unique_ptr<Botan::Cipher_Mode> enc_, dec_;
 };
 
 class SHA1
