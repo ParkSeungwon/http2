@@ -7,12 +7,13 @@
 #include<cassert>
 #include<gmpxx.h>
 #include<cstdio>
-#include<wolfssl/wolfcrypt/aes.h>
-#include<wolfssl/wolfcrypt/sha.h>
-#include<wolfssl/wolfcrypt/sha256.h>
-#define WOLFSSL_SHA512
-#include<wolfssl/wolfcrypt/sha512.h>
 #include<json/json.h>
+#include<cryptlib.h>
+#include<aes.h>
+#include<ccm.h>
+#include<sha.h>
+#include<filters.h>
+#include<hex.h>
 
 Json::Value pem2json(std::istream& is);
 Json::Value der2json(std::istream& is);
@@ -41,32 +42,34 @@ std::string get_certificate_core(std::istream& is);
 class AES
 {
 public:
-	AES(unsigned short bit = 128);
 	void key(const mpz_class key);
 	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
 	void iv(const unsigned char* iv);
 	template<typename It>
 	std::vector<unsigned char> encrypt(const It begin, const It end) {
-		int sz = end - begin;
-		assert(sz % 16 == 0);
-		std::vector<unsigned char> result(sz);
-		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_ENCRYPTION);
-		wc_AesCbcEncrypt(&aes_, result.data(), (const byte*)&*begin, sz);//&* for iterator
-		return result;
+		std::string s, result;
+		for(auto it = begin; it != end; it++) s += *it;
+		enc_.SetKeyWithIV(key_, 16, iv_);
+		CryptoPP::StringSource t(s, true, new CryptoPP::StreamTransformationFilter(enc_,
+					new CryptoPP::StringSink(result))); // StreamTransformationFilter
+		return {result.begin(), result.end()};
 	}
 	template<typename It>
 	std::vector<unsigned char> decrypt(const It begin, const It end) {
 		int sz = end - begin;
 		assert(sz % 16 == 0);
-		std::vector<unsigned char> result(sz);
-		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_DECRYPTION);
-		wc_AesCbcDecrypt(&aes_, result.data(), (const byte*)&*begin, sz);
-		return result;
+		std::string s, result;
+		for(auto it = begin; it != end; it++) s += *it;
+		dec_.SetKeyWithIV(key_, 16, iv_);
+		CryptoPP::StringSource t(s, true, new CryptoPP::StreamTransformationFilter(dec_,
+					new CryptoPP::StringSink(result))); // StreamTransformationFilter
+		return {result.begin(), result.end()};
 	}
 protected:
-	unsigned char key_[32], iv_[16];
-	Aes aes_;
+	unsigned char key_[16], iv_[16];
+	CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption enc_;
+	CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption dec_;
 	unsigned char key_size_;
 };
 
@@ -75,18 +78,18 @@ class SHA1
 public:
 	static const int block_size = 64;
 	static const int output_size = 20;
-	SHA1() {
-		if(wc_InitSha(&sha_)) std::cerr << "wc_init_sha_failed" << std::endl;
-	}
 	template<typename It>
 	std::array<unsigned char, output_size> hash(const It begin, const It end) {
 		std::array<unsigned char, output_size> r;
-		wc_ShaUpdate(&sha_, &*begin, end - begin);
-		wc_ShaFinal(&sha_, r.data());
+		std::string message, digest;
+		for(auto it = begin; it != end; it++) message += *it;
+		CryptoPP::StringSource s(message, true, new CryptoPP::HashFilter(sha_,
+					new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest))));
+		for(int i=0; i<output_size; i++) r[i] = digest[i];
 		return r;
 	}
 protected:
-	Sha sha_;
+	CryptoPP::SHA1 sha_;
 };
 
 class SHA2
@@ -94,18 +97,18 @@ class SHA2
 public:
 	static const int block_size = 64;
 	static const int output_size = 32;
-	SHA2() {
-		if(wc_InitSha256(&sha_)) std::cerr << "wc_init_sha256_failed" << std::endl;
-	}
 	template<typename It>
 	std::array<unsigned char, output_size> hash(const It begin, const It end) {
 		std::array<unsigned char, output_size> r;
-		wc_Sha256Update(&sha_, (const byte*)&*begin, end - begin);
-		wc_Sha256Final(&sha_, r.data());
+		std::string message, digest;
+		for(auto it = begin; it != end; it++) message += *it;
+		CryptoPP::StringSource s(message, true, new CryptoPP::HashFilter(sha_,
+					new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest))));
+		for(int i=0; i<output_size; i++) r[i] = digest[i];
 		return r;
 	}
 protected:
-	Sha256 sha_;
+	CryptoPP::SHA256 sha_;
 };
 
 class SHA5
@@ -113,18 +116,18 @@ class SHA5
 public:
 	static const int block_size = 128;
 	static const int output_size = 64;
-	SHA5() {
-		if(wc_InitSha512(&sha_)) std::cerr << "wc_init_sha512_failed" << std::endl;
-	}
 	template<class It>
 	std::array<unsigned char, output_size> hash(const It begin, const It end) {
 		std::array<unsigned char, output_size> r;
-		wc_Sha512Update(&sha_, &*begin, end - begin);
-		wc_Sha512Final(&sha_, r.data());
+		std::string message, digest;
+		for(auto it = begin; it != end; it++) message += *it;
+		CryptoPP::StringSource s(message, true, new CryptoPP::HashFilter(sha_,
+					new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest))));
+		for(int i=0; i<output_size; i++) r[i] = digest[i];
 		return r;
 	}
 protected:
-	Sha512 sha_;
+	CryptoPP::SHA512 sha_;
 };
 
 template<class C> std::string hexprint(const char *p, const C &c)

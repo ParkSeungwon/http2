@@ -2,11 +2,6 @@
 #include"options/log.h"
 using namespace std;
 
-AES::AES(unsigned short bit) : key_size_{bit / 8} 
-{
-	assert(key_size_ == 16 || key_size_ == 24 || key_size_ == 32);
-}
-
 void AES::key(const mpz_class key)
 {
 	mpz2bnd(key, key_, key_+ key_size_);
