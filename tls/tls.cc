@@ -761,6 +761,9 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	aes_[!SV].iv(p->iv);
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
 	LOGD << hexprint("decrypted", decrypted) << endl;
+	LOGD << "decrypted back : " << +decrypted.back() << endl;
+	assert(decrypted.size() > decrypted.back());
+	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 
 	array<unsigned char, 20> auth;//get auth
 	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();

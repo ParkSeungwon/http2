@@ -20,7 +20,7 @@ TEST_CASE("AES TEST") {
 	aes.iv(iv);
 	auto v = aes.encrypt(text, text+16);//should be multiple of 16
 	LOGI << hexprint("botan enc", v) << endl;
-	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f"});
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
 	v = aes.decrypt(v.begin(), v.end());
 	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 }
