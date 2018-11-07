@@ -233,3 +233,4 @@ TEST_CASE("wolfssl aes128 decrypt") {
 	aes.key(key);
 	LOGD << hexprint("decrypted", aes.decrypt(encrypted, encrypted + 48)) << endl;
 }
+
