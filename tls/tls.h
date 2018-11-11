@@ -46,26 +46,6 @@ Alert Protocol: Used for communicating exceptions and indicate potential problem
 
 Application Data Protocol: It takes arbitrary data (application-layer data generally), and feeds it through the secure channel.
 *******************/
-
-const int 
-	CHANGE_CIPHER_SPEC = 0x14,
-	ALERT = 0x15,
-	HANDSHAKE = 0x16,
-	APPLICATION_DATA = 0x17
-;
-const int 
-	HELLO_REQUEST = 0x00,
-	CLIENT_HELLO = 0x01,
-	SERVER_HELLO = 0x02,
-	CERTIFICATE = 0x0b,
-	SERVER_KEY_EXCHANGE = 0x0c,
-	CERTIFICATE_REQUEST = 0x0d,
-	SERVER_DONE = 0x0e,
-	CERTIFICATE_VERIFY = 0x0f,
-	CLIENT_KEY_EXCHANGE = 0x10,
-	FINISHED = 0x14
-;
-
 template<bool SV = true> class TLS
 {//just deals with memory structure -> decoupled from underlying file-descriptor
 public:
@@ -111,3 +91,21 @@ private:
 	std::string accumulate(const std::string &s);
 	void accumulate();
 };
+
+const int CHANGE_CIPHER_SPEC = 0x14
+		, ALERT = 0x15
+		, HANDSHAKE = 0x16
+		, APPLICATION_DATA = 0x17
+		;
+const int HELLO_REQUEST = 0x00
+		, CLIENT_HELLO = 0x01
+		, SERVER_HELLO = 0x02
+		, CERTIFICATE = 0x0b
+		, SERVER_KEY_EXCHANGE = 0x0c
+		, CERTIFICATE_REQUEST = 0x0d
+		, SERVER_DONE = 0x0e
+		, CERTIFICATE_VERIFY = 0x0f
+		, CLIENT_KEY_EXCHANGE = 0x10
+		, FINISHED = 0x14
+		;
+
