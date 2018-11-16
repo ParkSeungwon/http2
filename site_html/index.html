@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+		<script src="jquery.min.js">
+		</script>
+	<script>
+		function f() {
+			$("#content").val("data:text/html;base64," + window.btoa($("#content").val()));
+			alert("hello");
+		}
+	</script>
+	</head>
+
+	<body>
+			<form action="db" method="post" onsubmit='f()'>
+					<input type="text" id="title" class="form-control" name="title">
+					<textarea class="form-control" rows="25" name="content" id="content"></textarea>
+					<input type="submit" value="ok">
+			</form>
+		</div>
+	</body>
+</html>

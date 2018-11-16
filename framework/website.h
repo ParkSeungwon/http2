@@ -6,7 +6,7 @@ using namespace std;
 class WebSite 
 {//specific server will derive this class
 public:
-	WebSite();
+	WebSite(std::string dir = "www");
 	std::string operator()(std::string s);
 
 protected:

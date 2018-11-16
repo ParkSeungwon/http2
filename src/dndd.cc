@@ -5,7 +5,7 @@
 #include"database/util.h"
 using namespace std;
 
-DnDD::DnDD()
+DnDD::DnDD() : BootStrapSite{"www"}
 {//SqlQuery destructor -> mysqlquery destructor nullify
 	sq.connect("localhost", "dndd", "dndddndd", "dndd");//sq prohibit destruct
 }

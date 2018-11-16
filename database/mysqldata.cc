@@ -6,6 +6,10 @@
 #include "mysqldata.h"
 using namespace std;
 
+SqlQuery::SqlQuery(const SqlQuery& r) : Mysqlquery{r}
+{
+	query_.clear();
+}
 bool SqlQuery::is_int(int n)
 {
 	return columns[n].type.find("INT") != string::npos;

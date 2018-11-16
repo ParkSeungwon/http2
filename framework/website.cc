@@ -10,9 +10,9 @@ using namespace std;
 using namespace std::experimental::filesystem;
 
 map<string, string> WebSite::fileNhtml_;
-WebSite::WebSite()
+WebSite::WebSite(string dir)
 {
-	for(const path& a : directory_iterator{"www"}) {//directory entry has operator path
+	for(const path& a : directory_iterator{dir}) {//directory entry has operator path
 		ifstream f(a.string()); string s; char c;
 		while(f >> noskipws >> c) s += c;
 		fileNhtml_[a.filename()] = s;
