@@ -1,15 +1,25 @@
-#include <chrono>
+#include<chrono>
 #include<initializer_list>
 #include<unordered_map>
-#include <ctime>
+#include<ctime>
 #include<sstream>
-#include "mysqldata.h"
+#include"mysqldata.h"
+#include"options/log.h"
 using namespace std;
 
 SqlQuery::SqlQuery(const SqlQuery& r) : Mysqlquery{r}
+{ }
+
+bool SqlQuery::insert()
 {
-	query_.clear();
+	std::string q = "insert into " + table_name + " values (" + values_.str();
+	q.back() = ')';
+	q += ";";
+	values_.str("");
+	LOGD << q << endl;
+	return myQuery(q);
 }
+
 bool SqlQuery::is_int(int n)
 {
 	return columns[n].type.find("INT") != string::npos;

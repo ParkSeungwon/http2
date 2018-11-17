@@ -1,24 +1,32 @@
+
 <!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-		<script src="jquery.min.js">
-		</script>
+		<script src='jquery.min.js'></script>
 	<script>
-		function f() {
-			$("#content").val("data:text/html;base64," + window.btoa($("#content").val()));
-			alert("hello");
+		function b64e(s) {
+			return window.btoa(unescape(encodeURIComponent(s)));
 		}
+		function b64d(s) {
+			return decodeURIComponent(escape(window.atob(s)));
+		}
+		function f() {
+			$("textarea").val(b64e($("textarea").val()));
+			alert($("textarea").val());
+		}
+
+	$(function g() {
+		$('textarea').val(b64d($('textarea').val()));
+	});
 	</script>
 	</head>
 
 	<body>
-			<form action="db" method="post" onsubmit='f()'>
-					<input type="text" id="title" class="form-control" name="title">
-					<textarea class="form-control" rows="25" name="content" id="content"></textarea>
+			<form action="db.html" method="post" onsubmit="f()">
+					<input type="text" name="title" value='TITLE'>
+					<textarea rows="25" name="content">TEXT</textarea>
 					<input type="submit" value="ok">
 			</form>
-		</div>
 	</body>
 </html>

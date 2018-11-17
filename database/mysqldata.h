@@ -15,17 +15,21 @@ public:
 	bool insert(std::vector<std::string> v);
 	template<class T1, class... T2> bool insert(T1 a, T2... b)
 	{
-		if(std::is_same<std::string, T1>::value ||
-				std::is_same<const char*, T1>::value) query_ << "'"  << a << "',";
-		else query_ << a << ",";
-		if constexpr(!sizeof...(b)) {
-			std::string q = "insert into " + table_name + " values (" + query_.str();
-			q.back() = ')';
-			q += ";";
-			query_.clear();
-			return myQuery(q);
-		} else return insert(b...);
+		values_ << a << ",";
+		return insert(b...);
 	}
+	template<class... T> bool insert(std::string s, T... b)
+	{
+		values_ << "'" << s << "',";
+		return insert(b...);
+	}
+	template<class... T> bool insert(const char* p, T... b)
+	{
+		values_ << "'" << p << "',";
+		return insert(b...);
+	}
+	bool insert();
+	
 	void group_by(std::vector<std::string> v);
 	
 	std::string encrypt(std::string pass);
@@ -44,6 +48,6 @@ protected:
 private:
 	bool is_int(int nth_column);
 	bool is_real(int nth_column);
-	std::stringstream query_;
+	std::stringstream values_;//this is not copy constructable.copy constructor needed
 };
 
