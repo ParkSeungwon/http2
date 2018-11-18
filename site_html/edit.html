@@ -15,30 +15,19 @@
 			$("textarea").val(b64e($("textarea").val()));
 			$("input[name='title']").val(b64e($("input[name='title']").val()));
 		}
-		function on_click() {
-			$('#frame').hide();
-			$('#edit').show();
-		}
+
 	$(function on_ready() {
-		$('h1').text(b64d($('h1').text()));
-		$("input[name='title']").val(b64d($("input[name='title']").val()));
 		$('textarea').val(b64d($('textarea').val()));
+		$("input[name='title']").val(b64d($("input[name='title']").val()));
 	});
 	</script>
 	</head>
 
 	<body>
-		<div id='frame'>
-		<h1>TITLE</h1>
-		<iframe src='data:text/html;charset=utf-8;base64,TEXT'></iframe>
-		<button onclick='on_click()'>edit</button>
-		</div>
-		<div id='edit' style='display: none'>
 			<form action="db.html" method="post" onsubmit="on_submit()">
 					<input type="text" name="title" value='TITLE'>
 					<textarea rows="25" name="content">TEXT</textarea>
 					<input type="submit" value="ok">
 			</form>
-		</div>
 	</body>
 </html>

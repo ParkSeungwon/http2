@@ -18,12 +18,19 @@ void Site::process()
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
 	else if(requested_document_ == "db.html") db();
+	else if(requested_document_ == "edit.html") edit();
 }
-
+void Site::edit()
+{
+	swap("TEXT", nameNvalue_["src"]);
+	swap("TITLE", nameNvalue_["title"]);
+}
 void Site::index()
 {
 	sq.select("bbs", "where num=1 and page=1 and comment_order=1 order by edit desc limit 1");
-	swap("TEXT", sq[0]["content"].asString());
+	swap("SRC", sq[0]["content"].asString());
+	swap("TITLE", sq[0]["title"].asString());
+	swap("SRC", sq[0]["content"].asString());
 	swap("TITLE", sq[0]["title"].asString());
 }
 

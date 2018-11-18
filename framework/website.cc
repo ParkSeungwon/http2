@@ -12,13 +12,6 @@ using namespace std::experimental::filesystem;
 map<string, string> WebSite::fileNhtml_;
 WebSite::WebSite(string dir)
 {
-	dir_ = dir;
-	reload(dir_);
-}
-
-void WebSite::reload(string dir)
-{
-	fileNhtml_.clear();
 	for(const path& a : directory_iterator{dir}) {//directory entry has operator path
 		ifstream f(a.string()); string s; char c;
 		while(f >> noskipws >> c) s += c;
@@ -26,6 +19,7 @@ void WebSite::reload(string dir)
 		cout << "loading " << a.filename() << endl;
 	}
 }
+
 bool WebSite::swap(string b, string a)
 {//child classes will use this to change content_
 	if(content_.find(b) == string::npos) return false;
@@ -55,7 +49,7 @@ std::string WebSite::operator()(string s)
 		getline(ss2, s, '?');
 		requested_document_ = s.substr(1);//get rid of '/'
 		nameNvalue_ = parse_post(ss2);
-	} else if(s == "RELOAD") reload(dir_);
+	}
 	if(requested_document_ == "") requested_document_ = "index.html";
 	content_ = fileNhtml_[requested_document_];
 	try {

@@ -11,6 +11,6 @@ protected:
 	void process();
 
 private:
-	void index(), db();
+	void index(), db(), edit();
 };
 
