@@ -15,7 +15,7 @@ void Site::process()
 	cout << requested_document_ << endl;
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
-	else if(requested_document_ == "up.cgi") upload();
+	else if(requested_document_ == "up.cgi") content_ = upload();
 }
 void Site::index()
 {
@@ -29,8 +29,9 @@ void Site::index()
 	swap("@TITLE", sq[0]["title"].asString());
 }
 
-void Site::upload()
+string Site::upload()
 {
 	ofstream f(nameNvalue_["filename"]);
 	f << nameNvalue_["file"];
+	return nameNvalue_["goods"] + nameNvalue_["desc"];
 }

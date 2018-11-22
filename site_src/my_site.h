@@ -11,6 +11,7 @@ protected:
 	void process();
 
 private:
-	void index(), upload();
+	void index();
+	string upload();
 };
 

@@ -20,7 +20,7 @@ public:
 	template<class T> Log& operator<<(T r) {
 		if(log_on_[log_level_]) {
 			if(use_mutex_) mtx_.lock();
-			std::clog << r;
+			std::cerr << r;
 			log_file_ << r;
 			if(use_mutex_) mtx_.unlock();
 		}

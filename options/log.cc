@@ -19,7 +19,7 @@ Log& Log::operator<<(ostream& (*manipulators)(ostream&))
 {
 	if(log_on_[log_level_]) {
 		if(use_mutex_) mtx_.lock();
-		clog << manipulators;
+		cerr << manipulators;
 		log_file_ << manipulators;
 		if(use_mutex_) mtx_.unlock();
 	}

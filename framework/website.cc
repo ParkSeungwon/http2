@@ -78,17 +78,15 @@ istream& WebSite::parse_one(istream& is, string boundary)
 	if(regex_search(s, m, e1)) name = m[1].str();
 	s = m.suffix().str();
 	if(regex_search(s, m, e2)) filename = m[1].str();
-	s = "";
-	while(s != "\r") {
-		getline(is, s);
-		LOGD << s << " is here" << endl;
-	}
-	while(getline(is, s)) {//parser value
+	do getline(is, s);//skip
+	while(s != "\r");
+	
+	while(getline(is, s)) {//parse value
 		if(s.find(boundary) != string::npos) break;
 		val += s + '\n';
 	}
-	val.pop_back();
-	val.pop_back();
+	val.pop_back();// + \n
+	val.pop_back();//\r
 	nameNvalue_[name] = val;
 	if(filename != "") nameNvalue_["filename"] = filename;
 	return is;
