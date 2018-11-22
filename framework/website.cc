@@ -3,9 +3,11 @@
 #include<cstring>
 #include<iostream>
 #include<experimental/filesystem>
+#include<regex>
 #include"database/util.h"
 #include"server.h"
 #include"website.h"
+#include"options/log.h"
 using namespace std;
 using namespace std::experimental::filesystem;
 
@@ -41,8 +43,16 @@ std::string WebSite::operator()(string s)
 	if(s == "POST") {//parse request and header
 		ss >> requested_document_;
 		requested_document_ = requested_document_.substr(1);
-		while(s != "\r") getline(ss, s);
-		nameNvalue_ = parse_post(ss);
+		string boundary;
+		while(s != "\r") {
+			getline(ss, s);
+			if(s.find("Content-Type: multipart/form-data;") == 0) {
+				boundary = s.substr(s.find("boundary=") + 9);
+				boundary.pop_back();
+			}
+		}
+		if(boundary == "") nameNvalue_ = parse_post(ss);
+		else parse_multi(ss, boundary);
 	} else if(s == "GET") {
 		ss >> s;
 		stringstream ss2; ss2 << s;//GET '/login.html?adf=fdsa'
@@ -60,3 +70,33 @@ std::string WebSite::operator()(string s)
 	return header_ + to_string(content_.size()) + "\r\n\r\n" + content_;
 }
 
+istream& WebSite::parse_one(istream& is, string boundary)
+{
+	regex e1{R"raw(name="(\w+)")raw"}, e2{R"raw(filename="(\S+)")raw"};
+	smatch m; string s, name, filename, val;
+	if(!getline(is, s)) return is;
+	if(regex_search(s, m, e1)) name = m[1].str();
+	s = m.suffix().str();
+	if(regex_search(s, m, e2)) filename = m[1].str();
+	s = "";
+	while(s != "\r") {
+		getline(is, s);
+		LOGD << s << " is here" << endl;
+	}
+	while(getline(is, s)) {//parser value
+		if(s.find(boundary) != string::npos) break;
+		val += s + '\n';
+	}
+	val.pop_back();
+	val.pop_back();
+	nameNvalue_[name] = val;
+	if(filename != "") nameNvalue_["filename"] = filename;
+	return is;
+}
+
+void WebSite::parse_multi(istream& is, string boundary)
+{
+	string s;
+	getline(is, s);
+	while(parse_one(is, boundary));
+}

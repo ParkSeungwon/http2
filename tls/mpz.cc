@@ -8,7 +8,7 @@ using namespace std;
 
 static void show() {}
 template<typename... Args> void show(mpz_class a, Args... b)
-{//print args
+{//print args, use initializer_list
 	std::cout <<  "0x" << std::hex << a << std::endl;
 	show(b...);
 }

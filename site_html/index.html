@@ -3,41 +3,38 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<script src='jquery.min.js'></script>
-	<script>
-		function b64e(s) {
-			return window.btoa(unescape(encodeURIComponent(s)));
-		}
-		function b64d(s) {
-			return decodeURIComponent(escape(window.atob(s)));
-		}
-		function on_submit() {
-			$("textarea").val(b64e($("textarea").val()));
-			$("input[name='title']").val(b64e($("input[name='title']").val()));
-		}
-		function on_click() {
-			$('#frame').hide();
-			$('#edit').show();
-		}
-	$(function on_ready() {
-		$('h1').text(b64d($('h1').text()));
-		$("input[name='title']").val(b64d($("input[name='title']").val()));
-		$('textarea').val(b64d($('textarea').val()));
-	});
-	</script>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" ></script>
+		<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+
+		<link rel="stylesheet" type="text/css" href="index.css">
+		<script src='index.js'> </script>
 	</head>
 
-	<body>
+	<body> 
 		<div id='frame'>
-		<h1>TITLE</h1>
-		<iframe src='data:text/html;charset=utf-8;base64,TEXT'></iframe>
-		<button onclick='on_click()'>edit</button>
+			<h1>@TITLE</h1>
+			<iframe onload='resize()' id='iframe' src='data:text/html;charset=utf-8;base64,@TEXT' width=100% height=400px></iframe>
+			<button onclick='on_click()'>edit</button>
+			<button onclick='resize()'>resize</button>
+			<div id='app-6'>
+				<p>{{message}}</p>
+				<input v-model='message'>
+			</div>
 		</div>
-		<div id='edit' style='display: none'>
-			<form action="db.html" method="post" onsubmit="on_submit()">
-					<input type="text" name="title" value='TITLE'>
-					<textarea rows="25" name="content">TEXT</textarea>
+		<div id='edit' style='display: none' class='container'>
+			<form action="index.html" method="post" onsubmit="on_submit()">
+				<div class='form-group'>
+					<label for='title'>Title</label>
+					<input type="text" id='title' name="title" value='@TITLE' class='form-control'>
+					<label for='content'>Content</label>
+					<textarea rows="20" id='content' name="content" class='form-control'>@TEXT</textarea>
 					<input type="submit" value="ok">
+					<button onclick='cancel()'>cancel</button>
+				</div>
 			</form>
 		</div>
 	</body>

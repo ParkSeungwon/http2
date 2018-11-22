@@ -1,0 +1,8 @@
+iframe {
+  width: 1px;
+  min-width: 100%;
+}
+
+#edit {
+	display: none;
+}

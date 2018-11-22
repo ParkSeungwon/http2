@@ -127,3 +127,19 @@ TEST_CASE("which is front") {
 	f() + g();
 	cout << __LINE__ << ' ' << __FILE__ << __func__ << endl;
 }
+
+TEST_CASE("startwiwth") {
+	string s = "Content-Type: multipart/form-data; boundary=----WebKitFormBoundary1feen4q1pjqBCnWz";
+	REQUIRE(s.find("Content-Type: multipart/form-data;") == 0);
+	REQUIRE(s.substr(s.find("boundary=") + 9) == "----WebKitFormBoundary1feen4q1pjqBCnWz");
+
+	s = "Content-Disposition: form-data; name=\"file\"; filename=\"IMG_0315.JPG\"";
+	regex e1{R"raw(name="(\w+)")raw"}, e2{R"raw(filename="(\S+)")raw"};
+	smatch m; string name, filename, val;
+	if(regex_search(s, m, e1)) name = m[1].str();
+	s = m.suffix().str();
+	if(regex_search(s, m, e2)) filename = m[1].str();
+
+	REQUIRE(name == "file");
+	REQUIRE(filename == "IMG_0315.JPG");
+}

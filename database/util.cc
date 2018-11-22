@@ -73,3 +73,8 @@ map<string, string> parse_post(istream& post)
 	}
 	return m;
 }
+
+pair<string, string> parse_multiform(istream& is)
+{
+
+}

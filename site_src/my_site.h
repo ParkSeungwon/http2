@@ -1,5 +1,5 @@
 #include"database/mysqldata.h"
-#include"framework/bootstrap.h"
+#include"framework/website.h"
 
 class Site : public WebSite
 {
@@ -11,6 +11,6 @@ protected:
 	void process();
 
 private:
-	void index(), db(), edit();
+	void index(), upload();
 };
 

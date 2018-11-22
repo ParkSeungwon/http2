@@ -1,6 +1,4 @@
-#include<cassert>
 #include<fstream>
-#include<regex>
 #include<string>
 #include"my_site.h"
 #include"database/util.h"
@@ -17,28 +15,22 @@ void Site::process()
 	cout << requested_document_ << endl;
 	for(auto& a : nameNvalue_) cout << a.first << ':' << a.second << endl;
 	if(requested_document_ == "index.html") index();
-	else if(requested_document_ == "db.html") db();
-	else if(requested_document_ == "edit.html") edit();
-}
-void Site::edit()
-{
-	swap("TEXT", nameNvalue_["src"]);
-	swap("TITLE", nameNvalue_["title"]);
+	else if(requested_document_ == "up.cgi") upload();
 }
 void Site::index()
 {
+	if(nameNvalue_["title"] != "")//from edit
+		sq.insert(nameNvalue_["title"], nameNvalue_["content"], sq.now(), 
+			1, 1, 1, sq[0]["edit"].asInt() + 1, "zezeon@msn.com");
 	sq.select("bbs", "where num=1 and page=1 and comment_order=1 order by edit desc limit 1");
-	swap("SRC", sq[0]["content"].asString());
-	swap("TITLE", sq[0]["title"].asString());
-	swap("SRC", sq[0]["content"].asString());
-	swap("TITLE", sq[0]["title"].asString());
+	swap("@TEXT", sq[0]["content"].asString());
+	swap("@TITLE", sq[0]["title"].asString());
+	swap("@TEXT", sq[0]["content"].asString());
+	swap("@TITLE", sq[0]["title"].asString());
 }
 
-void Site::db()
+void Site::upload()
 {
-	sq.select("bbs", "where num=1 and page=1 and comment_order=1 order by edit desc limit 1");
-	sq.insert(nameNvalue_["title"], nameNvalue_["content"], sq.now(), 
-			1, 1, 1, sq[0]["edit"].asInt() + 1, "zezeon@msn.com");
-	stringstream ss; ss << sq[0];
-	swap("DATA", "inserted " + ss.str());
+	ofstream f(nameNvalue_["filename"]);
+	f << nameNvalue_["file"];
 }
