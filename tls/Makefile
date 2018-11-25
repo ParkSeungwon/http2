@@ -1,5 +1,5 @@
-CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread -Wcpp
-INCLUDE = -I../ -I/usr/include/jsoncpp 
+CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread
+INCLUDE = -I../ -I/usr/include/jsoncpp
 CC = g++
 OBJ = $(patsubst %.cc, ../obj/%.o, $(wildcard *.cc))
 MAIN_OBJ = $(patsubst %.cpp, ../obj/%.x, $(wildcard *.cpp))

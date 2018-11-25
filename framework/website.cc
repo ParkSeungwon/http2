@@ -4,10 +4,8 @@
 #include<iostream>
 #include<experimental/filesystem>
 #include<regex>
-#include"database/util.h"
 #include"server.h"
 #include"website.h"
-#include"options/log.h"
 using namespace std;
 using namespace std::experimental::filesystem;
 
@@ -98,3 +96,20 @@ void WebSite::parse_multi(istream& is, string boundary)
 	getline(is, s);
 	while(parse_one(is, boundary));
 }
+
+map<string, string> WebSite::parse_post(istream& post)
+{
+	map<string, string> m;
+	string s, value;
+	while(getline(post, s, '&')) {
+		int pos = s.find('=');
+		value = s.substr(pos+1);
+		for(auto& a : value) if(a == '+') a = ' ';
+		for(int i = value.find('%'); i != string::npos; i = value.find('%', i))
+			value.replace(i, 3, 1, (char)stoi(value.substr(i + 1, 2), nullptr,16));
+		if(value.back() == '\0') value.pop_back();
+		m[s.substr(0, pos)] = value;
+	}
+	return m;
+}
+

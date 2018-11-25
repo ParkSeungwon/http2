@@ -9,9 +9,11 @@ public:
 protected:
 	SqlQuery sq;
 	void process();
+	string id, name;
+	int level;
 
 private:
-	void index();
+	void index(), signup();
 	string upload();
 };
 
