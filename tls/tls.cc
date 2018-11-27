@@ -757,12 +757,10 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		uint8_t seq[8];
 		TLS_header h1;
 	} header_for_mac;
-	unsigned char kk[32];
-	memcpy(kk, aes_[1].key_, 32);
 	aes_[!SV].iv(p->iv);
+	aes_[1].save_key();
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
-	memcpy(aes_[1].key_, kk, 32);
-	LOGD << hexprint("decrypted", decrypted) << endl;
+	aes_[1].restore_key();
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
@@ -826,14 +824,9 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	auto iv = random_prime(16);
 	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
 	aes_[SV].iv(iv);
-	LOGD << hexprint("key", vector<uint8_t>{aes_[SV].key_, aes_[SV].key_ + 16}) << endl;
-	LOGD << hexprint("iv", vector<uint8_t>{header_to_send.iv, header_to_send.iv+16}) << endl;
-	LOGD << hexprint("message before encrypt", frag) << endl;
 	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
-	LOGD << hexprint("after encrypted", encrypted) << endl;
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
-	LOGD << hexprint("sending", s2) << endl;
 	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
 	return s2;
 }

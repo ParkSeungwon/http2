@@ -31,3 +31,12 @@ void AES::iv(const unsigned char* iv)
 	LOGT << hexprint("setting iv", vector<unsigned char>{iv_, iv_ + 16}) << endl;
 }
 
+void AES::save_key()
+{
+	memcpy(key_save_, key_, 32);
+}
+
+void AES::restore_key()
+{
+	memcpy(key_, key_save_, 32);
+}

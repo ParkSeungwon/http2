@@ -72,9 +72,11 @@ public:
 		wc_AesCbcDecrypt(&aes_, result.data(), (const byte*)&*begin, sz);
 		return result;
 	}
-	unsigned char key_[32], iv_[16];
+	void save_key();
+	void restore_key();
 protected:
 	Aes aes_;
+	unsigned char key_[32], iv_[16], key_save_[32];
 	unsigned char key_size_;
 };
 
