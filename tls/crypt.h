@@ -38,6 +38,14 @@ template<typename It> mpz_class bnd2mpz(It begin, It end)
 void print(unsigned char* r, const char* c);
 std::string get_certificate_core(std::istream& is);
 
+template<class C> std::string hexprint(const char *p, const C &c)
+{//log container specialization
+	std::stringstream ss;
+	ss << p << " : 0x";
+	for(unsigned char a : c) ss << std::hex << std::setw(2) << std::setfill('0')<< +a;
+	return ss.str();
+}
+
 class AES
 {
 public:
@@ -64,8 +72,8 @@ public:
 		wc_AesCbcDecrypt(&aes_, result.data(), (const byte*)&*begin, sz);
 		return result;
 	}
-protected:
 	unsigned char key_[32], iv_[16];
+protected:
 	Aes aes_;
 	unsigned char key_size_;
 };
@@ -126,14 +134,6 @@ public:
 protected:
 	Sha512 sha_;
 };
-
-template<class C> std::string hexprint(const char *p, const C &c)
-{//log container specialization
-	std::stringstream ss;
-	ss << p << " : 0x";
-	for(unsigned char a : c) ss << std::hex << std::setw(2) << std::setfill('0')<< +a;
-	return ss.str();
-}
 
 template<class H> class HMAC
 {//hmac using sha1
