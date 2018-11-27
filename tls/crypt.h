@@ -72,8 +72,8 @@ public:
 		wc_AesCbcDecrypt(&aes_, result.data(), (const byte*)&*begin, sz);
 		return result;
 	}
-	unsigned char key_[32], iv_[16];
 protected:
+	unsigned char overflow_[32], iv_[16], key_[32];
 	Aes aes_;
 	unsigned char key_size_;
 };
