@@ -77,7 +77,6 @@ protected:
 								   1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1},
 				  iv_[16], key_[32];
 	Aes aes_;
-	unsigned char key_[32], iv_[16], key_save_[32];
 	unsigned char key_size_;
 };
 

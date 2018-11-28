@@ -758,16 +758,10 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		TLS_header h1;
 	} header_for_mac;
 	aes_[!SV].iv(p->iv);
-<<<<<<< HEAD
-	aes_[1].save_key();
-	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
-	aes_[1].restore_key();
-=======
 	LOGD << hexprint("overflow", overflow_) << std::endl;
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
 	LOGD << hexprint("overflow", overflow_) << std::endl;
 	LOGD << hexprint("decrypted", decrypted) << endl;
->>>>>>> overflow
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
