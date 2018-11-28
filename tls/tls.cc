@@ -758,9 +758,16 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		TLS_header h1;
 	} header_for_mac;
 	aes_[!SV].iv(p->iv);
+<<<<<<< HEAD
 	aes_[1].save_key();
 	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);
 	aes_[1].restore_key();
+=======
+	LOGD << hexprint("overflow", overflow_) << std::endl;
+	auto decrypted = aes_[!SV].decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
+	LOGD << hexprint("overflow", overflow_) << std::endl;
+	LOGD << hexprint("decrypted", decrypted) << endl;
+>>>>>>> overflow
 	assert(decrypted.size() > decrypted.back());
 	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
 	array<unsigned char, 20> auth;//get auth
@@ -824,9 +831,12 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	auto iv = random_prime(16);
 	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
 	aes_[SV].iv(iv);
+	LOGD << hexprint("overflow", overflow_) << std::endl;
 	auto encrypted = aes_[SV].encrypt(frag.begin(), frag.end());
+	LOGD << hexprint("overflow", overflow_) << std::endl;
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
+	LOGT << hexprint("sending", s2) << endl;
 	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
 	return s2;
 }

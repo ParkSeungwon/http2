@@ -143,3 +143,25 @@ TEST_CASE("startwiwth") {
 	REQUIRE(name == "file");
 	REQUIRE(filename == "IMG_0315.JPG");
 }
+
+TEST_CASE("aes overflow test") {
+#pragma pack(1)
+	Aes aes;
+	unsigned char over[32], key[32], iv[16], result[32], msg[32];
+#pragma pack()
+	for(int i=0; i<32; i++) over[i] = 1;
+	wc_AesSetKey(&aes, key, 16, iv, AES_DECRYPTION);
+	wc_AesCbcEncrypt(&aes, result, msg, 32);
+	cout << "overflow : ";
+	for(int i=0; i<32; i++) cout << +over[i];
+	for(int i=0; i<32; i++) cout << +result[i];
+	for(int i=0; i<32; i++) cout << +msg[i];
+}
+
+void f(char* p) {
+	for(int i=0; i<10; i++) p[i] = '1';
+}
+TEST_CASE("const array") {
+	const char c[] = "abcdefghijklmn";
+//	f(c);
+}
