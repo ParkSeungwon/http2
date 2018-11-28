@@ -2,7 +2,10 @@
 #include"bootstrap.h"
 using namespace std;
 
-string BootStrapServer::carousel(vector<string> img, vector<string> desc, vector<string> href)
+BootStrapSite::BootStrapSite(string dir) : WebSite{dir}
+{ }
+
+string BootStrapSite::carousel(vector<string> img, vector<string> desc, vector<string> href)
 {//if you want more than 1 carousel in a page, you should change the id
 	string r = R"(
 <div id="myCarousel" class="carousel slide" data-ride="carousel">

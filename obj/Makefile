@@ -1,14 +1,14 @@
 CC = g++
 OBJ = $(wildcard *.o)
+TOBJ = $(wildcard *.t)
 EXE = $(patsubst %.x, ../%.x, $(wildcard *.x))
-TEST = $(patsubst %.t, ../%.x, $(wildcard *.t))
 gtkmmLIB = $(shell pkg-config gtkmm-3.0 --libs)
+LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl -lstdc++fs 
 
-all : $(EXE)
-test : $(TEST)
+all : $(EXE) ../catch.x
 
 ../%.x : %.x $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp
+	$(CC) -o $@ $< $(OBJ) $(LIBS)
 
-../%.x : %.t $(OBJ)
-	$(CC) -o $@ $< $(OBJ) -lpthread -lmysqlcppconn -ljsoncpp
+../catch.x : catch.tx $(OBJ) $(TOBJ)
+	$(CC) -o $@ $< $(OBJ) $(TOBJ) $(LIBS)

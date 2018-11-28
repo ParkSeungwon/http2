@@ -1,7 +1,7 @@
-#include"mysqldata.h"
-#include"bootstrap.h"
+#include"database/mysqldata.h"
+#include"framework/bootstrap.h"
 
-class DnDD : public BootStrapServer
+class DnDD : public BootStrapSite
 {
 public:
 	DnDD();
@@ -11,7 +11,7 @@ protected:
 	void process();
 
 private:
-	void signin(), index(), search(), mn(), pg(), edit(), add(), new_book(), comment(),result();
+	void signin(), index(), search(), mn(), pg(), edit(), add(), new_book(), comment(),result(), google();
 	std::string search(std::string s), field(std::string s), follow(), close(), vote();
 	std::array<int, 5> allowlevel(std::string table, std::string book);
 	std::vector<std::string> tables();

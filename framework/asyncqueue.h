@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 #include <condition_variable>
+#include<functional>
 #include <deque>
 #include <mutex>
 

@@ -1,14 +1,60 @@
+#include<utility>
 #include<iostream>
 #include<thread>
 #include<chrono>
 #include<unistd.h>
 #include<netdb.h>//gethostbyname
+#include<regex>
 #include<sys/wait.h>
 #include"server.h"
 #include"asyncqueue.h"
 using namespace std;
 
-Client::Client(string ip, int port) : Tcpip(port)
+Vrecv::Vrecv(int port) : Tcpip{port}
+{ }
+
+string Vrecv::recv(int fd)
+{
+	string s;
+	if(trailing_string_ == "") s = Tcpip::recv(fd);
+	s = trailing_string_ + s;
+	trailing_string_ = "";
+	int len = get_full_length(s);
+	if(len < s.size()) {//two packet once
+		trailing_string_ = s.substr(len);
+		s = s.substr(0, len);
+	} else if(len > s.size()) {//more to come
+		for(int n; s.size() < len; s += string(buffer, n))
+			n = read(client_fd, buffer, min(BUF_SIZE, (int)(len - s.size())));
+	}
+	return s;
+}
+
+int Vrecv::get_full_length(const string& s) 
+{//this should be replaced with inherent class function
+	return s.size();
+}
+
+Http::Http(int port) : Vrecv{port}
+{ }
+
+int Http::get_full_length(const string &s)
+{//get full length of one request. assume that s is a first received string
+	smatch m;
+	if(regex_search(s, m, regex{R"(Content-Length:\s*(\d+))"})) 
+		return stoi(m[1].str()) + s.find("\r\n\r\n") + 4;
+	else return s.size();
+}
+
+TlsLayer::TlsLayer(int port) : Vrecv{port}
+{ }
+
+int TlsLayer::get_full_length(const string& s)
+{
+	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
+}
+
+Client::Client(string ip, int port) : Http(port)
 {
 	server_addr.sin_addr.s_addr = inet_addr(get_addr(ip).c_str());
 	if(-1 == connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)))
@@ -22,7 +68,7 @@ string Client::get_addr(string host)
 	return inet_ntoa(*(struct in_addr*)a->h_addr);
 }
 
-Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port) 
+Server::Server(int port, unsigned int t, int queue, string e) : Http(port) 
 {
 	end_string = e;
 	time_out = t;
@@ -31,7 +77,7 @@ Server::Server(int port, unsigned int t, int queue, string e) : Tcpip(port)
 		cout << "bind() error" << endl;
 	else cout << "binding" << endl;
 	if(listen(server_fd, queue) == -1) cout << "listen() error" << endl;
-	else cout << "listening" << endl;
+	else cout << "listening port " << port << endl;
 }
 
 void Server::start(function<string(string)> f)
@@ -42,13 +88,14 @@ void Server::start(function<string(string)> f)
 		if(client_fd == -1) cout << "accept() error" << endl;
 		else if(!fork()) {
 			for(string s; (s = recv()) != end_string; send(f(s)));
-			break;
+			send(end_string);
+			break;//forked process ends here
 		}
 	}
 }
 
 void Server::nokeep_start(function<string(string)> f)
-{
+{//does not keep connection
 	int cl_size = sizeof(client_addr);
 	while(true) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);

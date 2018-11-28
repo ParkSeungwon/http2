@@ -1,6 +1,7 @@
 #include<iostream>
 #include<cassert>
 #include<regex>
+#include<iomanip>
 #include<unistd.h>//write
 #include"middle.h"
 using namespace std;
@@ -18,12 +19,14 @@ Packet Middle::recv()
 	int cl_size = sizeof(client_addr);
 	client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 	assert(client_fd != -1);// cout << "accept() error" << endl;
-	string s = Tcpip::recv();
-	if(debug) cout << "receiving " << s << endl;
-	regex e{R"(Cookie:.*middleID=(\d+))"};
+	string s = Http::recv();
+	if(debug) {
+		cout << "receiving " << s << endl;
+		for(int i=0; i<s.size(); i++) cout << hex << setw(2) << setfill('0') << +static_cast<unsigned char>(s[i]) << (i%16 == 15 ? '\n' : ' ');
+	}
 	int id = 0;
-	smatch m;
-	if(regex_search(s, m, e)) id = stoi(m[1].str());//if already connected
+	if(smatch m; regex_search(s, m, regex{R"(Cookie:.*middleID=(\d+))"}))
+		id = stoi(m[1].str());//if already connected
 	return {client_fd, id, s};
 }
 

@@ -2,10 +2,10 @@
 #include<fstream>
 #include<regex>
 #include"dndd.h"
-#include"util.h"
+#include"database/util.h"
 using namespace std;
 
-DnDD::DnDD()
+DnDD::DnDD() : BootStrapSite{"www"}
 {//SqlQuery destructor -> mysqlquery destructor nullify
 	sq.connect("localhost", "dndd", "dndddndd", "dndd");//sq prohibit destruct
 }
@@ -27,6 +27,24 @@ void DnDD::process()
 	else if(requested_document_ == "follow") content_ = follow();
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "close") content_ = close();
+	else if(requested_document_ == "googleapi") google();
+}
+
+void DnDD::google() 
+{
+	Json::Value jv; 
+	Json::Reader reader;
+	reader.parse(nameNvalue_["json"].data(), jv);
+	ofstream f("/tmp/jv", ofstream::app|ofstream::out);
+	f << jv;
+	content_ = "ok";
+	if(nameNvalue_["direction"] != "") {
+		auto j = jv["routes"][0]["legs"];
+		int sum = 0;
+		for(int i=0; i<j.size(); i++) sum += j[i]["duration"]["value"].asInt();
+		cout << "total " << sum << "sec" << endl;
+		cout << jv["route"][0]["waypoint_order"] << endl;
+	}
 }
 
 string DnDD::close()
@@ -105,6 +123,7 @@ void DnDD::add()
 	else content_ = "<script>alert('your level does not qualify.')</script>";
 }
 
+vector<unsigned char> base64_decode(string s);
 void DnDD::edit()
 {
 	if(page == "0") 
@@ -113,7 +132,12 @@ void DnDD::edit()
 		content_ = "<script>alert('your level does not qualify')</script>";
 	else if(id == tmp["email"].asString()) {
 		swap("TITLE", tmp["title"].asString());
-		swap("CONTENT", tmp["contents"].asString());
+		string s = tmp["contents"].asString();
+		if(s.substr(0, 15) == "data:text/html;") {
+			auto v = base64_decode(s.substr(22));
+			s = string{v.begin(), v.end()};
+		}
+		swap("CONTENT", s);
 	} else content_ = "<script>alert('you do not own this page');</script>";
 }
 
