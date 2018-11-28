@@ -99,6 +99,7 @@ TEST_CASE("DHA-RSA server key exchange signature verify") {
 TEST_CASE("rsa with upper") {
 	RSA rsa{256};//K should be bigger than m, K is 256 byte, and m is 256
 	auto m = cc2z(sign);//it is possible that m > K
+	while(m > rsa.K) rsa = RSA{256};
 	auto z = rsa.encode(m);
 	auto d = rsa.decode(z);
 	REQUIRE(m == d);

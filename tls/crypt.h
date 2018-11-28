@@ -56,7 +56,7 @@ public:
 	void iv(const unsigned char* iv);
 	template<typename It>
 	std::vector<unsigned char> encrypt(const It begin, const It end) {
-		int sz = end - begin;
+		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
 		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_ENCRYPTION);
@@ -65,7 +65,7 @@ public:
 	}
 	template<typename It>
 	std::vector<unsigned char> decrypt(const It begin, const It end) {
-		int sz = end - begin;
+		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
 		wc_AesSetKey(&aes_, key_, key_size_, iv_, AES_DECRYPTION);
@@ -73,7 +73,9 @@ public:
 		return result;
 	}
 protected:
-	unsigned char overflow_[32], iv_[16], key_[32];
+	unsigned char overflow_[32] = {1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+								   1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1},
+				  iv_[16], key_[32];
 	Aes aes_;
 	unsigned char key_size_;
 };
