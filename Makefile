@@ -6,6 +6,7 @@ all :
 	make -C tls/
 	make -C options/
 	make -C site_src/
+	make -C pybind/
 	make -C tst/
 	make -C obj/
 	./catch.x

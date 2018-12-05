@@ -5,8 +5,8 @@ using namespace std;
 static char b2c(unsigned char n)
 {//6bit to char
 	if(n < 26) return 'A' + n;
-	if(n < 52) return 'a' + n - 26;
-	if(n < 62) return '0' + n - 52;
+	if(n < 52) return 'a' + (n - 26);
+	if(n < 62) return '0' + (n - 52);
 	return n == 62 ? '+' : '/';
 }
 
