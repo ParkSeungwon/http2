@@ -1,6 +1,8 @@
 #pragma once
 #include<pybind11/pybind11.h>
+#include"framework/server.h"
 #include"tls/crypt.h"
+#include"tls/tls.h"
 
 std::string pemtojson(std::string filename);
 std::string dertojson(std::string filename);
@@ -53,11 +55,7 @@ struct PyDiffie : public DiffieHellman
 	PyDiffie(int bit = 1024);
 	PyDiffie(pybind11::int_ p, pybind11::int_ g, pybind11::int_ ya);
 	pybind11::int_ set_yb(pybind11::int_ pub_key);
-	pybind11::int_ get_p();
-	pybind11::int_ get_g();
-	pybind11::int_ get_K();
-	pybind11::int_ get_ya();
-	pybind11::int_ get_yb();
+	pybind11::int_ get_p(), get_g(), get_K(), get_ya(), get_yb();
 };
 
 struct PyRSA : public RSA
@@ -65,4 +63,35 @@ struct PyRSA : public RSA
 	PyRSA(int bit = 1024);
 	PyRSA(pybind11::int_ e, pybind11::int_ d, pybind11::int_ K);
 	pybind11::int_ encode(pybind11::int_ m), decode(pybind11::int_ m);
+};
+
+class TLS_client : public Client
+{
+public:
+	TLS_client(std::string ip, int port);
+	void send(std::string s);
+	std::string recv();
+private:
+	TLS<false> t;
+	int get_full_length(const std::string &s) {
+		return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
+	}
+};
+struct PyClient : Client
+{
+	PyClient(std::string ip, int port);
+	void send(std::vector<unsigned char> v);
+	std::vector<unsigned char> recv();
+};
+struct PyTLS : TLS<false>
+{
+	PyTLS();
+	template<std::string (TLS<false>::*FP)(std::string&&)>
+	std::vector<unsigned char> to_vector_func(std::vector<unsigned char> s) {
+		std::vector<unsigned char> v; std::string t;
+		for(unsigned char c : s) t += c;
+		for(unsigned char c : (this->*FP)(move(t))) v.push_back(c);
+		return v;
+	}
+	std::vector<unsigned char> encode(std::vector<unsigned char> s);
 };

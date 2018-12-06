@@ -1,6 +1,7 @@
 #include<pybind11/pybind11.h>
 #include<pybind11/stl.h>
-#include<pybind11/iostream.h>
+#include"framework/server.h"
+#include"tls/tls.h"
 #include"wrapper.h"
 using namespace std;
 using namespace pybind11;
@@ -56,4 +57,28 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def("decode", &PyRSA::decode)
 		.def("sign", &PyRSA::decode)
 		;
+	class_<PyClient>(m, "Client")
+		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 2001)
+		.def("send", &PyClient::send)
+		.def("recv", &PyClient::recv)
+		;
+	class_<TLS_client>(m, "TLS_client")
+		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 4433)
+		.def("send", &TLS_client::send)
+		.def("recv", &TLS_client::recv)
+		;
+	class_<PyTLS>(m, "TLS")
+		.def(init<>())
+		.def("client_hello", &PyTLS::to_vector_func<&TLS<false>::client_hello>)
+		.def("server_hello", &PyTLS::to_vector_func<&TLS<false>::server_hello>)
+		.def("server_certificate", &PyTLS::to_vector_func<&TLS<false>::server_certificate>)
+		.def("server_key_exchange", &PyTLS::to_vector_func<&TLS<false>::server_key_exchange>)
+		.def("server_hello_done", &PyTLS::to_vector_func<&TLS<false>::server_hello_done>)
+		.def("client_key_exchange", &PyTLS::to_vector_func<&TLS<false>::client_key_exchange>)
+		.def("change_cipher_spec", &PyTLS::to_vector_func<&TLS<false>::change_cipher_spec>)
+		.def("finished", &PyTLS::to_vector_func<&TLS<false>::finished>)
+		.def("encode", &PyTLS::encode)
+		.def("decode", &PyTLS::to_vector_func<&TLS<false>::decode>)
+		;
 }
+

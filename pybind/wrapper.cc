@@ -104,3 +104,51 @@ py::int_ PyRSA::decode(py::int_ m)
 {
 	return py::str(RSA::decode(mpz_class{py::str(m)}).get_str());
 }
+PyClient::PyClient(string ip, int port) : Client{ip, port}
+{ }
+void PyClient::send(vector<unsigned char> v)
+{
+	Client::send(string{v.begin(), v.end()}, 0);
+}
+vector<unsigned char> PyClient::recv()
+{
+	vector<unsigned char> v;
+	for(unsigned char c : Client::recv(0)) v.push_back(c);
+	return v;
+}
+
+TLS_client::TLS_client(string ip, int port) : Client{ip, port}
+{
+	send(t.client_hello());
+	t.server_hello(recv());
+	t.server_certificate(recv());
+	if(t.support_dhe()) t.server_key_exchange(recv());
+	t.server_hello_done(recv());
+	string a = t.client_key_exchange();
+	string b = t.change_cipher_spec();
+	string c = t.finished();
+	send(a + b + c);
+	t.change_cipher_spec(recv());
+	t.finished(recv());
+}
+
+void TLS_client::send(string s)
+{
+	Client::send(t.encode(move(s)));
+}
+
+string TLS_client::recv()
+{
+	return t.decode(Client::recv());
+}
+
+PyTLS::PyTLS() : TLS{nullptr}
+{ }
+
+std::vector<unsigned char> PyTLS::encode(std::vector<unsigned char> s)
+{
+	std::vector<unsigned char> v; std::string t;
+	for(unsigned char c : s) t += c;
+	for(unsigned char c : TLS<false>::encode(move(t))) v.push_back(c);
+	return v;
+}
