@@ -116,32 +116,39 @@ vector<unsigned char> PyClient::recv()
 	for(unsigned char c : Client::recv(0)) v.push_back(c);
 	return v;
 }
+PyTLSClient::PyTLSClient(string ip, int port) : PyClient(ip, port)
+{ }
 
-TLS_client::TLS_client(string ip, int port) : Client{ip, port}
+int PyTLSClient::get_full_length(const string &s) 
+{
+	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
+}
+
+PyHTTPSCLient::PyHTTPSCLient(string ip, int port) : Client(ip, port)
 {
 	send(t.client_hello());
 	t.server_hello(recv());
 	t.server_certificate(recv());
 	if(t.support_dhe()) t.server_key_exchange(recv());
 	t.server_hello_done(recv());
-	string a = t.client_key_exchange();
-	string b = t.change_cipher_spec();
-	string c = t.finished();
-	send(a + b + c);
+	send(t.client_key_exchange());
+	send(t.change_cipher_spec());
+	send(t.finished());
 	t.change_cipher_spec(recv());
 	t.finished(recv());
 }
-
-void TLS_client::send(string s)
+int PyHTTPSCLient::get_full_length(const string &s) 
 {
-	Client::send(t.encode(move(s)));
+	return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
 }
-
-string TLS_client::recv()
+void PyHTTPSCLient::pysend(string s)
 {
-	return t.decode(Client::recv());
+	send(t.encode(move(s)));
 }
-
+string PyHTTPSCLient::pyrecv()
+{
+	return t.decode(recv());
+}
 PyTLS::PyTLS() : TLS{nullptr}
 { }
 

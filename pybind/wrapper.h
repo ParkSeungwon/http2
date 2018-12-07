@@ -65,23 +65,26 @@ struct PyRSA : public RSA
 	pybind11::int_ encode(pybind11::int_ m), decode(pybind11::int_ m);
 };
 
-class TLS_client : public Client
-{
-public:
-	TLS_client(std::string ip, int port);
-	void send(std::string s);
-	std::string recv();
-private:
-	TLS<false> t;
-	int get_full_length(const std::string &s) {
-		return static_cast<unsigned char>(s[3]) * 0x100 + static_cast<unsigned char>(s[4]) + 5;
-	}
-};
 struct PyClient : Client
 {
 	PyClient(std::string ip, int port);
 	void send(std::vector<unsigned char> v);
 	std::vector<unsigned char> recv();
+};
+struct PyTLSClient : PyClient 
+{
+	PyTLSClient(std::string ip, int port);
+	int get_full_length(const std::string &s);
+};
+class PyHTTPSCLient : Client
+{
+public:
+	PyHTTPSCLient(std::string ip, int port);
+	std::string pyrecv();
+	void pysend(std::string s);
+protected:
+	TLS<false> t;
+	int get_full_length(const std::string &s);
 };
 struct PyTLS : TLS<false>
 {

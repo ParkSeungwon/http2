@@ -62,10 +62,10 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def("send", &PyClient::send)
 		.def("recv", &PyClient::recv)
 		;
-	class_<TLS_client>(m, "TLS_client")
+	class_<PyTLSClient>(m, "TLS_client")
 		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 4433)
-		.def("send", &TLS_client::send)
-		.def("recv", &TLS_client::recv)
+		.def("send", &PyTLSClient::send)
+		.def("recv", &PyTLSClient::recv)
 		;
 	class_<PyTLS>(m, "TLS")
 		.def(init<>())
@@ -79,6 +79,11 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def("finished", &PyTLS::to_vector_func<&TLS<false>::finished>)
 		.def("encode", &PyTLS::encode)
 		.def("decode", &PyTLS::to_vector_func<&TLS<false>::decode>)
+		;
+	class_<PyHTTPSCLient>(m, "HTTPS_Client")
+		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 4433)
+		.def("send", &PyHTTPSCLient::pysend)
+		.def("recv", &PyHTTPSCLient::pyrecv)
 		;
 }
 
