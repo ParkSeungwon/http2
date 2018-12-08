@@ -102,6 +102,9 @@ struct PyTLS : TLS<false>
 
 struct PySQL : SqlQuery
 {
+	PySQL() = default;
 	std::string select(std::string table, std::string where);
 	bool insert(std::vector<std::string> v);
+	bool connect(std::string ip, std::string user, std::string pass, std::string db);
+	std::vector<std::tuple<std::string, int, std::string>> column();
 };

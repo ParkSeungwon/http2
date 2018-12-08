@@ -169,5 +169,17 @@ string PySQL::select(string table, string where)
 
 bool PySQL::insert(vector<string> v)
 {
-	SqlQuery::insert(v);
+	return SqlQuery::insert(v);
+}
+
+bool PySQL::connect(string ip, string user, string pass, string db)
+{
+	return SqlQuery::connect(ip, user, pass, db);
+}
+
+vector<tuple<string, int, string>> PySQL::column()
+{
+	vector<tuple<string, int, string>> r;
+	for(auto col : columns) r.push_back(make_tuple(col.name, col.size, col.type));
+	return r;
 }

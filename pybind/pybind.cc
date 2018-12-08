@@ -90,6 +90,8 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def(init<>())
 		.def("select", &PySQL::select)
 		.def("insert", &PySQL::insert)
+		.def("connect", &PySQL::connect)
+		.def("columns", &PySQL::column)
 		;
 }
 

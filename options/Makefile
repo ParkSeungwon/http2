@@ -1,4 +1,4 @@
-CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread
+CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread -fPIC
 INCLUDE = -I../
 DIR = $(notdir $(shell pwd))
 CC = g++

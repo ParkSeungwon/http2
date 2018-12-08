@@ -32,7 +32,7 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 ../catch.x : catch.tx $(tls) $(framework) $(options) $(database) $(tst)
 	$(CC) -o $@ $^ $(TOBJ) $(LIBS)
 
-../tls_crypt.so : $(framework) $(tls) $(database) $(pybind)
+../tls_crypt.so : $(framework) $(tls) $(database) $(pybind) $(options)
 	$(CC) -shared -o $@ $^ $(LIBS)
 
 
