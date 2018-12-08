@@ -3,6 +3,7 @@
 #include"framework/server.h"
 #include"tls/tls.h"
 #include"wrapper.h"
+#include"database/mysqldata.h"
 using namespace std;
 using namespace pybind11;
 using namespace pybind11::literals;
@@ -84,6 +85,11 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 4433)
 		.def("send", &PyHTTPSCLient::pysend)
 		.def("recv", &PyHTTPSCLient::pyrecv)
+		;
+	class_<PySQL>(m, "SqlQuery")
+		.def(init<>())
+		.def("select", &PySQL::select)
+		.def("insert", &PySQL::insert)
 		;
 }
 

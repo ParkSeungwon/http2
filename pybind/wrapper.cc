@@ -159,3 +159,15 @@ std::vector<unsigned char> PyTLS::encode(std::vector<unsigned char> s)
 	for(unsigned char c : TLS<false>::encode(move(t))) v.push_back(c);
 	return v;
 }
+
+string PySQL::select(string table, string where)
+{
+	SqlQuery::select(table, where);
+	stringstream ss; ss << *this;
+	return ss.str();
+}
+
+bool PySQL::insert(vector<string> v)
+{
+	SqlQuery::insert(v);
+}

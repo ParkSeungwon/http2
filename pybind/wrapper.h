@@ -3,6 +3,7 @@
 #include"framework/server.h"
 #include"tls/crypt.h"
 #include"tls/tls.h"
+#include"database/mysqldata.h"
 
 std::string pemtojson(std::string filename);
 std::string dertojson(std::string filename);
@@ -97,4 +98,10 @@ struct PyTLS : TLS<false>
 		return v;
 	}
 	std::vector<unsigned char> encode(std::vector<unsigned char> s);
+};
+
+struct PySQL : SqlQuery
+{
+	std::string select(std::string table, std::string where);
+	bool insert(std::vector<std::string> v);
 };

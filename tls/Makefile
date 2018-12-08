@@ -1,18 +1,15 @@
-CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread
+CFLAG = -g -c -std=c++17 -fmax-errors=1 -pthread -fPIC
 INCLUDE = -I../ -I/usr/include/jsoncpp
+DIR = $(notdir $(shell pwd))
 CC = g++
-OBJ = $(patsubst %.cc, ../obj/%.o, $(wildcard *.cc))
-OOBJ = $(patsubst %.cc, ../obj/%.O, $(wildcard *.cc))
-MAIN_OBJ = $(patsubst %.cpp, ../obj/%.x, $(wildcard *.cpp))
+OBJ = $(patsubst %.cc, ../obj/%.$(DIR).o, $(wildcard *.cc))
+MAIN_OBJ = $(patsubst %.cpp, ../obj/%.$(DIR).x, $(wildcard *.cpp))
 
-all : $(OBJ) $(MAIN_OBJ) $(OOBJ)
+all : $(MAIN_OBJ) $(OBJ)
 
-../obj/%.o : %.cc 
+../obj/%.$(DIR).o : %.cc 
 	$(CC) $(INCLUDE) $(CFLAG) $< -o $@
 
-../obj/%.O : %.cc 
-	$(CC) $(INCLUDE) -fPIC $(CFLAG) $< -o $@
-
-../obj/%.x : %.cpp
+../obj/%.$(DIR).x : %.cpp
 	$(CC) $(INCLUDE) $(CFLAG) $< -o $@
 

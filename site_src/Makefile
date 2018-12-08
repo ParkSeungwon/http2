@@ -1,13 +1,17 @@
 CFLAG = -g -c -std=c++14 -fmax-errors=1 -pthread
 INCLUDE = -I../ -I/usr/include/jsoncpp
 CC = g++
-OBJ = $(patsubst %.cc, ../obj/%.o, $(wildcard *.cc))
-MAIN_OBJ = $(patsubst %.cpp, ../obj/%.x, $(wildcard *.cpp))
+DIR = $(notdir $(shell pwd))
+OBJ = $(patsubst %.cc, ../obj/%.$(DIR).o, $(wildcard *.cc))
+MAIN_OBJ = $(patsubst %.cpp, ../obj/%.$(DIR).x, $(wildcard *.cpp))
 
-all : $(OBJ) $(MAIN_OBJ)
+all : $(OBJ) $(MAIN_OBJ) test
 
-../obj/%.o : %.cc 
+../obj/%.$(DIR).o : %.cc 
 	$(CC) $(INCLUDE) $(CFLAG) $< -o $@
 
-../obj/%.x : %.cpp
+../obj/%.$(DIR).x : %.cpp
 	$(CC) $(INCLUDE) $(CFLAG) $< -o $@
+
+test:
+	echo $(DIR) $(shell pwd)
