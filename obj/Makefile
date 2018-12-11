@@ -20,8 +20,8 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 ../middle.x : middle.framework.x $(framework) $(options) 
 	$(CC) -o $@ $^ -ljsoncpp -lpthread -lstdc++fs
 
-../dndd.x : dndd.src.x $(framework) $(database) $(src) $(options) $(tls)
-	$(CC) -o $@ $^ $(LIBS)
+../dndd.x : dndd.src.x $(framework) $(database) $(src) $(options) base64.tls.o
+	$(CC) -o $@ $^ -ljsoncpp -lpthread -lstdc++fs -lmysqlcppconn
 
 ../site.x : site.site_src.x $(framework) $(database) $(options) $(site_src)
 	$(CC) -o $@ $^ -ljsoncpp -lmysqlcppconn -lpthread -lstdc++fs

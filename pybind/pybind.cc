@@ -80,6 +80,8 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def("finished", &PyTLS::to_vector_func<&TLS<false>::finished>)
 		.def("encode", &PyTLS::encode)
 		.def("decode", &PyTLS::to_vector_func<&TLS<false>::decode>)
+		.def("alert", &PyTLS::alert)
+		.def("support_dhe", &PyTLS::support_dhe)
 		;
 	class_<PyHTTPSCLient>(m, "HTTPS_Client")
 		.def(init<std::string, int>(), "ip"_a = "127.0.0.1", "port"_a = 4433)
@@ -92,6 +94,9 @@ PYBIND11_MODULE(tls_crypt, m) {
 		.def("insert", &PySQL::insert)
 		.def("connect", &PySQL::connect)
 		.def("columns", &PySQL::column)
+		.def("encrypt", &SqlQuery::encrypt)
+		.def("now", &SqlQuery::now)
+		.def("show_tables", &SqlQuery::show_tables)
 		;
 }
 

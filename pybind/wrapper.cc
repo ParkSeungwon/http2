@@ -159,6 +159,40 @@ std::vector<unsigned char> PyTLS::encode(std::vector<unsigned char> s)
 	for(unsigned char c : TLS<false>::encode(move(t))) v.push_back(c);
 	return v;
 }
+string PyTLS::alert(vector<unsigned char> v)
+{
+	if(v.empty()) return "";
+	std::string s, t;
+	for(unsigned char c : v) t += c;
+	switch(TLS<false>::alert(move(t))) {//s reuse
+		case 0: s = "close_notify(0)"; break;
+		case 10: s = "unexpected_message(10)"; break;
+		case 20: s = "bad_record_mac(20)"; break;
+		case 21: s = "decryption_failed_RESERVED(21)"; break;
+		case 22: s = "record_overflow(22)"; break;
+		case 30: s = "decompression_failure(30)"; break;
+		case 40: s = "handshake_failure(40)"; break;
+		case 41: s = "no_certificate_RESERVED(41)"; break;
+		case 42: s = "bad_certificate(42)"; break;
+		case 43: s = "unsupported_certificate(43)"; break;
+		case 44: s = "certificate_revoked(44)"; break;
+		case 45: s = "certificate_expired(45)"; break;
+		case 46: s = "certificate_unknown(46)"; break;
+		case 47: s = "illegal_parameter(47)"; break;
+		case 48: s = "unknown_ca(48)"; break;
+		case 49: s = "access_denied(49)"; break;
+		case 50: s = "decode_error(50)"; break;
+		case 51: s = "decrypt_error(51)"; break;
+		case 60: s = "export_restriction_RESERVED(60)"; break;
+		case 70: s = "protocol_version(70)"; break;
+		case 71: s = "insufficient_security(71)"; break;
+		case 80: s = "internal_error(80)"; break;
+		case 90: s = "user_canceled(90)"; break;
+		case 100: s = "no_renegotiation(100)"; break;
+		case 110: s = "unsupported_extension(110)"; break;
+	}
+	return s;
+}
 
 string PySQL::select(string table, string where)
 {
@@ -168,7 +202,7 @@ string PySQL::select(string table, string where)
 }
 
 bool PySQL::insert(vector<string> v)
-{
+{//because python cannot find appropiate overloading 
 	return SqlQuery::insert(v);
 }
 
@@ -178,7 +212,7 @@ bool PySQL::connect(string ip, string user, string pass, string db)
 }
 
 vector<tuple<string, int, string>> PySQL::column()
-{
+{//tuple is converted easily in python
 	vector<tuple<string, int, string>> r;
 	for(auto col : columns) r.push_back(make_tuple(col.name, col.size, col.type));
 	return r;

@@ -98,11 +98,11 @@ struct PyTLS : TLS<false>
 		return v;
 	}
 	std::vector<unsigned char> encode(std::vector<unsigned char> s);
+	std::string alert(std::vector<unsigned char> s);
 };
 
 struct PySQL : SqlQuery
 {
-	PySQL() = default;
 	std::string select(std::string table, std::string where);
 	bool insert(std::vector<std::string> v);
 	bool connect(std::string ip, std::string user, std::string pass, std::string db);
