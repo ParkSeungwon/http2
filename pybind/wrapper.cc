@@ -3,6 +3,7 @@
 #include<string>
 #include<json/json.h>
 #include<pybind11/pybind11.h>
+#include"tls/crypt.h"
 #include"wrapper.h"
 using namespace std;
 namespace py = pybind11;
@@ -24,17 +25,20 @@ string pemtojson(string filename)
 	return ss.str();
 }
 
-PyAES::PyAES(int key) : AES(key)
-{ }
-
 void PyAES::key(py::int_ k) 
 {
-	AES::key(mpz_class{py::str(k)});
+	unsigned char key[16];
+	mpz_class z{py::str(k)};
+	mpz2bnd(z, key, key + 16);
+	AES::key(key);
 }
 
 void PyAES::iv(py::int_ k)
 {
-	AES::iv(mpz_class{py::str(k)});
+	unsigned char iv[16];
+	mpz_class z{py::str(k)};
+	mpz2bnd(z, iv, iv + 16);
+	AES::iv(iv);
 }
 
 vector<unsigned char> PyAES::encrypt(vector<unsigned char> v)
