@@ -1,4 +1,6 @@
 #pragma once
+#include<vector>
+#include<valarray>
 #include<nettle/sha1.h>
 #include<nettle/sha2.h>
 #include<nettle/sha3.h>
@@ -132,7 +134,6 @@ public:
 	template<class It> void seed(const It begin, const It end) {
 		seed_.clear();
 		for(It it = begin; it != end; it++) seed_.push_back(*it);
-		hexprint("seed", seed_);
 	}
 	std::vector<unsigned char> get_n_byte(int n) {
 		auto seed = label_;//seed = label + seed_

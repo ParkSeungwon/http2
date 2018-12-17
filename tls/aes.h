@@ -2,8 +2,6 @@
 #include<nettle/aes.h>
 #include<nettle/cbc.h>
 #include<type_traits>
-#define Encryption true
-#define Decryption false
 
 template<int B = 128> class AES
 {

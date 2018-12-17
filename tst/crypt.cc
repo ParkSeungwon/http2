@@ -12,7 +12,7 @@ using namespace std;
 unsigned char c[] = "hello this is a test case this is a test case this is a test";
 
 TEST_CASE("AES TEST") {
-	AES aes;
+	AES aes, aes3;
 	unsigned char iv[16], key[32], text[32];
 	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
 	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
@@ -22,18 +22,20 @@ TEST_CASE("AES TEST") {
 	aes.iv(iv);
 	auto v = aes.encrypt(text, text+16);//should be multiple of 16
 	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
-	aes.set_dec_key(key);
-	v = aes.decrypt(v.begin(), v.end());
+	aes3.set_dec_key(key);
+	aes3.iv(iv);
+	v = aes3.decrypt(v.begin(), v.end());
 	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 
-	AES<256> aes2;
+	AES<256> aes2, aes4;
 	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
 	aes2.set_enc_key(key);
 	aes2.iv(iv);
 	v = aes2.encrypt(text, text+16);
 	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
-	aes2.set_dec_key(key);
-	v = aes2.decrypt(v.begin(), v.end());
+	aes4.set_dec_key(key);
+	aes4.iv(iv);
+	v = aes4.decrypt(v.begin(), v.end());
 	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 }
 /***********

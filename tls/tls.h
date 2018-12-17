@@ -1,4 +1,5 @@
 #pragma once
+#include<valarray>
 #include"crypt.h"
 #include"aes.h"
 #include"hash.h"

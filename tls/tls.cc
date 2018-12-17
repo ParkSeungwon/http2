@@ -2,6 +2,7 @@
 #include<cstring>
 #include<fstream>
 #include"options/log.h"
+#include"hash.h"
 #include"tls.h"
 using namespace std;
 
