@@ -15,10 +15,8 @@ PYBIND11_MODULE(tls_crypt, m) {
 	m.def("der2json", &dertojson);
 	class_<PyAES>(m, "AES")
 		.def(init<>())
-		.def("set_enc_key", &PyAES::set_enc_key)
-		.def("set_dec_key", &PyAES::set_dec_key)
+		.def("key", &PyAES::key)
 		.def("iv", &PyAES::iv)
-		.def("encrypt", &PyAES::encrypt)
 		.def("decrypt", &PyAES::decrypt)
 		;
 	class_<PySHA256>(m, "SHA256")

@@ -2,14 +2,14 @@
 #include<nettle/aes.h>
 #include<nettle/cbc.h>
 #include<type_traits>
+#define Encryption true
+#define Decryption false
 
-template<int B = 128> class AES
+template<bool Enc, int B = 128> class AES
 {
 public:
-	void set_enc_key(const mpz_class key);
-	void set_enc_key(const unsigned char* key);
-	void set_dec_key(const mpz_class key);
-	void set_dec_key(const unsigned char* key);
+	void key(const mpz_class key);
+	void key(const unsigned char* key);
 	void iv(const mpz_class iv);
 	void iv(const unsigned char* iv);
 	template<typename It>
@@ -36,7 +36,6 @@ protected:
 	typename std::conditional<B == 128, aes128_ctx, aes256_ctx>::type aes_;
 	unsigned char iv_[16], key_[32];
 private:
-	void set_enc_key();
-	void set_dec_key();
+	void key();
 };
 
