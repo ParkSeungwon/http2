@@ -24,12 +24,14 @@ string pemtojson(string filename)
 	return ss.str();
 }
 
-PyAES::PyAES(int key) : AES(key)
-{ }
-
-void PyAES::key(py::int_ k) 
+void PyAES::set_enc_key(py::int_ k) 
 {
-	AES::key(mpz_class{py::str(k)});
+	AES::set_enc_key(mpz_class{py::str(k)});
+}
+
+void PyAES::set_dec_key(py::int_ k)
+{
+	AES::set_dec_key(mpz_class{py::str(k)});
 }
 
 void PyAES::iv(py::int_ k)

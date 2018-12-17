@@ -1,29 +1,54 @@
 #include"crypt.h"
+#include"aes.h"
 #include"options/log.h"
 using namespace std;
 
-AES::AES(unsigned short bit) : key_size_{bit / 8} 
+template class AES<128>;
+template class AES<256>;
+
+template<int B> void AES<B>::set_enc_key(const mpz_class key)
 {
-	assert(key_size_ == 16 || key_size_ == 24 || key_size_ == 32);
+	mpz2bnd(key, key_, key_+ B / 8);
+	set_enc_key();
 }
 
-void AES::key(const mpz_class key)
+template<int B> void AES<B>::set_dec_key(const mpz_class key)
 {
-	mpz2bnd(key, key_, key_+ key_size_);
+	mpz2bnd(key, key_, key_+ B / 8);
+	set_dec_key();
 }
 
-void AES::key(const unsigned char* key)
+template<int B> void AES<B>::set_enc_key(const unsigned char* key)
 {
-	memcpy(key_, key, key_size_);
+	memcpy(key_, key, B / 8);
+	set_enc_key();
 	LOGT << hexprint("setting key", vector<unsigned char>{key_, key_ + 16}) << endl;
 }
 
-void AES::iv(const mpz_class iv)
+template<int B> void AES<B>::set_dec_key(const unsigned char* key)
+{
+	memcpy(key_, key, B / 8);
+	set_dec_key();
+	LOGT << hexprint("setting key", vector<unsigned char>{key_, key_ + 16}) << endl;
+}
+template<int B> void AES<B>::set_enc_key()
+{
+	if constexpr(B == 128) aes128_set_encrypt_key(&aes_, key_);
+	else aes256_set_encrypt_key(&aes_, key_);
+}
+
+template<int B> void AES<B>::set_dec_key()
+{
+	if constexpr(B == 128) aes128_set_decrypt_key(&aes_, key_);
+	else aes256_set_decrypt_key(&aes_, key_);
+}
+
+template<int B> void AES<B>::iv(const mpz_class iv)
 {
 	mpz2bnd(iv, iv_, iv_+16);
 }
 
-void AES::iv(const unsigned char* iv)
+template<int B> void AES<B>::iv(const unsigned char* iv)
 {
 	memcpy(iv_, iv, 16);
 	LOGT << hexprint("setting iv", vector<unsigned char>{iv_, iv_ + 16}) << endl;

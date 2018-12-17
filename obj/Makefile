@@ -10,12 +10,12 @@ options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
 EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x
-LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl -lstdc++fs 
+LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lnettle -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
 
 ../https.x : https.tls.x $(tls) $(framework) $(options)
-	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lwolfssl -lpthread -lstdc++fs
+	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lnettle -lpthread -lstdc++fs
 
 ../middle.x : middle.framework.x $(framework) $(options) 
 	$(CC) -o $@ $^ -ljsoncpp -lpthread -lstdc++fs
@@ -27,7 +27,7 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 	$(CC) -o $@ $^ -ljsoncpp -lmysqlcppconn -lpthread -lstdc++fs
 
 ../tls-cl.x : tls-cl.tls.x $(tls) $(framework) $(options)
-	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lwolfssl -lpthread -lstdc++fs
+	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lnettle -lpthread -lstdc++fs
 
 ../catch.x : catch.tx $(tls) $(framework) $(options) $(database) $(tst)
 	$(CC) -o $@ $^ $(TOBJ) $(LIBS)

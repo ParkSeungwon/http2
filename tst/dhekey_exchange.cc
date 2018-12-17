@@ -5,6 +5,7 @@
 #include<fstream>
 #include<sstream>
 #include"tls/crypt.h"
+#include"tls/hash.h"
 using namespace std;
 
 //from packt.pcap

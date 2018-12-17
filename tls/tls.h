@@ -1,5 +1,7 @@
 #pragma once
 #include"crypt.h"
+#include"aes.h"
+#include"hash.h"
 #define DH_KEY_SZ 128
 #define KEY_SZ 72
 /*********************
@@ -71,9 +73,7 @@ public:
 
 protected:
 	const void *rec_received_;
-	AES aes_[2];//0 client 1 server
-	unsigned char overflow_[32] = {1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
-								   1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1};
+	AES<> aes_[2];//0 client 1 server
 	HMAC<SHA1> mac_[2];
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
