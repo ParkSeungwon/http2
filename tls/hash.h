@@ -96,7 +96,7 @@ protected:
 	H sha_;
 	std::valarray<unsigned char> o_key_pad_, i_key_pad_;
 };
-/***********************************
+/**********************************
 Function hmac
    Inputs:
 	  key:        Bytes     array of bytes
@@ -117,7 +117,7 @@ Function hmac
    i_key_pad = key xor [0x36 * blockSize]   //Inner padded key
 	
    return hash(o_key_pad + hash(i_key_pad +message)) //Where +is concatenation
-*************************************/
+************************************/
 
 template<class H> class PRF
 {//H is hash function usually sha256
@@ -158,7 +158,7 @@ protected:
 	std::vector<unsigned char> secret_, label_, seed_;
 };
 
-/*******************************
+/******************************
 P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
 					   HMAC_hash(secret, A(2) + seed) +
 					   HMAC_hash(secret, A(3) + seed) + ...
@@ -179,5 +179,5 @@ form it is given without a length byte or trailing null character.
 For example, the label "slithy toves" would be processed by hashing
 the following bytes:
 73 6C 69 74 68 79 20 74 6F 76 65 73
-*******************************/
+******************************/
 

@@ -9,7 +9,7 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../passafe.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lnettle -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
@@ -35,7 +35,8 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 ../tls_crypt.so : $(framework) $(tls) $(database) $(pybind) $(options)
 	$(CC) -shared -o $@ $^ $(LIBS)
 
-
+../passafe.x : passavea.tls.x $(framework) $(tls) $(options) 
+	$(CC) -o $@ $^ $(LIBS)
 
 #    $@ |현재 목표 파일의 이름
 #    $* | 확장자를 제외한 현재 목표 파일의 이름

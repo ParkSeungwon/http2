@@ -813,7 +813,7 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	header_for_mac.h1.content_type = header_to_send.h1.content_type = type;
 
 	mpz2bnd(enc_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
-	const size_t chunk_size = (2 << 14) - 20 - 1;//cut string into 2^14
+	const size_t chunk_size = (1 << 14) - 64;//cut string into 2^14
 	int len = min(s.size(), chunk_size);
 	int block_len = ((len + 20) / 16 + 1) * 16;//20 = sha1 digest, 16 block sz
 	header_for_mac.h1.set_length(len);

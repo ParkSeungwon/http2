@@ -1,4 +1,6 @@
 #pragma once
+#include<cassert>
+#include<gmpxx.h>
 #include<nettle/aes.h>
 #include<nettle/cbc.h>
 #include<type_traits>

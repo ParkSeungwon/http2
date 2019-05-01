@@ -1,6 +1,5 @@
 #include"crypt.h"
 #include"aes.h"
-#include"options/log.h"
 using namespace std;
 
 template class AES<Encryption, 128>;
@@ -18,7 +17,6 @@ template<bool Enc, int B> void AES<Enc, B>::key(const unsigned char* keyy)
 {
 	memcpy(key_, keyy, B / 8);
 	key();
-	LOGT << hexprint("setting key", vector<unsigned char>{key_, key_ + 16}) << endl;
 }
 
 template<bool Enc, int B> void AES<Enc, B>::key()
@@ -40,6 +38,5 @@ template<bool Enc, int B> void AES<Enc, B>::iv(const mpz_class iv)
 template<bool Enc, int B> void AES<Enc, B>::iv(const unsigned char* iv)
 {
 	memcpy(iv_, iv, 16);
-	LOGT << hexprint("setting iv", vector<unsigned char>{iv_, iv_ + 16}) << endl;
 }
 
