@@ -24,34 +24,25 @@ string pemtojson(string filename)
 	return ss.str();
 }
 
-void PyDecAES::key(py::int_ k)
+void PyAES::key(py::int_ k)
 {
-	AES::key(mpz_class{py::str(k)});
+	enc.key(mpz_class{py::str(k)});
+	dec.key(mpz_class{py::str(k)});
 }
 
-void PyDecAES::iv(py::int_ k)
+void PyAES::iv(py::int_ k)
 {
-	AES::iv(mpz_class{py::str(k)});
+	enc.iv(mpz_class{py::str(k)});
+	dec.iv(mpz_class{py::str(k)});
 }
-vector<unsigned char> PyEncAES::encrypt(vector<unsigned char> v)
+vector<unsigned char> PyAES::encrypt(vector<unsigned char> v)
 {
-	return AES::encrypt(v.cbegin(), v.cend());
+	return enc.encrypt(v.cbegin(), v.cend());
 }
-void PyEncAES::key(py::int_ k)
+vector<unsigned char> PyAES::decrypt(vector<unsigned char> v)
 {
-	AES::key(mpz_class{py::str(k)});
+	return dec.decrypt(v.cbegin(), v.cend());
 }
-
-void PyEncAES::iv(py::int_ k)
-{
-	AES::iv(mpz_class{py::str(k)});
-}
-
-vector<unsigned char> PyDecAES::decrypt(vector<unsigned char> v)
-{
-	return AES::decrypt(v.cbegin(), v.cend());
-}
-
 void PyPRF::secret(vector<unsigned char> v)
 {
 	PRF<SHA2>::secret(v.cbegin(), v.cend());

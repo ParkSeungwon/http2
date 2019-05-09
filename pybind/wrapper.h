@@ -8,17 +8,13 @@
 std::string pemtojson(std::string filename);
 std::string dertojson(std::string filename);
 
-struct PyDecAES : public AES<Decryption, 128>
+struct PyAES
 {
+	AES<Decryption, 128> dec;
+	AES<Encryption, 128> enc;
 	void key(pybind11::int_);
 	void iv(pybind11::int_);
 	std::vector<unsigned char> decrypt(std::vector<unsigned char> m);
-};
-
-struct PyEncAES : public AES<Encryption, 128>
-{
-	void key(pybind11::int_);
-	void iv(pybind11::int_);
 	std::vector<unsigned char> encrypt(std::vector<unsigned char> m);
 };
 

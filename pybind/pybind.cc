@@ -14,17 +14,12 @@ PYBIND11_MODULE(tls_crypt, m) {
 	m.def("base64_decode", &base64_decode);
 	m.def("pem2json", &pemtojson);
 	m.def("der2json", &dertojson);
-	class_<PyDecAES>(m, "AESdec")
+	class_<PyAES>(m, "AES")
 		.def(init<>())
-		.def("key", &PyDecAES::key)
-		.def("iv", &PyDecAES::iv)
-		.def("decrypt", &PyDecAES::decrypt)
-		;
-	class_<PyEncAES>(m, "AESenc")
-		.def(init<>())
-		.def("key", &PyEncAES::key)
-		.def("iv", &PyEncAES::iv)
-		.def("encrypt", &PyEncAES::encrypt)
+		.def("key", &PyAES::key)
+		.def("iv", &PyAES::iv)
+		.def("decrypt", &PyAES::decrypt)
+		.def("encrypt", &PyAES::encrypt)
 		;
 	class_<PySHA256>(m, "SHA256")
 		.def(init<>())
