@@ -24,17 +24,30 @@ string pemtojson(string filename)
 	return ss.str();
 }
 
-void PyAES::key(py::int_ k)
+void PyDecAES::key(py::int_ k)
 {
 	AES::key(mpz_class{py::str(k)});
 }
 
-void PyAES::iv(py::int_ k)
+void PyDecAES::iv(py::int_ k)
+{
+	AES::iv(mpz_class{py::str(k)});
+}
+vector<unsigned char> PyEncAES::encrypt(vector<unsigned char> v)
+{
+	return AES::encrypt(v.cbegin(), v.cend());
+}
+void PyEncAES::key(py::int_ k)
+{
+	AES::key(mpz_class{py::str(k)});
+}
+
+void PyEncAES::iv(py::int_ k)
 {
 	AES::iv(mpz_class{py::str(k)});
 }
 
-vector<unsigned char> PyAES::decrypt(vector<unsigned char> v)
+vector<unsigned char> PyDecAES::decrypt(vector<unsigned char> v)
 {
 	return AES::decrypt(v.cbegin(), v.cend());
 }

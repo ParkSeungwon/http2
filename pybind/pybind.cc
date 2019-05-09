@@ -9,15 +9,22 @@ using namespace pybind11;
 using namespace pybind11::literals;
 
 PYBIND11_MODULE(tls_crypt, m) {
+	m.doc() = "TLS python module";
 	m.def("base64_encode", &base64_encode);
 	m.def("base64_decode", &base64_decode);
 	m.def("pem2json", &pemtojson);
 	m.def("der2json", &dertojson);
-	class_<PyAES>(m, "AES")
+	class_<PyDecAES>(m, "AESdec")
 		.def(init<>())
-		.def("key", &PyAES::key)
-		.def("iv", &PyAES::iv)
-		.def("decrypt", &PyAES::decrypt)
+		.def("key", &PyDecAES::key)
+		.def("iv", &PyDecAES::iv)
+		.def("decrypt", &PyDecAES::decrypt)
+		;
+	class_<PyEncAES>(m, "AESenc")
+		.def(init<>())
+		.def("key", &PyEncAES::key)
+		.def("iv", &PyEncAES::iv)
+		.def("encrypt", &PyEncAES::encrypt)
 		;
 	class_<PySHA256>(m, "SHA256")
 		.def(init<>())

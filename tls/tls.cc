@@ -765,17 +765,17 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	auto decrypted = aes_dec_.decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
 	LOGD << hexprint("decrypted", decrypted) << endl;
 	assert(decrypted.size() > decrypted.back());
-	for(int i=decrypted.back(); i>=0; i--) decrypted.pop_back();//remove padding
-	array<unsigned char, 20> auth;//get auth
-	for(int i=19; i>=0; i--) auth[i] = decrypted.back(), decrypted.pop_back();
-	string content{decrypted.begin(), decrypted.end()};
+	decrypted.resize(decrypted.size() - decrypted.back() - 1);//remove padding
+	string content{decrypted.begin(), decrypted.end() - 20};
 
 	mpz2bnd(dec_seq_num_++, header_for_mac.seq, header_for_mac.seq + 8);
 	header_for_mac.h1 = p->h1;
 	header_for_mac.h1.set_length(content.size());
 	string t = struct2str(header_for_mac) + content;
-	assert(auth == mac_[!SV].hash(t.begin(), t.end()));//verify auth
-	LOGI << "mac verified" << endl;
+	auto auth = mac_[!SV].hash(t.begin(), t.end());//verify auth
+	if(equal(auth.rbegin(), auth.rend(), decrypted.rbegin())) 
+		LOGI << "mac verified" << endl;
+	else LOGE << "mac verification failed" << endl;
 	return content;
 }
 /***********************
@@ -824,14 +824,14 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	frag += string{verify.begin(), verify.end()};//add authentication
 	while(frag.size() != block_len) frag += (char)(block_len - len - 21);//padding
 
-	auto iv = random_prime(16);
-	mpz2bnd(iv, header_to_send.iv, header_to_send.iv + 16);
-	aes_enc_.iv(iv);
+	mpz2bnd(random_prime(16), header_to_send.iv, header_to_send.iv + 16);
+	aes_enc_.iv(header_to_send.iv);
 	auto encrypted = aes_enc_.encrypt(frag.begin(), frag.end());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
 	LOGT << hexprint("sending", s2) << endl;
-	if(s.size() > chunk_size) s2 += encode(s.substr(chunk_size));
+	if(s.size() > chunk_size)//finished does not exceed chunk size, so no type needed
+		s2 += encode(s.substr(chunk_size));
 	return s2;
 }
 /***************

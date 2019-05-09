@@ -9,7 +9,7 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../passafe.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../passafe.x ../test.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lnettle -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
@@ -38,6 +38,9 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 ../passafe.x : passavea.tls.x $(framework) $(tls) $(options) 
 	$(CC) -o $@ $^ $(LIBS)
 
+../test.x : test.tls.x $(framework) $(tls) $(options) 
+	$(CC) -o $@ $^ $(LIBS)
+	
 #    $@ |현재 목표 파일의 이름
 #    $* | 확장자를 제외한 현재 목표 파일의 이름
 #    $< | 현재 필수 조건 파일 중 첫 번째 파일 이름
