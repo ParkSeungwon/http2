@@ -86,8 +86,8 @@ void Server::start(function<string(string)> f)
 	while(1) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
 		if(client_fd == -1) cout << "accept() error" << endl;
-		else if(!fork()) {
-			for(string s; (s = recv()) != end_string; send(f(s)));//recv server fail 시 에러
+		else if(!fork()) {//string size 0 : error -> s.size() : verify 
+			for(string s; (s = recv()) != end_string && s.size(); send(f(s)));//recv server fail 시 에러
 			send(end_string);
 			break;//forked process ends here
 		}
