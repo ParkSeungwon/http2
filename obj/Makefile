@@ -9,7 +9,7 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../passafe.x ../test.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../passafe.x ../test.x ../latex.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lnettle -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
@@ -36,6 +36,9 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 	$(CC) -shared -o $@ $^ $(LIBS)
 
 ../passafe.x : passavea.tls.x $(framework) $(tls) $(options) 
+	$(CC) -o $@ $^ $(LIBS)
+
+../latex.x : latex.tls.x  $(framework) $(tls) $(options) 
 	$(CC) -o $@ $^ $(LIBS)
 
 ../test.x : test.tls.x $(framework) $(tls) $(options) 
