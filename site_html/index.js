@@ -17,8 +17,6 @@ function cancel() {
 	$('#edit').hide();
 }
 function resize() {
-  $('iframe').height($('iframe').contents().height());
-	alert(JSON.stringify($('iframe').contents()));
 }
 $(function on_ready() {
 	$('h1').text(b64d($('h1').text()));

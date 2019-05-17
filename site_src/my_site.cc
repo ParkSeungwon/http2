@@ -20,12 +20,12 @@ void Site::process()
 }
 void Site::index()
 {
-	if(nameNvalue_["title"] != "")//from edit
+	if(nameNvalue_["title"] != "") {//from edit
+		sq.select("bbs", "limit 1");
 		sq.insert(nameNvalue_["title"], nameNvalue_["content"], sq.now(), 
 			1, 1, 1, sq[0]["edit"].asInt() + 1, "zezeon@msn.com");
+	}
 	sq.select("bbs", "where num=1 and page=1 and comment_order=1 order by edit desc limit 1");
-	swap("@TEXT", sq[0]["content"].asString());
-	swap("@TITLE", sq[0]["title"].asString());
 	swap("@TEXT", sq[0]["content"].asString());
 	swap("@TITLE", sq[0]["title"].asString());
 }
