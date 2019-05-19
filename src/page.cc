@@ -4,18 +4,6 @@
 #include"dndd.h"
 using namespace std;
 
-static string quote_encode(string s)
-{//" -> ' to embed inside srcdoc, if text \n -> <br>
-	for(auto i = s.find('\"'); i != string::npos; i = s.find('\"', i)) 
-		s.replace(i, 1, "\'");
-//	for(auto i = s.find('%'); i != string::npos; i = s.find('%', i)) 
-//		s.replace(i, 1, "%37");
-	if(s.find('<') > 10) 
-		for(auto i = s.find('\n'); i != string::npos; i = s.find('\n', i)) 
-			s.replace(i, 1, "<br>");
-	return s;
-}
-
 static string level2txt(array<int, 5> allow)
 {
 	string s[6] = {"anonymous", "registered", "regular", "representative", "senior", "root"};
@@ -27,10 +15,24 @@ static string level2txt(array<int, 5> allow)
 	return r;
 }
 
-string base64_encode(vector<unsigned char> v);
+string base64_encode(vector<uint8_t> v);
 void DnDD::pg()
 {
-	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
+	if(nameNvalue_["add"] != "") {//from add
+		if(stoi(level) >= allow[1]) {//from page.html, check write level
+			sq.select(table, "where num = " + book + " order by page desc limit 1");
+			page = to_string(maxpage(table, book) + 1);
+			sq.insert({book, page, id, "Edit this page", "", sq.now(), "null"});
+		} else content_ = "<script>alert('your level does not qualify.')</script>";
+	} else if(nameNvalue_["read"] != "") {//from new 
+		sq.select(table, "order by num desc limit 1");
+		book = to_string(sq[0]["num"].asInt() + 1);
+		sq.insert({book, "0", id, nameNvalue_["title"], 
+				nameNvalue_["read"] + nameNvalue_["write"] + nameNvalue_["comment"] 
+				+ nameNvalue_["vote"] + '0' + nameNvalue_["option"] + '0', 
+				sq.now(), "null"});
+		page = "0";
+	} else if(nameNvalue_["title"] != "") {//from edit
 		sq.select(table, "limit 1");//if from page no date
 		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"],
 				tmp.empty() ? sq.now() : tmp["date"].asString(), "null"});
@@ -63,17 +65,15 @@ void DnDD::pg()
 	swap("OPTIONS", r);
 
 	//main frame
-	sq.select(table, "where num=" + book + " and page=" + page + " and title <> \'코멘트임.\' order by edit desc limit 1");
+	sq.select(table, "where num=" + book + " and page=" + page + " and title <> '코멘트임.' order by edit desc limit 1");
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", sq[0]["title"].asString());
-	if(page == "0") swap("MAINTEXT", level2txt(allow));
-	else {
-		string s = sq[0]["contents"].asString();
-		if(s.substr(0, 15) != "data:text/html;") swap("MAINTEXT", s);
-		else swap("srcdoc=\"MAINTEXT\"", "src=" + s);
-	}
-	swap("MAINTEXT", page == "0" ? 
-			level2txt(allow) : quote_encode(sq[0]["contents"].asString()));
+
+	if(page == "0") {
+		string str = level2txt(allow);
+		swap("MAINTEXT", base64_encode(vector<uint8_t>{str.begin(), str.end()}));
+	} else swap("MAINTEXT", sq[0]["contents"].asString());
+
 	tmp = sq[0];//5 date
 	string date = sq[0]["date"].asString();
 	sq.select("Users", "where email='" + sq[0]["email"].asString() + "' order by date desc limit 1");
@@ -81,7 +81,7 @@ void DnDD::pg()
 	//swap("WHO", "by " + sq[0]["email"].asString() + " on " + sq[0]["date"].asString());
 
 	//attachment덧글
-	sq.select(table, "where num=" + book + " and page=" + page + " and title = \'코멘트임.\' order by date desc, email, edit desc");
+	sq.select(table, "where num=" + book + " and page=" + page + " and title = '코멘트임.' order by date desc, email, edit desc");
 	sq.group_by({"date", "email", "edit"});
 	string t;
 	for(int i=0; i<sq.size(); i++) {

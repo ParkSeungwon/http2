@@ -19,7 +19,6 @@ void DnDD::process()
 	else if(requested_document_ == "signin.html") signin();
 	else if(requested_document_ == "page.html") pg();
 	else if(requested_document_ == "edit.html") edit();
-	else if(requested_document_ == "add.html") add();
 	else if(requested_document_ == "new.html") new_book();
 	else if(requested_document_ == "comment.html") comment();
 	else if(requested_document_ == "vote") content_ = vote();
@@ -105,22 +104,6 @@ void DnDD::comment()
 void DnDD::new_book()
 {
 	if(id == "") content_ = "<script>alert('login first.')</script>";
-}
-
-void DnDD::add() 
-{
-	tmp.clear();
-	if(nameNvalue_["title"] != "") {//from new.html
-		sq.select(table, "order by num desc limit 1");
-		book = to_string(sq[0]["num"].asInt() + 1);
-		sq.insert({book, "0", id, nameNvalue_["title"], 
-				nameNvalue_["read"] + nameNvalue_["write"] + nameNvalue_["comment"] 
-				+ nameNvalue_["vote"] + '0' + nameNvalue_["option"] + '0', 
-				sq.now(), "null"});
-		page = "1";
-	} else if(stoi(level) >= allow[1])//from page.html, check write level
-		page = to_string(maxpage(table, book) + 1);
-	else content_ = "<script>alert('your level does not qualify.')</script>";
 }
 
 vector<unsigned char> base64_decode(string s);

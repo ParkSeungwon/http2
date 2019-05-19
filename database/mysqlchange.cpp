@@ -6,7 +6,7 @@ int main()
 {
 	SqlQuery sq;
 	sq.connect("localhost", "dndd", "dndddndd", "dndd");
-	for(const char *p : {"VotingBoard", "수능", "공지사항", "전공및교양", "TroubleShooting", "Test"}) {
+	for(const char *p : {"Sample"}) {
 		sq.select(p, "where title <> '코멘트임.' and page <> 0 order by num, page, edit desc");
 		sq.group_by({"num", "page"});
 		int k = 1;
