@@ -27,11 +27,12 @@ static string level2txt(array<int, 5> allow)
 	return r;
 }
 
+string base64_encode(vector<unsigned char> v);
 void DnDD::pg()
 {
 	if(nameNvalue_["title"] != "") {//if from edit, or new->add->page
 		sq.select(table, "limit 1");//if from page no date
-		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"], 
+		sq.insert({book, page, id, nameNvalue_["title"], nameNvalue_["content"],
 				tmp.empty() ? sq.now() : tmp["date"].asString(), "null"});
 	} else if(nameNvalue_["comment"] != "") {//if from comment
 		sq.select(table, "limit 1");

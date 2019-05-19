@@ -9,12 +9,12 @@ using namespace std;
 
 bool Mysqlquery::myQuery(std::string str)
 {
-	//cout << str << endl;
+	cerr << str << endl;
 	try {
-        //cout << "Executing query....." << endl << endl;
+        cerr << "Executing query....."; 
 //		str = dynamic_cast<sql::mysql::MySQL_Connection*>(con)->escapeString(str);
         res = stmt->executeQuery(str);
-		//cout << "Done." << endl;
+		cerr << "Done." << endl;
         return true;
 	} catch (sql::SQLException &e) {
 		if(e.getErrorCode() != 0) {

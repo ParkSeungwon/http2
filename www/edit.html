@@ -10,8 +10,11 @@
   <script crossorigin="anonymous" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
   </script>
 	<script>
+function b64e(s) {
+	return window.btoa(unescape(encodeURIComponent(s)));
+}
 		function f() {
-			$("#content").val("data:text/html;base64," + window.btoa($("#content").val())); 			}
+			$("#content").val(b64e($("#content").val())); 			}
 	</script>
  </head>
  

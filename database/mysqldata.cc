@@ -44,8 +44,8 @@ bool SqlQuery::insert(vector<string> v)
 	return myQuery(q);
 }
 
-bool SqlQuery::insert(int n)
-{//seekp rewind
+bool SqlQuery::insert_nth_row(int n)
+{//seekp rewind, insert the data of sq[n]
 	stringstream ss; ss << "insert into " << table_name << " (";
 	for(int i=0; i<columns.size(); i++) ss << columns[i].name << ',';
 	ss.seekp(-1, ss.cur); ss << ") values (";

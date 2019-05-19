@@ -11,7 +11,7 @@ public:
 	SqlQuery() = default;
 	SqlQuery(const SqlQuery& r);
 	int select(std::string table, std::string where = "");
-	bool insert(int n);
+	bool insert_nth_row(int n);
 	bool insert(std::vector<std::string> v);
 	template<class T1, class... T2> bool insert(T1 a, T2... b)
 	{
