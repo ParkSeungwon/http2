@@ -67,7 +67,7 @@ void DnDD::pg()
 	//main frame
 	sq.select(table, "where num=" + book + " and page=" + page + " and title <> '코멘트임.' order by edit desc limit 1");
 	swap("FOLLOW", sq[0]["email"].asString());
-	swap("TITLE", sq[0]["title"].asString());
+	swap("TITLE", "<small>" + table + '.' + book + '.' + page + ".</small>" + sq[0]["title"].asString());
 
 	if(page == "0") {
 		string str = level2txt(allow);

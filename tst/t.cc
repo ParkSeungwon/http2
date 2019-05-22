@@ -152,3 +152,10 @@ TEST_CASE("const array") {
 	const char c[] = "abcdefghijklmn";
 //	f(c);
 }
+
+TEST_CASE("sha1 tex") {
+	SHA1 sha;
+	char c[] = "abc";
+	cout << "SHA1 hash of abc : ";
+	for(auto a : sha.hash(c, c+3)) cout << +a;
+}
