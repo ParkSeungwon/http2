@@ -8,6 +8,7 @@
 #include"framework/server.h"
 #include"tls/tls.h"
 #include"tls/aes.h"
+#include"options/log.h"
 using namespace std;
 
 string get_certificate_core(istream& is);
@@ -117,16 +118,16 @@ TEST_CASE("substr index") {
 }
 
 int f() {
-	cout << 1 << ' ';
+	LOGT << 1 << ' ';
 	return 1;
 }
 int g() {
-	cout << 2 << ' ';
+	LOGT << 2 << ' ';
 	return 2;
 }
 TEST_CASE("which is front") {
 	f() + g();
-	cout << __LINE__ << ' ' << __FILE__ << __func__ << endl;
+	LOGT << __LINE__ << ' ' << __FILE__ << __func__ << endl;
 }
 
 TEST_CASE("startwiwth") {
@@ -156,6 +157,6 @@ TEST_CASE("const array") {
 TEST_CASE("sha1 tex") {
 	SHA1 sha;
 	char c[] = "abc";
-	cout << "SHA1 hash of abc : ";
-	for(auto a : sha.hash(c, c+3)) cout << +a;
+	LOGT << "SHA1 hash of abc : ";
+	for(auto a : sha.hash(c, c+3)) LOGT << +a;
 }
