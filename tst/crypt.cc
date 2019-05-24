@@ -5,40 +5,38 @@
 #include<gmpxx.h>
 #include"tls/crypt.h"
 #include"options/log.h"
-#include"tls/aes.h"
+#include"tls/block_cipher.h"
 #include"tls/hash.h"
 using namespace std;
 
 unsigned char c[] = "hello this is a test case this is a test case this is a test";
 
 TEST_CASE("AES TEST") {
-//	AES<Encryption> aes;
-//	AES<Decryption> aes3;
-//	unsigned char iv[16], key[32], text[32];
-//	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
-//	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
-//	for(int i=0; i<16; i++) iv[i] = i;
-//
-//	aes.key(key);
-//	aes.iv(iv);
-//	auto v = aes.encrypt(text, text+16);//should be multiple of 16
-//	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
-//	aes3.key(key);
-//	aes3.iv(iv);
-//	v = aes3.decrypt(v.begin(), v.end());
-//	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
-//
-//	AES<Encryption, 256> aes2;
-//	AES<Decryption, 256> aes4;
-//	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
-//	aes2.key(key);
-//	aes2.iv(iv);
-//	v = aes2.encrypt(text, text+16);
-//	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
-//	aes4.key(key);
-//	aes4.iv(iv);
-//	v = aes4.decrypt(v.begin(), v.end());
-//	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
+	CBC<AES<128>> aes;
+	unsigned char iv[16], key[32], text[32];
+	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
+	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
+	for(int i=0; i<16; i++) iv[i] = i;
+
+	aes.enc_key(key);
+	aes.enc_iv(iv);
+	auto v = aes.encrypt(text, text+16);//should be multiple of 16
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
+	aes.dec_key(key);
+	aes.dec_iv(iv);
+	v = aes.decrypt(v.begin(), v.end());
+	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
+
+	CBC<AES<256>> aes2;
+	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
+	aes2.enc_key(key);
+	aes2.enc_iv(iv);
+	v = aes2.encrypt(text, text+16);
+	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
+	aes2.dec_key(key);
+	aes2.dec_iv(iv);
+	v = aes2.decrypt(v.begin(), v.end());
+	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 }
 /***********
 AES CBC 128-bit encryption mode

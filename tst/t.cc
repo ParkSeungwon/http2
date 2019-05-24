@@ -7,7 +7,7 @@
 #include"tls/crypt.h"
 #include"framework/server.h"
 #include"tls/tls.h"
-#include"tls/aes.h"
+#include"tls/block_cipher.h"
 #include"options/log.h"
 using namespace std;
 
@@ -117,19 +117,6 @@ TEST_CASE("substr index") {
 	REQUIRE(s.substr(0, 15) == "data:text/html;");
 }
 
-int f() {
-	LOGT << 1 << ' ';
-	return 1;
-}
-int g() {
-	LOGT << 2 << ' ';
-	return 2;
-}
-TEST_CASE("which is front") {
-	f() + g();
-	LOGT << __LINE__ << ' ' << __FILE__ << __func__ << endl;
-}
-
 TEST_CASE("startwiwth") {
 	string s = "Content-Type: multipart/form-data; boundary=----WebKitFormBoundary1feen4q1pjqBCnWz";
 	REQUIRE(s.find("Content-Type: multipart/form-data;") == 0);
@@ -157,6 +144,6 @@ TEST_CASE("const array") {
 TEST_CASE("sha1 tex") {
 	SHA1 sha;
 	char c[] = "abc";
-	LOGT << "SHA1 hash of abc : ";
-	for(auto a : sha.hash(c, c+3)) LOGT << +a;
+//	LOGT << "SHA1 hash of abc : ";
+//	for(auto a : sha.hash(c, c+3)) LOGT << +a;
 }

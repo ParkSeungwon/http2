@@ -1,24 +1,46 @@
 #include"crypt.h"
-#include"aes.h"
+#include"block_cipher.h"
 using namespace std;
 
 template class CBC<AES<128>>;
 template class CBC<AES<256>>;
 template class GCM<AES<128>>;
 template class GCM<AES<256>>;
+template class CBC<Camellia<128>>;
+template class CBC<Camellia<256>>;
 
 //AES
 template<int B> void AES<B>::enc_key(const unsigned char* k)
 {
-	memcpy(enc_key_, k, B / 8);
-	if constexpr(B == 128) aes128_set_encrypt_key(&enc_ctx_, enc_key_);
-	else aes256_set_encrypt_key(&enc_ctx_, enc_key_);
+	if constexpr(B == 128) aes128_set_encrypt_key(&enc_ctx_, k);
+	else aes256_set_encrypt_key(&enc_ctx_, k);
 }
 template<int B> void AES<B>::dec_key(const unsigned char* k)
 {
-	memcpy(dec_key_, k, B / 8);
-	if constexpr(B == 128) aes128_set_decrypt_key(&dec_ctx_, dec_key_);
-	else aes256_set_decrypt_key(&dec_ctx_, dec_key_);
+	if constexpr(B == 128) aes128_set_decrypt_key(&dec_ctx_, k);
+	else aes256_set_decrypt_key(&dec_ctx_, k);
+}
+
+//Camellia
+template<int B> void Camellia<B>::enc_key(const unsigned char *k)
+{
+	if constexpr(B == 128) {
+		camellia128_set_encrypt_key(&enc_ctx_, k);
+		camellia128_invert_key(&dec_ctx_, &enc_ctx_);
+	} else {
+		camellia256_set_encrypt_key(&enc_ctx_, k);
+		camellia256_invert_key(&dec_ctx_, &enc_ctx_);
+	}
+}
+template<int B> void Camellia<B>::dec_key(const unsigned char *k)
+{
+	if constexpr(B == 128) {
+		camellia128_set_decrypt_key(&dec_ctx_, k);
+		camellia128_invert_key(&enc_ctx_, &dec_ctx_);
+	} else {
+		camellia256_set_encrypt_key(&dec_ctx_, k);
+		camellia256_invert_key(&enc_ctx_, &dec_ctx_);
+	}
 }
 
 //CBC
@@ -55,4 +77,8 @@ template<class C> void GCM<C>::enc_iv(const unsigned char *iv)
 template<class C> void GCM<C>::dec_iv(const unsigned char *iv)
 {
 	gcm_set_iv(&dec_ctx_, &dec_key_, 12, iv);
+}
+template<class C> void GCM<C>::increase_seq_num(unsigned char *p)
+{
+	for(int i=7; !++p[i] && i; i--); 
 }

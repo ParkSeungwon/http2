@@ -1,7 +1,7 @@
 #pragma once
 #include<valarray>
 #include"crypt.h"
-#include"aes.h"
+#include"block_cipher.h"
 #include"hash.h"
 #define DH_KEY_SZ 128
 #define KEY_SZ 72

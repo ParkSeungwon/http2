@@ -1,6 +1,6 @@
 #include<iostream>
 #include<vector>
-#include"aes.h"
+#include"block_cipher.h"
 #include"crypt.h"//base64, mpz2bnd, random_prime
 #include"hash.h"
 #include"options/option.h"//CMDoption
