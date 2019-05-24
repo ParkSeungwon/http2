@@ -10,10 +10,11 @@ std::string dertojson(std::string filename);
 
 struct PyAES
 {
-	AES<Decryption, 128> dec;
-	AES<Encryption, 128> enc;
-	void key(pybind11::int_);
-	void iv(pybind11::int_);
+	CBC<AES<128>> aes;
+	void enc_key(pybind11::int_);
+	void dec_key(pybind11::int_);
+	void enc_iv(pybind11::int_);
+	void dec_iv(pybind11::int_);
 	std::vector<unsigned char> decrypt(std::vector<unsigned char> m);
 	std::vector<unsigned char> encrypt(std::vector<unsigned char> m);
 };

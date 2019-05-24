@@ -2,41 +2,57 @@
 #include"aes.h"
 using namespace std;
 
-template class AES<Encryption, 128>;
-template class AES<Encryption, 256>;
-template class AES<Decryption, 128>;
-template class AES<Decryption, 256>;
+template class CBC<AES<128>>;
+template class CBC<AES<256>>;
+template class GCM<AES<128>>;
+template class GCM<AES<256>>;
 
-template<bool Enc, int B> void AES<Enc, B>::key(const mpz_class keyy)
+//AES
+template<int B> void AES<B>::enc_key(const unsigned char* k)
 {
-	mpz2bnd(keyy, key_, key_+ B / 8);
-	key();
+	memcpy(enc_key_, k, B / 8);
+	if constexpr(B == 128) aes128_set_encrypt_key(&enc_ctx_, enc_key_);
+	else aes256_set_encrypt_key(&enc_ctx_, enc_key_);
+}
+template<int B> void AES<B>::dec_key(const unsigned char* k)
+{
+	memcpy(dec_key_, k, B / 8);
+	if constexpr(B == 128) aes128_set_decrypt_key(&dec_ctx_, dec_key_);
+	else aes256_set_decrypt_key(&dec_ctx_, dec_key_);
 }
 
-template<bool Enc, int B> void AES<Enc, B>::key(const unsigned char* keyy)
+//CBC
+template<class C> void CBC<C>::enc_key(const unsigned char *k)
 {
-	memcpy(key_, keyy, B / 8);
-	key();
+	cipher_.enc_key(k);
+}
+template<class C> void CBC<C>::dec_key(const unsigned char *k)
+{
+	cipher_.dec_key(k);
+}
+template<class C> void CBC<C>::enc_iv(const unsigned char *iv)
+{
+	memcpy(enc_iv_, iv, 16);
+}
+template<class C> void CBC<C>::dec_iv(const unsigned char *iv)
+{
+	memcpy(dec_iv_, iv, 16);
 }
 
-template<bool Enc, int B> void AES<Enc, B>::key()
+//GCM
+template<class C> void GCM<C>::enc_key(const unsigned char *k)
 {
-	if constexpr(Enc) {
-		if constexpr(B == 128) aes128_set_encrypt_key(&aes_, key_);
-		else aes256_set_encrypt_key(&aes_, key_);
-	} else {
-		if constexpr(B == 128) aes128_set_decrypt_key(&aes_, key_);
-		else aes256_set_decrypt_key(&aes_, key_);
-	}
+	gcm_set_key(&enc_key_, &cipher_.enc_ctx_, C::enc_func_);
 }
-
-template<bool Enc, int B> void AES<Enc, B>::iv(const mpz_class iv)
+template<class C> void GCM<C>::dec_key(const unsigned char *k)
 {
-	mpz2bnd(iv, iv_, iv_+16);
+	gcm_set_key(&dec_key_, &cipher_.dec_ctx_, C::dec_func_);
 }
-
-template<bool Enc, int B> void AES<Enc, B>::iv(const unsigned char* iv)
+template<class C> void GCM<C>::enc_iv(const unsigned char *iv)
 {
-	memcpy(iv_, iv, 16);
+	gcm_set_iv(&enc_ctx_, &enc_key_, 12, iv);
 }
-
+template<class C> void GCM<C>::dec_iv(const unsigned char *iv)
+{
+	gcm_set_iv(&dec_ctx_, &dec_key_, 12, iv);
+}

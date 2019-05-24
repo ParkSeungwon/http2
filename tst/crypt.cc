@@ -12,33 +12,33 @@ using namespace std;
 unsigned char c[] = "hello this is a test case this is a test case this is a test";
 
 TEST_CASE("AES TEST") {
-	AES<Encryption> aes;
-	AES<Decryption> aes3;
-	unsigned char iv[16], key[32], text[32];
-	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
-	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
-	for(int i=0; i<16; i++) iv[i] = i;
-
-	aes.key(key);
-	aes.iv(iv);
-	auto v = aes.encrypt(text, text+16);//should be multiple of 16
-	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
-	aes3.key(key);
-	aes3.iv(iv);
-	v = aes3.decrypt(v.begin(), v.end());
-	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
-
-	AES<Encryption, 256> aes2;
-	AES<Decryption, 256> aes4;
-	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
-	aes2.key(key);
-	aes2.iv(iv);
-	v = aes2.encrypt(text, text+16);
-	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
-	aes4.key(key);
-	aes4.iv(iv);
-	v = aes4.decrypt(v.begin(), v.end());
-	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
+//	AES<Encryption> aes;
+//	AES<Decryption> aes3;
+//	unsigned char iv[16], key[32], text[32];
+//	mpz2bnd(mpz_class{"0x2b7e151628aed2a6abf7158809cf4f3c"}, key, key+16);
+//	mpz2bnd(mpz_class{"0x6bc1bee22e409f96e93d7e117393172a"}, text, text+16);
+//	for(int i=0; i<16; i++) iv[i] = i;
+//
+//	aes.key(key);
+//	aes.iv(iv);
+//	auto v = aes.encrypt(text, text+16);//should be multiple of 16
+//	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0x7649abac8119b246cee98e9b12e9197d"});
+//	aes3.key(key);
+//	aes3.iv(iv);
+//	v = aes3.decrypt(v.begin(), v.end());
+//	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
+//
+//	AES<Encryption, 256> aes2;
+//	AES<Decryption, 256> aes4;
+//	mpz2bnd(mpz_class{"0x603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4"}, key, key+32);
+//	aes2.key(key);
+//	aes2.iv(iv);
+//	v = aes2.encrypt(text, text+16);
+//	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xf58c4c04d6e5f1ba779eabfb5f7bfbd6"});
+//	aes4.key(key);
+//	aes4.iv(iv);
+//	v = aes4.decrypt(v.begin(), v.end());
+//	for(int i=0; i<16; i++) REQUIRE(v[i] == text[i]);
 }
 /***********
 AES CBC 128-bit encryption mode
@@ -225,20 +225,20 @@ TEST_CASE("mpz_sizeinbase") {
 }
 
 TEST_CASE("wolfssl aes128 decrypt") {
-	mpz_class iv{"0xeffdfe624049b98737fd115795058eca"};
-	mpz_class key{"0xfe1709cdffcfdaad15d2aa4ae711ee3f"};
-
-	unsigned char encrypted[] = {
-		0xb1, 0xcc, 0x29, 0x57, 0x5b, 0x5c, 0xf5, 0x9e,
-		0xe7, 0xb0, 0x35, 0x4c, 0x6c, 0x3a, 0x94, 0xe7,
-		0x39, 0xf4, 0x97, 0xb1, 0x54, 0x2d, 0x77, 0x22,
-		0x35, 0xdb, 0xcf, 0x64, 0x70, 0x13, 0x9c, 0x22,
-		0xf5, 0x3e, 0x1c, 0x24, 0x7e, 0x20, 0x9c, 0x6f,
-		0xb1, 0xd8, 0x93, 0x48, 0xcb, 0xf4, 0xc9, 0x54
-	};
-	AES<Decryption> aes;
-	aes.iv(iv);
-	aes.key(key);
-	LOGT << hexprint("decrypted", aes.decrypt(encrypted, encrypted + 48)) << endl;
+//	mpz_class iv{"0xeffdfe624049b98737fd115795058eca"};
+//	mpz_class key{"0xfe1709cdffcfdaad15d2aa4ae711ee3f"};
+//
+//	unsigned char encrypted[] = {
+//		0xb1, 0xcc, 0x29, 0x57, 0x5b, 0x5c, 0xf5, 0x9e,
+//		0xe7, 0xb0, 0x35, 0x4c, 0x6c, 0x3a, 0x94, 0xe7,
+//		0x39, 0xf4, 0x97, 0xb1, 0x54, 0x2d, 0x77, 0x22,
+//		0x35, 0xdb, 0xcf, 0x64, 0x70, 0x13, 0x9c, 0x22,
+//		0xf5, 0x3e, 0x1c, 0x24, 0x7e, 0x20, 0x9c, 0x6f,
+//		0xb1, 0xd8, 0x93, 0x48, 0xcb, 0xf4, 0xc9, 0x54
+//	};
+//	AES<Decryption> aes;
+//	aes.iv(iv);
+//	aes.key(key);
+//	LOGT << hexprint("decrypted", aes.decrypt(encrypted, encrypted + 48)) << endl;
 }
 

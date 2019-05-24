@@ -162,11 +162,11 @@ array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 	mac_[0].key(p, p + 20);
 	mac_[1].key(p + 20, p + 40);
 	if constexpr(SV) {
-		aes_dec_.key(p + 40);//AES128 key size 16
-		aes_enc_.key(p + 56);
+		aes_.dec_key(p + 40);//AES128 key size 16
+		aes_.enc_key(p + 56);
 	} else {
-		aes_enc_.key(p + 40);
-		aes_dec_.key(p + 56);
+		aes_.enc_key(p + 40);
+		aes_.dec_key(p + 56);
 	}
 	return keys;
 }
@@ -761,8 +761,8 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		uint8_t seq[8];
 		TLS_header h1;
 	} header_for_mac;
-	aes_dec_.iv(p->iv);
-	auto decrypted = aes_dec_.decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
+	aes_.dec_iv(p->iv);
+	auto decrypted = aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
 	LOGD << hexprint("decrypted", decrypted) << endl;
 	assert(decrypted.size() > decrypted.back());
 	decrypted.resize(decrypted.size() - decrypted.back() - 1);//remove padding
@@ -825,8 +825,8 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	while(frag.size() != block_len) frag += (char)(block_len - len - 21);//padding
 
 	mpz2bnd(random_prime(16), header_to_send.iv, header_to_send.iv + 16);
-	aes_enc_.iv(header_to_send.iv);
-	auto encrypted = aes_enc_.encrypt(frag.begin(), frag.end());
+	aes_.enc_iv(header_to_send.iv);
+	auto encrypted = aes_.encrypt(frag.begin(), frag.end());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
 	LOGT << hexprint("sending", s2) << endl;

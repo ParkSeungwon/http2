@@ -8,19 +8,21 @@ using namespace std;
 
 int main(int ac, char **av) 
 {//i will upload my passwords to dropbox, so I need to encrypt it
-	const mpz_class key{"0x471289aecb4389affde2d2d67892a"};
+	const mpz_class key2{"0x471289aecb4389affde2d2d67892a"};
+	uint8_t key[16];
+	mpz2bnd(key2, key, key + 16);
 	CMDoption co{
 		{"decrypt", "decrypt, input from cin", false }
 	};
 	if(!co.args(ac, av)) return 0;
 
 	SHA1 sha;//IV + {msg + sha1 hash + 1-000 padding}, {} : aes128 encrypted
+	CBC<AES<128>> aes;
 	if(string s; co.get<bool>("decrypt")) {
-		AES<Decryption> aes;
-		aes.key(key);
+		aes.dec_key(key);
 		for(char c; cin >> c;) s += c;
 		auto v = base64_decode(move(s));
-		aes.iv(&v[0]);
+		aes.dec_iv(&v[0]);
 		v = aes.decrypt(v.begin() + 16, v.end());
 		while(!v.back()) v.pop_back();
 		v.pop_back();
@@ -30,11 +32,10 @@ int main(int ac, char **av)
 		for(char c : v) s += c;
 		cout << s;
 	} else {
-		AES<Encryption> aes;
-		aes.key(key);
+		aes.enc_key(key);
 		unsigned char ar[16];
 		mpz2bnd(random_prime(16), ar, ar+16);
-		aes.iv(ar);
+		aes.enc_iv(ar);
 		for(char c; cin >> noskipws >> c;) s += c;
 		auto h = sha.hash(s.begin(), s.end());
 		s.insert(s.end(), h.begin(), h.end());

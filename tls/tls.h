@@ -74,8 +74,7 @@ public:
 
 protected:
 	const void *rec_received_;
-	AES<Encryption> aes_enc_;//0 client 1 server
-	AES<Decryption> aes_dec_;
+	CBC<AES<128>> aes_;
 	HMAC<SHA1> mac_[2];
 	DiffieHellman diffie_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
