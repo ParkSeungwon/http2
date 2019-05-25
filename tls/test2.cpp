@@ -1,6 +1,7 @@
 #include<iostream>
 #include<nettle/gcm.h>
 #include<nettle/aes.h>
+#include<nettle/chacha-poly1305.h>
 using namespace std;
 using cf = nettle_cipher_func;
 
@@ -52,6 +53,9 @@ int main()
 	gcm_aes128_update(ctx, 8, datum);
 	gcm_aes128_encrypt(ctx, 32, decoded, encoded);
 	gcm_aes128_digest(ctx, 16, digest);
+	cout << "digest ";
+	for(unsigned char c : digest) cerr << hex << +c;
+	cout << endl;
 
 //	gcm_aes128_set_key(ctx2, key);
 	aes128_set_encrypt_key(&ctx2->cipher, key);
@@ -60,6 +64,36 @@ int main()
 	gcm_aes128_update(ctx2, 8, datum);
 	gcm_aes128_decrypt(ctx2, 32, decoded, encoded);
 	gcm_aes128_digest(ctx2, 16, digest);
+	for(unsigned char c : digest) cerr << hex << +c;
+	cout << endl;
+
+	for(unsigned char c : src) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : encoded) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : decoded) cerr << hex << +c;
+	cout << endl;
+
+	chacha_poly1305_ctx cctx;
+	chacha_poly1305_set_key(&cctx, key);
+	chacha_poly1305_set_nonce(&cctx, iv);
+	chacha_poly1305_update(&cctx, 8, datum);
+	chacha_poly1305_encrypt(&cctx, 32, encoded, src);
+	chacha_poly1305_digest(&cctx, 16, digest);
+
+	for(unsigned char c : src) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : encoded) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : decoded) cerr << hex << +c;
+	cout << endl;
+
+	chacha_poly1305_ctx cctx2;
+	chacha_poly1305_set_key(&cctx2, key);
+	chacha_poly1305_set_nonce(&cctx2, iv);
+	chacha_poly1305_update(&cctx2, 8, datum);
+	chacha_poly1305_decrypt(&cctx2, 32, decoded, encoded);
+	chacha_poly1305_digest(&cctx2, 16, digest);
 
 	for(unsigned char c : src) cerr << hex << +c;
 	cout << endl;
