@@ -2,6 +2,7 @@
 #include<nettle/gcm.h>
 #include<nettle/aes.h>
 using namespace std;
+using cf = nettle_cipher_func;
 
 int main()
 {
@@ -14,19 +15,39 @@ int main()
 	struct aes128_ctx ac, ac2;
 
 	aes128_set_encrypt_key(&ac, key);
-	gcm_set_key(&gk, &ac, (nettle_cipher_func*)aes128_encrypt);
+	gcm_set_key(&gk, &ac, (cf*)aes128_encrypt);
 	gcm_set_iv(&gc, &gk, 12, iv);
 	gcm_update(&gc, &gk, 8, datum);
-	gcm_encrypt(&gc, &gk, &ac, (nettle_cipher_func*)aes128_encrypt, 32, encoded, src);
-	gcm_digest(&gc, &gk, &ac, (nettle_cipher_func*)aes128_encrypt, 16, digest);
+	gcm_encrypt(&gc, &gk, &ac, (cf*)aes128_encrypt, 32, encoded, src);
+	gcm_digest(&gc, &gk, &ac, (cf*)aes128_encrypt, 16, digest);
 
 	aes128_set_decrypt_key(&ac2, key);
-	gcm_set_key(&gk2, &ac2, (nettle_cipher_func*)aes128_decrypt);
+	gcm_set_key(&gk2, &ac2, (cf*)aes128_decrypt);
 	gcm_set_iv(&gc2, &gk2, 12, iv);
 	gcm_update(&gc2, &gk2, 8, datum);
-	gcm_decrypt(&gc2, &gk2, &ac2, (nettle_cipher_func*)aes128_decrypt, 32, decoded, encoded);
-	gcm_digest(&gc2, &gk2, &ac2, (nettle_cipher_func*)aes128_decrypt, 16, digest);
+	gcm_decrypt(&gc2, &gk2, &ac2, (cf*)aes128_decrypt, 32, decoded, encoded);
+	gcm_digest(&gc2, &gk2, &ac2, (cf*)aes128_decrypt, 16, digest);
 	
+	for(unsigned char c : src) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : encoded) cerr << hex << +c;
+	cout << endl;
+	for(uint8_t c : decoded) cerr << hex << +c;
+	cout << endl;
+
+	struct gcm_aes128_ctx ctx, ctx2;
+	gcm_aes128_set_key(&ctx, key);
+	gcm_aes128_set_iv(&ctx, 12, iv);
+	gcm_aes128_update(&ctx, 8, datum);
+	gcm_aes128_encrypt(&ctx, 32, decoded, encoded);
+	gcm_aes128_digest(&ctx, 16, digest);
+
+	gcm_aes128_set_key(&ctx2, key);
+	gcm_aes128_set_iv(&ctx2, 12, iv);
+	gcm_aes128_update(&ctx2, 8, datum);
+	gcm_aes128_decrypt(&ctx2, 32, decoded, encoded);
+	gcm_aes128_digest(&ctx2, 16, digest);
+
 	for(unsigned char c : src) cerr << hex << +c;
 	cout << endl;
 	for(uint8_t c : encoded) cerr << hex << +c;
