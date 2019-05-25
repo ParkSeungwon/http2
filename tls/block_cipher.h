@@ -16,6 +16,9 @@ template<int B = 128> struct AES
 		(nettle_cipher_func*)aes128_decrypt : (nettle_cipher_func*)aes256_decrypt;
 	typename std::conditional<B == 128, aes128_ctx, aes256_ctx>::type
 		enc_ctx_, dec_ctx_;
+	static constexpr nettle_set_key_func *set_key_func_ = B == 128
+		?  (nettle_set_key_func*)aes128_set_encrypt_key
+		: (nettle_set_key_func*)aes256_set_encrypt_key;
 };
 
 template<int B = 128> struct Camellia
@@ -27,6 +30,9 @@ template<int B = 128> struct Camellia
 	static constexpr nettle_cipher_func *dec_func_ = enc_func_;
 	typename std::conditional<B == 128, camellia128_ctx, camellia256_ctx>::type
 		enc_ctx_, dec_ctx_;
+	static constexpr nettle_set_key_func *set_key_func_ = B == 128
+		?  (nettle_set_key_func*)camellia128_set_encrypt_key
+		: (nettle_set_key_func*)camellia256_set_encrypt_key;
 };
 
 template<class Cipher> class CBC
@@ -86,9 +92,9 @@ public:
 		std::vector<uint8_t> result(sz + 16);//for digest at the end 16
 		gcm_update(&dec_ctx_, &dec_key_, 8, dec_sequence_num_);
 		increase_seq_num(dec_sequence_num_);
-		gcm_decrypt(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::dec_func_,
+		gcm_decrypt(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::enc_func_,
 				sz, &result[0], &*begin);
-		gcm_digest(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::dec_func_,
+		gcm_digest(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::enc_func_,
 				16, &result[sz]);
 		return result;
 	}

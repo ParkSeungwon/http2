@@ -72,7 +72,7 @@ TEST_CASE("aes cbc new") {
 	for(int i=0; i<32; i++) cerr << hex << +src[i];
 	cout << endl << "GCM decode : ";
 	for(int i=0; i<32; i++) cerr << hex << +v2[i];
-	//for(int i=0; i<32; i++) REQUIRE(src[i] == v2[i]);
+	for(int i=0; i<32; i++) REQUIRE(src[i] == v2[i]);
 }
 
 TEST_CASE("camellia") {

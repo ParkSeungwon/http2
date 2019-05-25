@@ -61,8 +61,8 @@ template<class C> void GCM<C>::enc_key(const unsigned char *k)
 }
 template<class C> void GCM<C>::dec_key(const unsigned char *k)
 {
-	cipher_.dec_key(k);
-	gcm_set_key(&dec_key_, &cipher_.dec_ctx_, C::dec_func_);
+	cipher_.set_key_func_(&cipher_.dec_ctx_, k);
+	gcm_set_key(&dec_key_, &cipher_.dec_ctx_, C::enc_func_);
 }
 template<class C> void GCM<C>::enc_iv(const unsigned char *iv)
 {
