@@ -10,6 +10,8 @@ template class CBC<Camellia<128>>;
 template class CBC<Camellia<256>>;
 template class GCM<Camellia<128>>;
 template class GCM<Camellia<256>>;
+template class CBC<DES3>;
+template class GCM<DES3>;
 
 //AES
 template<int B> void AES<B>::enc_key(const unsigned char* k)
@@ -33,6 +35,16 @@ template<int B> void Camellia<B>::dec_key(const unsigned char *k)
 {
 	if constexpr(B == 128) camellia128_set_decrypt_key(&dec_ctx_, k);
 	else camellia256_set_decrypt_key(&dec_ctx_, k);
+}
+
+//DES3
+void DES3::enc_key(const unsigned char *k)
+{
+	des3_set_key(&enc_ctx_, k);
+}
+void DES3::dec_key(const unsigned char *k)
+{
+	des3_set_key(&dec_ctx_, k);
 }
 
 //CBC

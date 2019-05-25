@@ -2,6 +2,7 @@
 #include<cassert>
 #include<nettle/aes.h>
 #include<nettle/camellia.h>
+#include<nettle/des.h>
 #include<nettle/cbc.h>
 #include<nettle/gcm.h>
 #include<type_traits>
@@ -17,7 +18,7 @@ template<int B = 128> struct AES
 	typename std::conditional<B == 128, aes128_ctx, aes256_ctx>::type
 		enc_ctx_, dec_ctx_;
 	static constexpr nettle_set_key_func *set_key_func_ = B == 128
-		?  (nettle_set_key_func*)aes128_set_encrypt_key
+		? (nettle_set_key_func*)aes128_set_encrypt_key//for GCM mode
 		: (nettle_set_key_func*)aes256_set_encrypt_key;
 };
 
@@ -31,8 +32,19 @@ template<int B = 128> struct Camellia
 	typename std::conditional<B == 128, camellia128_ctx, camellia256_ctx>::type
 		enc_ctx_, dec_ctx_;
 	static constexpr nettle_set_key_func *set_key_func_ = B == 128
-		?  (nettle_set_key_func*)camellia128_set_encrypt_key
+		? (nettle_set_key_func*)camellia128_set_encrypt_key
 		: (nettle_set_key_func*)camellia256_set_encrypt_key;
+};
+
+struct DES3
+{//24 key size
+	void enc_key(const unsigned char *key);
+	void dec_key(const unsigned char *key);
+	des3_ctx enc_ctx_, dec_ctx_;
+	static constexpr nettle_set_key_func *set_key_func_ 
+		= (nettle_set_key_func*)des3_set_key;
+	static constexpr nettle_cipher_func *enc_func_ = (nettle_cipher_func*)des3_encrypt;
+	static constexpr nettle_cipher_func *dec_func_ = (nettle_cipher_func*)des3_decrypt;
 };
 
 template<class Cipher> class CBC

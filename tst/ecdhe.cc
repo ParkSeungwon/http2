@@ -12,7 +12,7 @@ TEST_CASE("ecdhe") {
 	B.set_Q(A.Q);
 	REQUIRE(A.K == B.K);
 }
-unsigned char key[] = "1234567890123456";
+unsigned char key[] = "123456789012345678901234567890123456";
 unsigned char iv[] = "123456789012";
 unsigned char src[33] = "12345678901234567890123456789012";
 unsigned char encoded[32], digest[16], datum[8] = {0,}, decoded[32];
@@ -76,7 +76,7 @@ TEST_CASE("aes cbc new") {
 }
 
 TEST_CASE("camellia") {
-	CBC<Camellia<256>> ca;
+	GCM<Camellia<256>> ca;
 	ca.enc_key(key);
 	ca.dec_key(key);
 	ca.enc_iv(iv);
@@ -84,4 +84,16 @@ TEST_CASE("camellia") {
 	auto v = ca.encrypt(src, src + 32);
 	auto v2 = ca.decrypt(v.begin(), v.end());
 	for(int i=0; i<32; i++) REQUIRE(src[i] == v2[i]);
+}
+
+TEST_CASE("des3 gcm") {
+	GCM<DES3> ca;
+	ca.enc_key(key);
+	ca.dec_key(key);
+	ca.enc_iv(iv);
+	ca.dec_iv(iv);
+	auto v = ca.encrypt(src, src + 32);
+	auto v2 = ca.decrypt(v.begin(), v.end());
+	for(int i=0; i<32; i++) REQUIRE(src[i] == v2[i]);
+
 }
