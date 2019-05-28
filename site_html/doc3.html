@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<script src="jquery.js"></script>
+		<script>
+			function on_click() {
+				$.post('jquery_post', {name : 'abc', num : 123}, 
+					function(data, status) { alert(data); }
+				);
+			}
+		</script>
+	</head>
+	<body>
+		<a href="doc1.html?name='park'&day='mon'">go to doc1 with get method</a><br>
+		<button onclick='on_click()'>post with jquery</button><br>
+			<form action="doc1.html" method="post" enctype="multipart/form-data">
+				Post with Form<br>
+				image upload<input type="file" name="file" id="file" ><br>
+				product name<input type='text' name='name' id="goods"><br>
+				description<br>
+					<textarea name="desc" rows="10" cols="70" class="form-control" id="desc">
+					</textarea>
+					<input type="submit" name="up" value="ok" class="btn btn-primary">
+			</form>
+	</body>
+</html>

@@ -111,7 +111,7 @@ void DnDD::edit()
 {
 	if(page == "0") 
 		content_ = "<script>alert('This page cannot be edited.');</script>";
-	else if(stoi(level) < allow[3]) 
+	else if(stoi(level) < allow[1]) 
 		content_ = "<script>alert('your level does not qualify')</script>";
 	else if(id == tmp["email"].asString()) {
 		swap("TITLE", tmp["title"].asString());
@@ -141,14 +141,16 @@ string DnDD::search(string s)
 	vector<string> v1 = tables();
 	string t;
 	for(string table : v1) {
-		sq.select(table, "where title like '%" + s + "%' and title <> '코멘트임.' order by num desc, page, edit desc" ); 
-		sq.group_by({"email", "date"});
-		for(int i=0; i<sq.size(); i++) {
-			string n = sq[i]["num"].asString();
-			string p = sq[i]["page"].asString();
+		sq.select( "(select tt.num, tt.page, email, title, contents, date, edit from "
+				+ table + " tt inner join (select num, page, max(edit) as maxedit from "
+				+ table + " group by num, page) tmp on tt.num = tmp.num and tt.page = tmp.page and tt.edit = tmp.maxedit) tt2",
+				"where title like '%" + s + "%' and title <> '코멘트임.';");
+		for(const auto &a : sq) {
+			string n = a["num"].asString();
+			string p = a["page"].asString();
 			t += "<div class='panel-body'><a href='page.html?table=" + table;
 			t += "&book=" + n + "&page=" + p + "'>" + table + ' ' + n;
-			t += '.' + p + ". " + sq[i]["title"].asString() + "</a></div>\n";
+			t += '.' + p + ". " + a["title"].asString() + "</a></div>\n";
 		}
 	}
 	return t;
