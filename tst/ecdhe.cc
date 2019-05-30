@@ -39,7 +39,7 @@ TEST_CASE("gcm nettle test") {
 }
 
 TEST_CASE("aes cbc new") {
-	GCM<AES<128>> aes;
+	GCM<AES<192>> aes;
 	aes.enc_key(key);
 	aes.dec_key(key);
 	aes.enc_iv(iv);
@@ -52,6 +52,17 @@ TEST_CASE("aes cbc new") {
 
 TEST_CASE("camellia") {
 	GCM<Camellia<256>> ca;
+	ca.enc_key(key);
+	ca.dec_key(key);
+	ca.enc_iv(iv);
+	ca.dec_iv(iv);
+	auto v = ca.encrypt(src, src + 32);
+	auto v2 = ca.decrypt(v.begin(), v.end()-16);
+	REQUIRE(equal(src, src + 32, v2.begin()));
+	REQUIRE(std::equal(v.end() - 16, v.end(), v2.end()-16));
+}
+TEST_CASE("camellia192") {
+	GCM<Camellia<192>> ca;
 	ca.enc_key(key);
 	ca.dec_key(key);
 	ca.enc_iv(iv);

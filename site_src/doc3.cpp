@@ -2,6 +2,7 @@
 #include<iostream>
 #include"framework/server.h"//Server class
 #include"framework/website.h"//WebSite class
+#include"options/option.h"
 using namespace std;
 
 class My_site : public WebSite
@@ -33,10 +34,12 @@ protected:
 
 int main(int ac, char** av)
 {
+	CMDoption co{ {"port", "listening port", 2000}, };
+	if(!co.args(ac, av)) return 0;
 	My_site my_site;//directory name relative to your exe file
 							//directory contains html files
-	Server sv{2000};//port number
-	cout << "opening port " << 2000 << endl;
+	Server sv{co.get<int>("port")};//port number
+	cout << "opening port " << co.get<int>("port") << endl;
 	sv.start(my_site);//go infinite loop
 }
 

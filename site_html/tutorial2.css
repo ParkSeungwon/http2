@@ -2,9 +2,6 @@
 	background-color : cyan;
 }
 pre {
-	tab-size : 4;
-	-moz-tab-size : 4;
-}
-.p {
-	
+	tab-size : 2;
+	-moz-tab-size : 2;
 }
