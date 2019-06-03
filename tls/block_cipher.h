@@ -62,7 +62,17 @@ struct DES3
 	des3_ctx enc_ctx_, dec_ctx_;
 };
 
-template<class Cipher> class CBC
+struct CipherMode
+{
+	virtual void enc_iv(const unsigned char *) = 0;
+	virtual void dec_iv(const unsigned char *) = 0;
+	virtual void enc_key(const unsigned char *) = 0;
+	virtual void dec_key(const unsigned char *) = 0;
+	virtual std::vector<uint8_t> encrypt(const uint8_t *, int) = 0;
+	virtual std::vector<uint8_t> decrypt(const uint8_t *, int) = 0;
+};
+
+template<class Cipher> class CBC : public CipherMode
 {
 public:
 	void enc_iv(const unsigned char* iv) {
@@ -95,12 +105,18 @@ public:
 				(uint8_t*)&result[0], (const unsigned char*)&*begin);
 		return result;
 	}
+	std::vector<uint8_t> encrypt(const uint8_t *begin, int sz) {
+		encrypt(begin, begin + sz);
+	}
+	std::vector<uint8_t> decrypt(const uint8_t *begin, int sz) {
+		decrypt(begin, begin + sz);
+	}
 protected:
 	Cipher cipher_;
 	unsigned char enc_iv_[16], dec_iv_[16];
 };
 
-template<class Cipher> class GCM
+template<class Cipher> class GCM : public CipherMode
 {
 public:
 	void enc_key(const unsigned char *k) {
@@ -142,6 +158,12 @@ public:
 		gcm_digest(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::enc_func_,
 				GCM_DIGEST_SIZE, &result[sz]);
 		return result;
+	}
+	std::vector<uint8_t> encrypt(const uint8_t *begin, int sz) {
+		encrypt(begin, begin + sz);
+	}
+	std::vector<uint8_t> decrypt(const uint8_t *begin, int sz) {
+		decrypt(begin, begin + sz);
 	}
 protected:
 	gcm_key enc_key_, dec_key_;
