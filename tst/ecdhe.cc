@@ -50,6 +50,16 @@ TEST_CASE("aes cbc new") {
 	REQUIRE(std::equal(v.end() - 16, v.end(), v2.end()-16));
 }
 
+TEST_CASE("CBC AES") {
+	CBC<AES<256>> ca;
+	ca.enc_key(key);
+	ca.dec_key(key);
+	ca.enc_iv(iv);
+	ca.dec_iv(iv);
+	auto v = ca.encrypt(src, src + 32);
+	auto v2 = ca.decrypt(v.begin(), v.end());
+	REQUIRE(equal(src, src + 32, v2.begin()));
+}
 TEST_CASE("camellia") {
 	GCM<Camellia<256>> ca;
 	ca.enc_key(key);

@@ -9,7 +9,7 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../doc1.x ../doc3.x ../doc4.x#../passafe.x ../test2.x ../latex.x ../sql.x ../test3.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../doc1.x ../doc3.x ../doc4.x ../passafe.x #../test2.x ../latex.x ../sql.x ../test3.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lhogweed -lnettle -lgmpxx -lgmp -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so

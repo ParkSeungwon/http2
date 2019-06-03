@@ -82,7 +82,7 @@ public:
 		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
-		cbc_encrypt(&cipher_.enc_ctx_, cipher_.enc_func_, 16, enc_iv_, sz,
+		cbc_encrypt(&cipher_.enc_ctx_, Cipher::enc_func_, 16, enc_iv_, sz,
 				(uint8_t*)&result[0], (const unsigned char*)&*begin);
 		return result;
 	}
@@ -91,7 +91,7 @@ public:
 		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
-		cbc_decrypt(&cipher_.dec_ctx_, cipher_.dec_func_, 16, dec_iv_, sz,
+		cbc_decrypt(&cipher_.dec_ctx_, Cipher::dec_func_, 16, dec_iv_, sz,
 				(uint8_t*)&result[0], (const unsigned char*)&*begin);
 		return result;
 	}
