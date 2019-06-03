@@ -347,16 +347,52 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		TLS_header h1;
 		Handshake_header h2;
 		Hello_header h3;
-		uint8_t cipher_suite_length[2] = {0, 4};
-		uint8_t cipher_suite[4] = {0x00, 0x33, 0x00, 0x2f};
+		uint8_t cipher_suite_length[2] = {0, 52};
+		uint8_t cipher_suite[52] = {
+			0x00,0x33,// TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
+			0x00,0x9E,// TLS_DHE_RSA_WITH_AES_128_GCM_SHA256                        
+			0x00,0x9F,// TLS_DHE_RSA_WITH_AES_256_GCM_SHA384                        
+			0x00,0x39,// TLS_DHE_RSA_WITH_AES_256_CBC_SHA                           
+			0x00,0x67,// TLS_DHE_RSA_WITH_AES_128_CBC_SHA256                        
+			0x00,0x6B,// TLS_DHE_RSA_WITH_AES_256_CBC_SHA256                        
+			0xCC,0xAA,// TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 
+			0x00,0x45,// TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA                      
+			0x00,0x88,// TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA                      
+			0x00,0xBE,// TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                   
+			0x00,0xC4,// TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256                   
+			0xC0,0x7C,// TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                   
+			0xC0,0x7D,// TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                   
+			0x00,0x16,// TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA                          
+
+			0xC0,0x2F,// TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256                      
+			0xC0,0x30,// TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384                      
+			0xC0,0x13,// TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                         
+			0xC0,0x14,// TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                         
+			0xC0,0x27,// TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256                      
+			0xC0,0x28,// TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384                      
+			0xCC,0xA8,// TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256    
+			0xC0,0x76,// TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                 
+			0xC0,0x77,// TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384                 
+			0xC0,0x8A,// TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                 
+			0xC0,0x8B,// TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                 
+			0xC0,0x12// TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+		};
 		uint8_t compression_length = 1;
 		uint8_t compression_method = 0;//none
-		//uint8_t extension_length[2] = {0, 0};
+		uint8_t extension_length[2] = {0, 0};
+		uint8_t supported_group[2] = {0, 0x0a};
+		uint8_t supported_group_length[2] = {0, 4};
+		uint8_t support_list_length[2] = {0, 2};
+		uint8_t x25519[2] = {0, 0x1d};
+		uint8_t ec_point_format[2] = {0, 0x0b};
+		uint8_t ec_format_length[2] = {0, 2};
+		uint8_t ec_length = 1;
+		uint8_t ec_uncompressed = 0;
 	} r;
 	if constexpr(!SV) {//if client
 		r.h2.handshake_type = 1;
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 8;
-		r.h2.length[2] = sizeof(Hello_header) + 8;
+		r.h1.set_length(sizeof(H) - sizeof(TLS_header));
+		r.h2.set_length(sizeof(H) - sizeof(TLS_header) - sizeof(Hello_header));
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 		return accumulate(struct2str(r));
@@ -367,7 +403,18 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
-		for(int i=0; i<len; i++) if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
+		for(int i=0; i<sizeof(r.cipher_suite); i+=2) {
+			auto it = search(p->cipher_suite, p->cipher_suite + len,
+					r.cipher_suite + i, r.cipher_suite + i + 1);
+			//if(it != p->cipher_suite + len && (it - p->cipher_suite) % 2 == 0) 
+			//	;
+		}
+		for(int i=0; i<len; i+=2) {
+			if(p->cipher_suite[i] == 0 && p->cipher_suite[i+1] == 0x33)
+				support_dhe_ = true;
+			if(p->cipher_suite[i] == 0xc0 && p->cipher_suite[i+1] == 0x13)
+				support_dhe_ = true;
+		}
 		if(support_dhe_) LOGI << "using TLS_DHE_RSA_AES128_SHA" << endl;
 		else LOGI << "using TLS_RSA_AES128_SHA" << endl;
 		return "";
@@ -762,7 +809,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		TLS_header h1;
 	} header_for_mac;
 	aes_.dec_iv(p->iv);
-	auto decrypted = aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
+	auto decrypted = aes_.decrypt(p->m, p->h1.get_length() - 16);//here key value is changed(the other key?)
 	LOGD << hexprint("decrypted", decrypted) << endl;
 	assert(decrypted.size() > decrypted.back());
 	decrypted.resize(decrypted.size() - decrypted.back() - 1);//remove padding
@@ -826,7 +873,7 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 
 	mpz2bnd(random_prime(16), header_to_send.iv, header_to_send.iv + 16);
 	aes_.enc_iv(header_to_send.iv);
-	auto encrypted = aes_.encrypt(frag.begin(), frag.end());
+	auto encrypted = aes_.encrypt((uint8_t*)&*frag.begin(), frag.size());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
 	LOGT << hexprint("sending", s2) << endl;

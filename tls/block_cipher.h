@@ -62,7 +62,15 @@ struct DES3
 	des3_ctx enc_ctx_, dec_ctx_;
 };
 
-template<class Cipher> class CBC
+struct CipherMode {
+	virtual void enc_iv(const unsigned char *) = 0;
+	virtual void dec_iv(const unsigned char *) = 0;
+	virtual void enc_key(const unsigned char *) = 0;
+	virtual void dec_key(const unsigned char *) = 0;
+	virtual std::vector<uint8_t> encrypt(const uint8_t*, int) = 0;
+};
+
+template<class Cipher> class CBC : public CipherMode
 {
 public:
 	void enc_iv(const unsigned char* iv) {
@@ -77,22 +85,20 @@ public:
 	void dec_key(const unsigned char *key) {
 		Cipher::set_dec_key_(&cipher_.dec_ctx_, key);
 	}
-	template<class It> std::vector<uint8_t> encrypt(const It begin, const It end)
+	std::vector<uint8_t> encrypt(const uint8_t *begin, int sz)
 	{
-		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
 		cbc_encrypt(&cipher_.enc_ctx_, Cipher::enc_func_, 16, enc_iv_, sz,
-				(uint8_t*)&result[0], (const unsigned char*)&*begin);
+				(uint8_t*)&result[0], begin);
 		return result;
 	}
-	template<class It> std::vector<uint8_t> decrypt(const It begin, const It end)
+	std::vector<uint8_t> decrypt(const uint8_t *begin, int sz)
 	{
-		const int sz = end - begin;
 		assert(sz % 16 == 0);
 		std::vector<unsigned char> result(sz);
 		cbc_decrypt(&cipher_.dec_ctx_, Cipher::dec_func_, 16, dec_iv_, sz,
-				(uint8_t*)&result[0], (const unsigned char*)&*begin);
+				(uint8_t*)&result[0], begin);
 		return result;
 	}
 protected:
@@ -100,7 +106,7 @@ protected:
 	unsigned char enc_iv_[16], dec_iv_[16];
 };
 
-template<class Cipher> class GCM
+template<class Cipher> class GCM : CipherMode
 {
 public:
 	void enc_key(const unsigned char *k) {
@@ -117,28 +123,26 @@ public:
 	void dec_iv(const unsigned char *iv) {
 		gcm_set_iv(&dec_ctx_, &dec_key_, GCM_IV_SIZE, iv);//12
 	}
-	template<class It> std::vector<uint8_t> encrypt(const It begin, const It end)
+	std::vector<uint8_t> encrypt(const uint8_t *begin, int sz)
 	{
-		int sz = end - begin;
 		assert(sz % GCM_BLOCK_SIZE == 0);//16
 		std::vector<uint8_t> result(sz + GCM_DIGEST_SIZE);//16
 		gcm_update(&enc_ctx_, &enc_key_, 8, enc_sequence_num_);
 		increase_seq_num(enc_sequence_num_);
 		gcm_encrypt(&enc_ctx_, &enc_key_, &cipher_.enc_ctx_, Cipher::enc_func_,
-				sz, &result[0], &*begin);
+				sz, &result[0], begin);
 		gcm_digest(&enc_ctx_, &enc_key_, &cipher_.enc_ctx_, Cipher::enc_func_,
 				GCM_DIGEST_SIZE, &result[sz]);//16
 		return result;
 	}
-	template<class It> std::vector<uint8_t> decrypt(const It begin, const It end)
+	std::vector<uint8_t> decrypt(const uint8_t *begin, int sz)
 	{
-		int sz = end - begin;
 		assert(sz % GCM_BLOCK_SIZE == 0);//16
 		std::vector<uint8_t> result(sz + GCM_DIGEST_SIZE);//16
 		gcm_update(&dec_ctx_, &dec_key_, 8, dec_sequence_num_);
 		increase_seq_num(dec_sequence_num_);
 		gcm_decrypt(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::enc_func_,
-				sz, &result[0], &*begin);
+				sz, &result[0], begin);
 		gcm_digest(&dec_ctx_, &dec_key_, &cipher_.dec_ctx_, Cipher::enc_func_,
 				GCM_DIGEST_SIZE, &result[sz]);
 		return result;

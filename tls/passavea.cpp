@@ -23,7 +23,7 @@ int main(int ac, char **av)
 		for(char c; cin >> c;) s += c;
 		auto v = base64_decode(move(s));
 		aes.dec_iv(&v[0]);
-		v = aes.decrypt(v.begin() + 16, v.end());
+		v = aes.decrypt(&*(v.begin() + 16), v.size()-16);
 		while(!v.back()) v.pop_back();
 		v.pop_back();
 		auto ar = sha.hash(v.begin(), v.end() - 20);
@@ -41,7 +41,7 @@ int main(int ac, char **av)
 		s.insert(s.end(), h.begin(), h.end());
 		s += (char)1;//1+00000.. 패딩
 		while(s.size() % 16) s += (char)0;
-		auto v = aes.encrypt(s.begin(), s.end());
+		auto v = aes.encrypt((uint8_t*)&*s.begin(), s.size());
 		v.insert(v.begin(), ar, ar+16);//add iv
 		cout << base64_encode(v);
 	}
