@@ -24,12 +24,12 @@ protected:
 	sha1_ctx sha_;
 };
 
-class SHA2
+class SHA256
 {//sha256, sha2 due to some naming reason
 public:
 	static const int block_size = 64;
 	static const int output_size = 32;
-	SHA2() {
+	SHA256() {
 		sha256_init(&sha_);
 	}
 	template<typename It>
@@ -43,12 +43,31 @@ protected:
 	sha256_ctx sha_;
 };
 
-class SHA5
+class SHA384
+{
+public:
+	static const int block_size = 128;
+	static const int output_size = 48;
+	SHA384() {
+		sha384_init(&sha_);
+	}
+	template<typename It>
+	std::array<unsigned char, output_size> hash(const It begin, const It end) {
+		std::array<unsigned char, output_size> r;
+		sha384_update(&sha_, end - begin, (const unsigned char*)&*begin);
+		sha384_digest(&sha_, output_size, &r[0]);
+		return r;
+	}
+protected:
+	sha384_ctx sha_;
+};
+
+class SHA512
 {//sha512
 public:
 	static const int block_size = 128;
 	static const int output_size = 64;
-	SHA5() {
+	SHA512() {
 		sha512_init(&sha_);
 	}
 	template<class It>
@@ -62,7 +81,12 @@ protected:
 	sha512_ctx sha_;
 };
 
-template<class H> class HMAC
+struct MAC {
+	virtual void key(const uint8_t*, int) = 0;
+	virtual std::vector<uint8_t> hash(const uint8_t*, int) = 0;
+};
+
+template<class H> class HMAC : MAC
 {//hmac using sha1
 public:
 	HMAC() : o_key_pad_(H::block_size), i_key_pad_(H::block_size)
@@ -91,6 +115,13 @@ public:
 		v.insert(v.begin(), std::begin(o_key_pad_), std::end(o_key_pad_));
 		v.insert(v.end(), h.begin(), h.end());
 		return sha_.hash(v.begin(), v.end());
+	}
+	void key(const uint8_t *k, int sz) {
+		key(k, k + sz);
+	}
+	std::vector<uint8_t> hash(const uint8_t *begin, int sz) {
+		auto a = hash(begin, begin + sz);
+		return std::vector<uint8_t>{a.begin(), a.end()};
 	}
 protected:
 	H sha_;

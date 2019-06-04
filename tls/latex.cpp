@@ -55,8 +55,8 @@ void expand_key(const unsigned char *pkey) {
 }
 int main()
 {
-	DiffieHellman Alice;
-	DiffieHellman Bob{Alice.p, Alice.g, Alice.ya};
+	DHE Alice;
+	DHE Bob{Alice.p, Alice.g, Alice.ya};
 	Alice.set_yb(Bob.yb);
 	cout << hex << Alice.K << endl << Bob.K << endl;
 	assert(Alice.K == Bob.K);

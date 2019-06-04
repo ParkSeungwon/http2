@@ -52,7 +52,7 @@ Encryption key: 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
 ******************/
 
 TEST_CASE("Diffie hellman key exchange test") {
-	struct DH : DiffieHellman {
+	struct DH : DHE {
 		DH() = default;
 		DH(mpz_class p, mpz_class g, mpz_class ya) : DiffieHellman(p, g, ya) {}
 		auto get_K() {return K;}//for test drag protected member out
@@ -95,7 +95,7 @@ TEST_CASE("sha1") {
 }
 
 TEST_CASE("sha512") {
-	SHA5 sha;
+	SHA512 sha;
 	unsigned char c[] = "abc";
 	auto v = sha.hash(c, c+3);
 	REQUIRE(bnd2mpz(v.begin(), v.end()) == mpz_class{"0xddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"});
@@ -140,7 +140,7 @@ HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog") = f7bc83f43053
 TEST_CASE("hmac-sha256-2") {
 	unsigned char key[] = "Jefe";
 	unsigned char data[] = "what do ya want for nothing?";
-	HMAC<SHA2> hmac;
+	HMAC<SHA256> hmac;
 	hmac.key(key, key+4);
 	auto ar = hmac.hash(data, data+28);
 	REQUIRE(bnd2mpz(ar.begin(), ar.end()) == mpz_class{"0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"});
@@ -170,7 +170,7 @@ TEST_CASE("prf") {
 							  0xb1, 0x76, 0x52, 0x84, 0x9a, 0x71, 0xdb, 0x35};
 	unsigned char seed[] = {0xa0, 0xba, 0x9f, 0x93, 0x6c, 0xda, 0x31, 0x18,
 							0x27, 0xa6, 0xf7, 0x96, 0xff, 0xd5, 0x19, 0x8c};
-	PRF<SHA2> prf;
+	PRF<SHA256> prf;
 	prf.label("test label");
 	prf.seed(seed, seed + 16);
 	prf.secret(secret, secret + 16);

@@ -20,7 +20,7 @@ int main()
 	cout << jv << endl;
 	auto [K,e,sign] = get_pubkeys(jv);
 	mpz2bnd(pub, ar, ar + 256);
-	SHA2 sha;
+	SHA256 sha;
 	auto a = sha.hash(ar, ar + 256);
 
 	s = get_certificate_core(f);

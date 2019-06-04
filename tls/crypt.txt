@@ -1,0 +1,27 @@
+0x00,0x9E           & TLS_DHE_RSA_WITH_AES_128_GCM_SHA256                        
+0x00,0x9F           & TLS_DHE_RSA_WITH_AES_256_GCM_SHA384                        
+0x00,0x33           & TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
+0x00,0x39           & TLS_DHE_RSA_WITH_AES_256_CBC_SHA                           
+0x00,0x67           & TLS_DHE_RSA_WITH_AES_128_CBC_SHA256                        
+0x00,0x6B           & TLS_DHE_RSA_WITH_AES_256_CBC_SHA256                        
+0xCC,0xAA           & TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 
+0x00,0x45           & TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA                      
+0x00,0x88           & TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA                      
+0x00,0xBE           & TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                   
+0x00,0xC4           & TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256                   
+0xC0,0x7C           & TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                   
+0xC0,0x7D           & TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                   
+0x00,0x16           & TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA                          
+
+0xC0,0x2F           & TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256                      
+0xC0,0x30           & TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384                      
+0xC0,0x13           & TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                         
+0xC0,0x14           & TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                         
+0xC0,0x27           & TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256                      
+0xC0,0x28           & TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384                      
+0xCC,0xA8           & TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256    
+0xC0,0x76           & TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                 
+0xC0,0x77           & TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384                 
+0xC0,0x8A           & TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                 
+0xC0,0x8B           & TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                 
+0xC0,0x12           & TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA                        

@@ -81,7 +81,7 @@ void TLS<SV>::generate_signature(unsigned char* p_length, unsigned char* sign)
 	memcpy(a + 32, server_random_.data(), 32);
 	memcpy(a + 64, p_length, 6 + 3 * DH_KEY_SZ);
 	//		auto b = server_mac_.hash(a, a + 70 + 3 * DH_KEY_SZ);
-	SHA5 sha;
+	SHA512 sha;
 	auto b = sha.hash(a, a + 70 + 3 * DH_KEY_SZ);
 	std::deque<unsigned char> dq{b.begin(), b.end()};
 	unsigned char d[] = {0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
@@ -111,7 +111,7 @@ array<unsigned char, KEY_SZ> TLS<SV>::derive_keys(mpz_class premaster_secret)
 	sz /= 2;
 	assert(DH_KEY_SZ * 2 >= sz);
 	mpz2bnd(premaster_secret, pre, pre + sz);
-	PRF<SHA2> prf;
+	PRF<SHA256> prf;
 	prf.secret(pre, pre + sz);
 	memcpy(rand, client_random_.data(), 32);
 	memcpy(rand + 32, server_random_.data(), 32);
@@ -159,14 +159,14 @@ template<bool SV>
 array<unsigned char, KEY_SZ> TLS<SV>::use_key(array<unsigned char, KEY_SZ> keys)
 {
 	unsigned char *p = keys.data();
-	mac_[0].key(p, p + 20);
-	mac_[1].key(p + 20, p + 40);
+	mac_[0]->key(p, 20);
+	mac_[1]->key(p + 20, 20);
 	if constexpr(SV) {
-		aes_.dec_key(p + 40);//AES128 key size 16
-		aes_.enc_key(p + 56);
+		cipher_->dec_key(p + 40);//AES128 key size 16
+		cipher_->enc_key(p + 56);
 	} else {
-		aes_.enc_key(p + 40);
-		aes_.dec_key(p + 56);
+		cipher_->enc_key(p + 40);
+		cipher_->dec_key(p + 56);
 	}
 	return keys;
 }
@@ -341,22 +341,84 @@ template<bool SV> void TLS<SV>::accumulate()
 	accumulated_handshakes_ += string{q + sizeof(TLS_header),
 									q + sizeof(TLS_header) + p->get_length()};
 }
+template<bool SV> void TLS<SV>::allocate_cipher(uint8_t a, uint8_t b) 
+{
+	switch(a*0x100 + b) {
+		case 0x0016: set_cipher<DHE, RSA, DES3, 0, CBC, SHA1>(); break;
+		case 0x002F: set_cipher<void, RSA, AES, 128, CBC, SHA1>(); break;
+		case 0x0033: set_cipher<DHE, RSA, AES, 128, CBC, SHA1>(); break;
+		case 0x0039: set_cipher<DHE, RSA, AES, 256, CBC, SHA1>(); break;
+		case 0x0045: set_cipher<DHE, RSA, Camellia, 128, CBC, SHA1>(); break;
+		case 0x0067: set_cipher<DHE, RSA, AES, 128, CBC, SHA256>(); break;
+		case 0x006B: set_cipher<DHE, RSA, AES, 256, CBC, SHA256>(); break;
+		case 0x0088: set_cipher<DHE, RSA, Camellia, 256, CBC, SHA1>(); break;
+		case 0x009E: set_cipher<DHE, RSA, AES, 128, GCM, SHA256>(); break;
+		case 0x009F: set_cipher<DHE, RSA, AES, 256, GCM, SHA384>(); break;
+		case 0x00BE: set_cipher<DHE, RSA, Camellia, 128, CBC, SHA256>(); break;
+		case 0x00C4: set_cipher<DHE, RSA, Camellia, 256, CBC, SHA256>(); break;
+		case 0xC012: set_cipher<ECDHE, RSA, DES3, 0, CBC, SHA1>(); break;
+		case 0xC013: set_cipher<ECDHE, RSA, AES, 128, CBC, SHA1>(); break;
+		case 0xC014: set_cipher<ECDHE, RSA, AES, 256, CBC, SHA1>(); break;
+		case 0xC027: set_cipher<ECDHE, RSA, AES, 128, CBC, SHA256>(); break;
+		case 0xC028: set_cipher<ECDHE, RSA, AES, 256, CBC, SHA384>(); break;
+		case 0xC02F: set_cipher<ECDHE, RSA, AES, 128, GCM, SHA256>(); break;
+		case 0xC030: set_cipher<ECDHE, RSA, AES, 256, GCM, SHA384>(); break;
+		case 0xC076: set_cipher<ECDHE, RSA, Camellia, 128, CBC, SHA256>(); break;
+		case 0xC077: set_cipher<ECDHE, RSA, Camellia, 256, CBC, SHA384>(); break;
+		case 0xC07C: set_cipher<DHE, RSA, Camellia, 128, GCM, SHA256>(); break;
+		case 0xC07D: set_cipher<DHE, RSA, Camellia, 256, GCM, SHA384>(); break;
+		case 0xC08A: set_cipher<ECDHE, RSA, Camellia, 128, GCM, SHA256>(); break;
+		case 0xC08B: set_cipher<ECDHE, RSA, Camellia, 256, GCM, SHA384>(); break;
+		case 0xCCA8: set_cipher<ECDHE, RSA, CHACHA, 1305, CBC, SHA256>(); break;
+		case 0xCCAA: set_cipher<DHE, RSA, CHACHA, 1305, CBC, SHA256>(); break;
+	}
+}
 template<bool SV> string TLS<SV>::client_hello(string&& s)
 {//return desired id
 	struct H {
 		TLS_header h1;
 		Handshake_header h2;
 		Hello_header h3;
-		uint8_t cipher_suite_length[2] = {0, 4};
-		uint8_t cipher_suite[4] = {0x00, 0x33, 0x00, 0x2f};
+		uint8_t cipher_suite_length[2] = {0, 52};
+		uint8_t cipher_suite[] = {
+			0x00,0x33,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
+			0x00,0x9E,//TLS_DHE_RSA_WITH_AES_128_GCM_SHA256                        
+			0x00,0x9F,//TLS_DHE_RSA_WITH_AES_256_GCM_SHA384                        
+			0x00,0x39,//TLS_DHE_RSA_WITH_AES_256_CBC_SHA                           
+			0x00,0x67,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA256                        
+			0x00,0x6B,//TLS_DHE_RSA_WITH_AES_256_CBC_SHA256                        
+			0xCC,0xAA,//TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 
+			0x00,0x45,//TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA                      
+			0x00,0x88,//TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA                      
+			0x00,0xBE,//TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                   
+			0x00,0xC4,//TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256                   
+			0xC0,0x7C,//TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                   
+			0xC0,0x7D,//TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                   
+			0x00,0x16,//TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA                          
+
+			0xC0,0x2F,//TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256                      
+			0xC0,0x30,//TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384                      
+			0xC0,0x13,//TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                         
+			0xC0,0x14,//TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                         
+			0xC0,0x27,//TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256                      
+			0xC0,0x28,//TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384                      
+			0xCC,0xA8,//TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256    
+			0xC0,0x76,//TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256                 
+			0xC0,0x77,//TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384                 
+			0xC0,0x8A,//TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                 
+			0xC0,0x8B,//TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                 
+			0xC0,0x12,//TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA        
+			0x00,0x2F//TLS_RSA_AES_128_SHA
+		};
 		uint8_t compression_length = 1;
 		uint8_t compression_method = 0;//none
-		//uint8_t extension_length[2] = {0, 0};
+		uint8_t extension_length[2] = {0, 0};
+
 	} r;
 	if constexpr(!SV) {//if client
 		r.h2.handshake_type = 1;
-		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 8;
-		r.h2.length[2] = sizeof(Hello_header) + 8;
+		r.h1.set_length(sizeof(H) - sizeof(TLS_header));
+		r.h2.set_length(sizeof(H) - sizeof(TLS_header) - sizeof(Hello_header));
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
 		return accumulate(struct2str(r));
@@ -580,9 +642,9 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		r.h1.set_length(k + sizeof(Handshake_header));
 		r.h2.set_length(k);
 		r.h2.handshake_type = 12;
-		mpz2bnd(diffie_.p, r.p, r.p + DH_KEY_SZ);
-		mpz2bnd(diffie_.g, r.g, r.g + DH_KEY_SZ);
-		mpz2bnd(diffie_.ya, r.ya, r.ya + DH_KEY_SZ);
+		mpz2bnd(diffie_->p, r.p, r.p + DH_KEY_SZ);
+		mpz2bnd(diffie_->g, r.g, r.g + DH_KEY_SZ);
+		mpz2bnd(diffie_->ya, r.ya, r.ya + DH_KEY_SZ);
 		generate_signature(r.p_length, r.sign);
 		return accumulate(struct2str(r));
 	} else {
@@ -596,8 +658,8 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 			key_length = *ptr_keys * 0x100 + *(ptr_keys + 1);
 			pgya[i] = bnd2mpz(ptr_keys + 2, ptr_keys + 2 + key_length);
 		}
-		diffie_ = DiffieHellman{pgya[0], pgya[1], pgya[2]};
-		use_key(derive_keys(diffie_.K));
+		diffie_ = DHE{pgya[0], pgya[1], pgya[2]};
+		use_key(derive_keys(diffie_->K));
 		return "";
 	}	
 }
@@ -710,7 +772,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 		H* p = (H*)rec_received_;;
 		assert(p->h2.handshake_type == 16);
 		if(support_dhe_) 
-			premaster_secret = diffie_.set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
+			premaster_secret = diffie_->set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
 		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + p->key_sz[0] * 0x100 + p->key_sz[1]));
 		auto a = use_key(derive_keys(premaster_secret));
 		return "";
@@ -718,7 +780,7 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 		r.h2.handshake_type = 16;
 		r.h1.set_length(sizeof(Handshake_header) + DH_KEY_SZ + 2);
 		r.h2.set_length(DH_KEY_SZ + 2);
-		if(support_dhe_) mpz2bnd(diffie_.yb, r.pub_key, r.pub_key + DH_KEY_SZ);
+		if(support_dhe_) mpz2bnd(diffie_->yb, r.pub_key, r.pub_key + DH_KEY_SZ);
 		else {
 			premaster_secret = random_prime(48);
 			auto z = rsa_.encode(premaster_secret);

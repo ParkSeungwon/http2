@@ -2,7 +2,7 @@
 #include"crypt.h"
 using namespace std;
 
-DiffieHellman::DiffieHellman(int bit_sz)
+DHE::DHE(int bit_sz)
 {//server side
 	if(bit_sz == 2048) {
 		p = premade;
@@ -11,7 +11,7 @@ DiffieHellman::DiffieHellman(int bit_sz)
 	xa = random_prime(bit_sz / 8);
 	ya = powm(g, xa, p);
 }
-DiffieHellman::DiffieHellman(mpz_class p, mpz_class g, mpz_class ya)
+DHE::DHE(mpz_class p, mpz_class g, mpz_class ya)
 {//client side
 	this->p = p; this->g = g; this->ya = ya;
 	if(mpz_sizeinbase(p.get_mpz_t(), 16) <= 256) xb = random_prime(128);
@@ -24,7 +24,7 @@ DiffieHellman::DiffieHellman(mpz_class p, mpz_class g, mpz_class ya)
 	LOGD << "yb : " << hex << yb;
 	LOGD << "K : " << hex << K;
 }
-mpz_class DiffieHellman::set_yb(mpz_class pub_key)
+mpz_class DHE::set_yb(mpz_class pub_key)
 {//set client pub key
 	yb = pub_key;
 	K = powm(yb, xa, p);

@@ -7,6 +7,7 @@
 #include<nettle/cbc.h>
 #include<nettle/gcm.h>
 #include<type_traits>
+#include"chacha.h"
 
 template<int B = 128> struct AES
 {
@@ -51,7 +52,7 @@ template<int B = 128> struct Camellia
 		enc_ctx_, dec_ctx_;//camellia192_ctx is an alias for camellias256_ctx
 };
 
-struct DES3 
+template<int B = 0> struct DES3 
 {//24 key size
 	using cf = nettle_cipher_func;
 	using kf = nettle_set_key_func;
@@ -173,5 +174,22 @@ protected:
 private:
 	void increase_seq_num(uint8_t *p) {
 		for(int i=7; !++p[i] && i; i--); 
+	}
+};
+
+template<int B = 1305> class CHACHA : public CipherMode, public ChaCha
+{//template B is just for compatibility with other block ciphers
+public:
+	void enc_iv(const uint8_t *iv) {
+		enc_nonce(iv);
+	}
+	void dec_iv(const uint8_t *iv) {
+		dec_nonce(iv);
+	}
+	std::vector<uint8_t> encrypt(const uint8_t *begin, int sz) {
+		return ChaCha::encrypt(begin, begin + sz);
+	}
+	std::vector<uint8_t> decrypt(const uint8_t *begin, int sz) {
+		return ChaCha::decrypt(begin, begin + sz);
 	}
 };

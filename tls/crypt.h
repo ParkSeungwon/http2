@@ -40,11 +40,11 @@ template<class C> std::string hexprint(const char *p, const C &c)
 	return ss.str();
 }
 
-class DiffieHellman
+class DHE
 {//256 byte = 2048 bit
 public:
-	DiffieHellman(int bit_sz = 1024);
-	DiffieHellman(mpz_class p, mpz_class g, mpz_class ya);
+	DHE(int bit_sz = 1024);
+	DHE(mpz_class p, mpz_class g, mpz_class ya);
 	mpz_class set_yb(mpz_class pub_key);
 	mpz_class p{"0xd6c094ad57f5374f68d58c7b096872d945cee1f82664e0594421e1d5e3c8e98bc3f0a6af8f92f19e3fef9337b99b9c93a055d55a96e425734005a68ed47040fdf00a55936eba4b93f64cba1a004e4513611c9b217438a703a2060c2038d0cfaaffbba48fb9dac4b2450dc58cb0320a0317e2a31b44a02787c657fb0c0cbec11d"};
 	mpz_class g{"0x27e1ab131b6c22d259d199e9df8acbb1fe2fd4461afb7cb321d6946b02c66a9a45c062d5ffd01e47075cf7b082845e87e49529a66a8405354d1148184933078341c9fa627fde3c2a9a195e2cae33145c47bd86bbcd49b012f235bbc58486ce1d75522175fc7c9efd3aeaac06855b003e65a2208d16e7d89d9359dfd5e7002de1"};
@@ -67,10 +67,10 @@ protected:
 	mpz_class p, q, d, phi;
 };
 
-class ECDH
+class ECDHE
 {//curve25519 nettle library
 public:
-	ECDH();
+	ECDHE();
 	void set_P(mpz_class P);
 	mpz_class set_Q(mpz_class Q);
 	mpz_class P, Q, N, K;

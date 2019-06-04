@@ -1,5 +1,7 @@
 #pragma once
+#include<type_traits>
 #include<valarray>
+#include<memory>
 #include"crypt.h"
 #include"block_cipher.h"
 #include"hash.h"
@@ -74,9 +76,10 @@ public:
 
 protected:
 	const void *rec_received_;
-	CBC<AES<128>> aes_;
-	HMAC<SHA1> mac_[2];
-	DiffieHellman diffie_;
+	std::unique_ptr<CipherMode> cipher_{nullptr};
+	std::unique_ptr<MAC> mac_[2] = {nullptr, nullptr};
+	std::unique_ptr<DHE> diffie_{nullptr};
+	std::unique_ptr<ECDHE> ecdhe_{nullptr};
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	std::vector<unsigned char> master_secret_;
 	std::string accumulated_handshakes_;
@@ -93,6 +96,16 @@ private:
 	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
 	std::string accumulate(const std::string &s);
 	void accumulate();
+	void allocate_cipher(uint8_t cipher_suite_first_byte, uint8_t second_byte);
+	template<class D, class A, template<int> class C, int B, template<class> class M, class H>
+	void set_cipher() {//Auth is not implemented yet
+		if(std::is_same<DHE, D>::value) diffie_ = std::make_unique<DHE>();
+		else if(std::is_same<D, ECDHE>::value) ecdhe_ = std::make_unique<ECDHE>();
+		if constexpr(B == 1305) cipher_ = std::make_unique<C<B>>();
+		else cipher_ = std::make_unique<M<C<B>>>();
+		mac_[0] = std::make_unique<HMAC<H>>();
+		mac_[1] = std::make_unique<HMAC<H>>();
+	}
 };
 
 const int CHANGE_CIPHER_SPEC = 0x14

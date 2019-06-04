@@ -9,7 +9,7 @@
 using namespace std;
 
 TEST_CASE("ecdhe") {
-	ECDH A, B;
+	ECDHE A, B;
 	A.set_Q(B.Q);
 	B.set_Q(A.Q);
 	REQUIRE(A.K == B.K);

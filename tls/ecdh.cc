@@ -16,21 +16,21 @@ static mpz_class lnd2mpz(uint8_t *p)
 	return bnd2mpz(tmp, tmp + 32);
 }
 
-ECDH::ECDH() : N{random_prime(32)}
+ECDHE::ECDHE() : N{random_prime(32)}
 {
 	mpz2lnd(N, n);
 	curve25519_mul_g(q, n);
 	Q = lnd2mpz(q);
 }
 
-mpz_class ECDH::set_Q(mpz_class Q)
+mpz_class ECDHE::set_Q(mpz_class Q)
 {
 	mpz2lnd(Q, q);
 	curve25519_mul(k, n, q);
 	return K = lnd2mpz(k);
 }
 
-void ECDH::set_P(mpz_class P)
+void ECDHE::set_P(mpz_class P)
 {
 	mpz2lnd(P, p);
 	curve25519_mul(q, n, p);
