@@ -177,9 +177,15 @@ private:
 	}
 };
 
-template<int B = 1305> class CHACHA : public CipherMode, public ChaCha
+template<class C = DES3<0>> class CHACHA : public CipherMode, public ChaCha
 {//template B is just for compatibility with other block ciphers
 public:
+	void enc_key(const uint8_t *k) {
+		ChaCha::enc_key(k);
+	}
+	void dec_key(const uint8_t *k) {
+		ChaCha::dec_key(k);
+	}
 	void enc_iv(const uint8_t *iv) {
 		enc_nonce(iv);
 	}

@@ -1,5 +1,6 @@
 //http://blog.fourthbit.com/2014/12/23/traffic-analysis-of-an-ssl-slash-tls-session
 #include<cstring>
+#include<algorithm>
 #include<fstream>
 #include"options/log.h"
 #include"hash.h"
@@ -341,8 +342,20 @@ template<bool SV> void TLS<SV>::accumulate()
 	accumulated_handshakes_ += string{q + sizeof(TLS_header),
 									q + sizeof(TLS_header) + p->get_length()};
 }
+template<bool SV>
+template<class D, class A, template<int> class C, int B,
+	template<class> class M, class H>
+void TLS<SV>::set_cipher() {//Auth is not implemented yet
+	if(std::is_same<DHE, D>::value) diffie_ = std::make_unique<DHE>();
+	else if(std::is_same<D, ECDHE>::value) ecdhe_ = std::make_unique<ECDHE>();
+	cipher_ = std::make_unique<M<C<B>>>();
+	mac_[0] = std::make_unique<HMAC<H>>();
+	mac_[1] = std::make_unique<HMAC<H>>();
+	LOGI << "using " << typeid(D).name() << typeid(A).name() << typeid(C<B>).name()
+		<< B << typeid(M<C<B>>).name() << typeid(H).name() << endl;
+}
 template<bool SV> void TLS<SV>::allocate_cipher(uint8_t a, uint8_t b) 
-{
+{//CHACHA case : CBC or GCM does not take effect
 	switch(a*0x100 + b) {
 		case 0x0016: set_cipher<DHE, RSA, DES3, 0, CBC, SHA1>(); break;
 		case 0x002F: set_cipher<void, RSA, AES, 128, CBC, SHA1>(); break;
@@ -369,18 +382,63 @@ template<bool SV> void TLS<SV>::allocate_cipher(uint8_t a, uint8_t b)
 		case 0xC07D: set_cipher<DHE, RSA, Camellia, 256, GCM, SHA384>(); break;
 		case 0xC08A: set_cipher<ECDHE, RSA, Camellia, 128, GCM, SHA256>(); break;
 		case 0xC08B: set_cipher<ECDHE, RSA, Camellia, 256, GCM, SHA384>(); break;
-		case 0xCCA8: set_cipher<ECDHE, RSA, CHACHA, 1305, CBC, SHA256>(); break;
-		case 0xCCAA: set_cipher<DHE, RSA, CHACHA, 1305, CBC, SHA256>(); break;
+		case 0xCCA8: set_cipher<ECDHE, RSA, DES3, 0, CHACHA, SHA256>(); break;
+		case 0xCCAA: set_cipher<DHE, RSA, DES3, 0, CHACHA, SHA256>(); break;
 	}
 }
+template<bool SV> bool TLS<SV>::process_extension(uint8_t *p)
+{
+	struct Ext {
+		uint8_t type[2];
+		uint8_t length[2];
+		uint8_t list_length[2];
+		uint8_t data[];
+	} *q;
+	int total_length = 0x100 * *p + *(p + 1), len;
+	p += 2;
+	uint8_t *start = p;
+	bool check[4] = {false,};//x25519, no compress, hash, key
+	while(p < start + total_length) {
+		q = (Ext*)p;
+		int ll = q->list_length[0] * 0x100 + q->list_length[1];
+		switch(q->type[0] * 0x100 + q->type[1]) {
+		case 10: //curve x25519
+			for(int i=0; i<ll; i+=2) 
+				if(q->data[i] == 0 && q->data[i+1] == 0x1d) check[0] = true;
+			break;
+		case 11: //format no compress
+			if(!q->list_length[1]) check[1] = true;
+			else for(int i=0; i<q->list_length[0]-1; i++)
+					if(!q->data[i]) check[1] = true;
+			break;
+		case 13://signature algorithm sha512 rsa
+			for(int i=0; i<ll; i+=2) 
+				if(q->data[i] == 6 && q->data[i+1] == 1) check[2] = true;
+		case 51: //key
+			for(int i=0; i<ll;) {
+				if(q->data[i] == 0 && q->data[i+1] == 0x1d) {
+					ecdhe_->set_Q(bnd2mpz(q->data + i + 4, q->data + i + 36));
+					check[3] = true;
+					break;
+				} else i += q->data[2] * 0x100 + q->data[3] + 4;
+			}
+			break;
+		default: break;
+		}
+		p += 0x100 * q->length[0] + q->length[1] + 4;
+	}
+	for(int i=0; i<4; i++) if(!check[i]) return false;
+	return true;
+}
+
 template<bool SV> string TLS<SV>::client_hello(string&& s)
 {//return desired id
 	struct H {
 		TLS_header h1;
 		Handshake_header h2;
 		Hello_header h3;
-		uint8_t cipher_suite_length[2] = {0, 52};
-		uint8_t cipher_suite[] = {
+		uint8_t cipher_suite_length[2] = {0, 54};
+		uint8_t cipher_suite[54] = {
 			0x00,0x33,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
 			0x00,0x9E,//TLS_DHE_RSA_WITH_AES_128_GCM_SHA256                        
 			0x00,0x9F,//TLS_DHE_RSA_WITH_AES_256_GCM_SHA384                        
@@ -412,8 +470,25 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		};
 		uint8_t compression_length = 1;
 		uint8_t compression_method = 0;//none
-		uint8_t extension_length[2] = {0, 0};
 
+		uint8_t extension_length[2] = {0, 56};
+
+		uint8_t supported_group[2] = {0, 10};//type
+		uint8_t supported_group_length[2] = {0, 4};//length
+		uint8_t support_group_list_length[2] = {0, 2};
+		uint8_t x25519[2] = {0, 0x1d};
+		
+		uint8_t ec_point_format[2] = {0, 11};//type
+		uint8_t ec_point_format_length[2] = {0, 2};//length
+		uint8_t ec_length = 1;
+		uint8_t non_compressed = 0;
+
+		uint8_t key_share[2] = {0, 51};//type
+		uint8_t key_share_length[2] = {0, 38};//length
+		uint8_t client_key_share_len[2] = {0, 36};
+		uint8_t x25519_key[2] = {0, 0x1d};
+		uint8_t key_length[2] = {0, 32};
+		uint8_t key[32];
 	} r;
 	if constexpr(!SV) {//if client
 		r.h2.handshake_type = 1;
@@ -421,6 +496,8 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		r.h2.set_length(sizeof(H) - sizeof(TLS_header) - sizeof(Hello_header));
 		mpz2bnd(random_prime(32), r.h3.random, r.h3.random + 32);
 		memcpy(client_random_.data(), r.h3.random, 32);//unix time + 28 random
+		ecdhe_ = make_unique<ECDHE>();
+		mpz2bnd(ecdhe_->Q, r.key, r.key + 32);
 		return accumulate(struct2str(r));
 	} else {//server
 		if(s != "") set_buf(s.data());
@@ -429,9 +506,19 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = 0x100 * p->cipher_suite_length[0] + p->cipher_suite_length[1];
-		for(int i=0; i<len; i++) if(p->cipher_suite[i] == 0x33) support_dhe_ = true;
-		if(support_dhe_) LOGI << "using TLS_DHE_RSA_AES128_SHA" << endl;
-		else LOGI << "using TLS_RSA_AES128_SHA" << endl;
+		for(int i=0; i<r.cipher_suite_length[1]+0x100*r.cipher_suite_length[0]; i+=2) {
+			auto it = search(p->cipher_suite, p->cipher_suite + len,
+					r.cipher_suite + i, r.cipher_suite + i + 1);
+			if(it != p->cipher_suite + len && (it - p->cipher_suite) % 2 == 0) {
+				allocate_cipher(r.cipher_suite[i], r.cipher_suite[i + 1]);
+				break;
+			}
+		}
+		if(ecdhe_) {//if ecdhe is selected -> check extension
+			uint8_t *up = p->cipher_suite;//v ext
+			up += 2 + p->cipher_suite_length[0] * 0x100 + p->cipher_suite_length[1];
+			if(!process_extension(up)) return alert(2, 40);//ecdhe handshake failed
+		}
 		return "";
 	}
 }
@@ -500,7 +587,7 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		uint8_t compression = 0;
 		//uint8_t extension_length[2] = {0, 0};
 	} r;
-	if constexpr(SV) {
+	if constexpr(SV) { 
 		if(support_dhe_) r.cipher_suite[1] = 0x33;
 		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 3;
 		r.h2.length[2] = sizeof(Hello_header) + 3;
@@ -637,16 +724,33 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 		  enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
 	} r;
 
+	struct EH {
+		TLS_header h1;
+		Handshake_header h2;
+		uint8_t named_curve = 3, x25519[2] = {0, 0x1d};
+		uint8_t pubkey_len = 32, key[32];
+		uint8_t signature_hash = 6, signature_sign = 1;
+		uint8_t signature_length[2] = {1, 0}, sign[256];
+	} r2;
+
 	if constexpr(SV) {
-		const int k = 3 * DH_KEY_SZ + 266;
-		r.h1.set_length(k + sizeof(Handshake_header));
-		r.h2.set_length(k);
-		r.h2.handshake_type = 12;
-		mpz2bnd(diffie_->p, r.p, r.p + DH_KEY_SZ);
-		mpz2bnd(diffie_->g, r.g, r.g + DH_KEY_SZ);
-		mpz2bnd(diffie_->ya, r.ya, r.ya + DH_KEY_SZ);
-		generate_signature(r.p_length, r.sign);
-		return accumulate(struct2str(r));
+		if(ecdhe_) {
+			r2.h1.set_length(sizeof(EH) - sizeof(TLS_header));
+			r2.h2.set_length(sizeof(EH)-sizeof(TLS_header)-sizeof(Handshake_header));
+			r2.h2.handshake_type = 12;
+			mpz2bnd(ecdhe_->Q, r2.key, r2.key + 32);
+			generate_signature(&r2.named_curve, r2.sign);
+			return accumulate(struct2str(r2));
+		} else {
+			r.h1.set_length(sizeof(H) - sizeof(TLS_header));
+			r.h2.set_length(sizeof(H) - sizeof(TLS_header) - sizeof(Handshake_header));
+			r.h2.handshake_type = 12;
+			mpz2bnd(diffie_->p, r.p, r.p + DH_KEY_SZ);
+			mpz2bnd(diffie_->g, r.g, r.g + DH_KEY_SZ);
+			mpz2bnd(diffie_->ya, r.ya, r.ya + DH_KEY_SZ);
+			generate_signature(r.p_length, r.sign);
+			return accumulate(struct2str(r));
+		}
 	} else {
 		if(s != "") set_buf(s.data());
 		if(get_content_type() != pair{HANDSHAKE, SERVER_KEY_EXCHANGE})
@@ -658,7 +762,7 @@ template<bool SV> string TLS<SV>::server_key_exchange(string&& s)
 			key_length = *ptr_keys * 0x100 + *(ptr_keys + 1);
 			pgya[i] = bnd2mpz(ptr_keys + 2, ptr_keys + 2 + key_length);
 		}
-		diffie_ = DHE{pgya[0], pgya[1], pgya[2]};
+		diffie_ = make_unique<DHE>(pgya[0], pgya[1], pgya[2]);
 		use_key(derive_keys(diffie_->K));
 		return "";
 	}	
@@ -823,8 +927,8 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 		uint8_t seq[8];
 		TLS_header h1;
 	} header_for_mac;
-	aes_.dec_iv(p->iv);
-	auto decrypted = aes_.decrypt(p->m, p->m + p->h1.get_length() - 16);//here key value is changed(the other key?)
+	cipher_->dec_iv(p->iv);
+	auto decrypted = cipher_->decrypt(p->m, p->h1.get_length() - 16);//here key value is changed(the other key?)
 	LOGD << hexprint("decrypted", decrypted) << endl;
 	assert(decrypted.size() > decrypted.back());
 	decrypted.resize(decrypted.size() - decrypted.back() - 1);//remove padding
@@ -834,7 +938,7 @@ template<bool SV> string TLS<SV>::decode(string &&s)
 	header_for_mac.h1 = p->h1;
 	header_for_mac.h1.set_length(content.size());
 	string t = struct2str(header_for_mac) + content;
-	auto auth = mac_[!SV].hash(t.begin(), t.end());//verify auth
+	auto auth = mac_[!SV]->hash((const uint8_t*)&*t.begin(), t.size());//verify auth
 	if(equal(auth.rbegin(), auth.rend(), decrypted.rbegin())) 
 		LOGI << "mac verified" << endl;
 	else LOGE << "mac verification failed" << endl;
@@ -881,14 +985,14 @@ template<bool SV> string TLS<SV>::encode(string &&s, int type)
 	header_for_mac.h1.set_length(len);
 	string frag = s.substr(0, len);
 	string s2 = struct2str(header_for_mac) + frag;
-	array<unsigned char, 20> verify = mac_[SV].hash(s2.begin(), s2.end());
+	auto verify = mac_[SV]->hash((const uint8_t*)&*s2.begin(), s2.size());
 	LOGD << hexprint("mac verify", verify) << endl;
 	frag += string{verify.begin(), verify.end()};//add authentication
 	while(frag.size() != block_len) frag += (char)(block_len - len - 21);//padding
 
 	mpz2bnd(random_prime(16), header_to_send.iv, header_to_send.iv + 16);
-	aes_.enc_iv(header_to_send.iv);
-	auto encrypted = aes_.encrypt(frag.begin(), frag.end());
+	cipher_->enc_iv(header_to_send.iv);
+	auto encrypted = cipher_->encrypt((const uint8_t*)&*frag.begin(), frag.size());
 	header_to_send.h1.set_length(sizeof(header_to_send.iv) + encrypted.size());
 	s2 = struct2str(header_to_send) + string{encrypted.begin(), encrypted.end()};
 	LOGT << hexprint("sending", s2) << endl;
@@ -914,7 +1018,7 @@ struct {
 *********************/
 template<bool SV> string TLS<SV>::finished(string &&s)
 {//finished message to send(s == "") and receive(s == recv())
-	PRF<SHA2> prf; SHA2 sha;
+	PRF<SHA256> prf; SHA256 sha;
 	prf.secret(master_secret_.begin(), master_secret_.end());
 	auto h = sha.hash(accumulated_handshakes_.cbegin(), accumulated_handshakes_.cend());
 	prf.seed(h.begin(), h.end());

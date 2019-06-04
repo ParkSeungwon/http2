@@ -97,15 +97,9 @@ private:
 	std::string accumulate(const std::string &s);
 	void accumulate();
 	void allocate_cipher(uint8_t cipher_suite_first_byte, uint8_t second_byte);
-	template<class D, class A, template<int> class C, int B, template<class> class M, class H>
-	void set_cipher() {//Auth is not implemented yet
-		if(std::is_same<DHE, D>::value) diffie_ = std::make_unique<DHE>();
-		else if(std::is_same<D, ECDHE>::value) ecdhe_ = std::make_unique<ECDHE>();
-		if constexpr(B == 1305) cipher_ = std::make_unique<C<B>>();
-		else cipher_ = std::make_unique<M<C<B>>>();
-		mac_[0] = std::make_unique<HMAC<H>>();
-		mac_[1] = std::make_unique<HMAC<H>>();
-	}
+	template<class D, class A, template<int> class C, int B, 
+		template<class> class M, class H> void set_cipher();
+	bool process_extension(uint8_t *p);
 };
 
 const int CHANGE_CIPHER_SPEC = 0x14

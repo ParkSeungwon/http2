@@ -86,7 +86,7 @@ struct MAC {
 	virtual std::vector<uint8_t> hash(const uint8_t*, int) = 0;
 };
 
-template<class H> class HMAC : MAC
+template<class H> class HMAC : public MAC
 {//hmac using sha1
 public:
 	HMAC() : o_key_pad_(H::block_size), i_key_pad_(H::block_size)
