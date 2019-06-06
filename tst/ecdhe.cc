@@ -6,6 +6,7 @@
 #include"tls/block_cipher.h"
 #include"tls/chacha.h"
 #include"options/log.h"
+#include"tls/hash.h"
 using namespace std;
 
 TEST_CASE("ecdhe") {
@@ -106,3 +107,29 @@ TEST_CASE("chacha") {
 	REQUIRE(equal(src, src+64, v2.begin()));
 	REQUIRE(equal(v.end()-16, v.end(), v2.end()-16));
 }
+
+TEST_CASE("HKDF") {
+	mpz_class salt{"0x000102030405060708090a0b0c"};// (13 octets);  v (32 octets)
+	mpz_class PRK{"0x077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5"};
+	mpz_class info{"0xf0f1f2f3f4f5f6f7f8f9"};// (10 octets)
+	mpz_class OKM{"0x3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"};// (42 octets)
+	uint8_t s[13], ikm[22], prk[32], inf[10], okm[42];
+	for(int i=0; i<22; i++) ikm[i] = 0x0b;
+	mpz2bnd(salt, s, s+13);
+	mpz2bnd(PRK, prk, prk + 32);
+	mpz2bnd(info, inf, inf+10);
+	mpz2bnd(OKM, okm, okm+42);
+	HKDF<SHA256> h;
+	h.key(s, s+13);
+	auto a = h.hash(ikm, ikm + 22);
+	REQUIRE(equal(a.begin(), a.end(), prk));
+	h.key(prk, prk + 32);
+	auto b = h.expand(string{inf, inf+10}, 42);
+	REQUIRE(equal(b.begin(), b.end(), okm));
+}
+/*
+Basic test case with SHA-256
+Hash = SHA-256
+IKM = 0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b (22 octets)
+L = 42
+*/
