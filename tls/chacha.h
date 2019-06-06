@@ -1,3 +1,4 @@
+#pragma once
 #include<vector>
 #include<cassert>
 #include<nettle/chacha-poly1305.h>

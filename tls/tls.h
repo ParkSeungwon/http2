@@ -76,9 +76,10 @@ public:
 
 protected:
 	const void *rec_received_;
+	uint8_t selected_cipher_suite[2];
 	std::unique_ptr<CipherMode> cipher_{nullptr};
 	std::unique_ptr<MAC> mac_[2] = {nullptr, nullptr};
-	std::unique_ptr<DHE> diffie_{nullptr};
+	std::unique_ptr<DHE> dhe_{nullptr};
 	std::unique_ptr<ECDHE> ecdhe_{nullptr};
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
 	std::vector<unsigned char> master_secret_;
@@ -89,7 +90,6 @@ protected:
 		
 private:
 	static RSA rsa_;
-	bool support_dhe_ = false;
 	int finish_msg_count_ = -1;
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);
@@ -100,6 +100,8 @@ private:
 	template<class D, class A, template<int> class C, int B, 
 		template<class> class M, class H> void set_cipher();
 	bool process_extension(uint8_t *p);
+	std::string ecdhe_server_key_exchange(std::string &&);
+	std::string dhe_server_key_exchange(std::string &&);
 };
 
 const int CHANGE_CIPHER_SPEC = 0x14

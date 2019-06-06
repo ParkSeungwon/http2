@@ -84,7 +84,7 @@ TEST_CASE("camellia192") {
 }
 
 TEST_CASE("des3 gcm") {
-	GCM<DES3> ca;
+	GCM<DES3<>> ca;
 	ca.enc_key(key);
 	ca.dec_key(key);
 	ca.enc_iv(iv);

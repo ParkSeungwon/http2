@@ -59,24 +59,24 @@ vector<unsigned char> PyAES::decrypt(vector<unsigned char> v)
 }
 void PyPRF::secret(vector<unsigned char> v)
 {
-	PRF<SHA2>::secret(v.cbegin(), v.cend());
+	PRF<SHA256>::secret(v.cbegin(), v.cend());
 }
 void PyPRF::seed(vector<unsigned char> v)
 {
-	PRF<SHA2>::seed(v.cbegin(), v.cend());
+	PRF<SHA256>::seed(v.cbegin(), v.cend());
 }
 
-PyDiffie::PyDiffie(int bit) : DiffieHellman{bit}
+PyDiffie::PyDiffie(int bit) : DHE{bit}
 { }
 
 PyDiffie::PyDiffie(py::int_ p, py::int_ g, py::int_ ya)
-	: DiffieHellman{mpz_class{py::str(p)}, mpz_class{py::str(g)},
+	: DHE{mpz_class{py::str(p)}, mpz_class{py::str(g)},
 		mpz_class{py::str(ya)}}
 { }
 
 py::int_ PyDiffie::set_yb(py::int_ pubkey)
 {
-	DiffieHellman::set_yb(mpz_class{py::str(pubkey)});
+	DHE::set_yb(mpz_class{py::str(pubkey)});
 	return get_K();
 }
 

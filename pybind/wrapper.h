@@ -25,37 +25,37 @@ struct PySHA1 : public SHA1
 		return SHA1::hash(v.cbegin(), v.cend());
 	}
 };
-struct PySHA256 : public SHA2
+struct PySHA256 : public SHA256
 {
 	auto hash(std::vector<unsigned char> v) {
-		return SHA2::hash(v.cbegin(), v.cend());
+		return SHA256::hash(v.cbegin(), v.cend());
 	}
 };
-struct PySHA512 : public SHA5
+struct PySHA512 : public SHA512
 {
 	auto hash(std::vector<unsigned char> v) {
-		return SHA5::hash(v.cbegin(), v.cend());
+		return SHA512::hash(v.cbegin(), v.cend());
 	}
 };
-struct PyHMAC : public HMAC<SHA2>
+struct PyHMAC : public HMAC<SHA256>
 {
 	void key(std::vector<unsigned char> v) {
-		HMAC<SHA2>::key(v.cbegin(), v.cend());
+		HMAC<SHA256>::key(v.cbegin(), v.cend());
 	}
 	auto hash(std::vector<unsigned char> v) {
-		return HMAC<SHA2>::hash(v.cbegin(), v.cend());
+		return HMAC<SHA256>::hash(v.cbegin(), v.cend());
 	}
 };
 
-struct PyPRF : public PRF<SHA2>
+struct PyPRF : public PRF<SHA256>
 {
 	void secret(std::vector<unsigned char> v);
 	void seed(std::vector<unsigned char> v);
 };
 
-struct PyDiffie : public DiffieHellman
+struct PyDiffie : public DHE
 {
-	PyDiffie(int bit = 1024);
+	PyDiffie(int bit = 2048);
 	PyDiffie(pybind11::int_ p, pybind11::int_ g, pybind11::int_ ya);
 	pybind11::int_ set_yb(pybind11::int_ pub_key);
 	pybind11::int_ get_p(), get_g(), get_K(), get_ya(), get_yb();

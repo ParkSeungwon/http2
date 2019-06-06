@@ -84,12 +84,12 @@ TEST_CASE("DHA-RSA server key exchange signature verify") {
 	v.push_back(0); v.push_back(128);
 	for(unsigned char c : tr(ya)) v.push_back(c);
 	
-	SHA5 sha;
+	SHA512 sha;
 	auto ar = sha.hash(v.begin(), v.end());
 	auto h = bnd2mpz(ar.begin(), ar.end());
 
 	string s = "0x1";
-	for(int i=0; i<SHA5::output_size; i++) s += "00";
+	for(int i=0; i<SHA512::output_size; i++) s += "00";
 	REQUIRE(signature_decode % mpz_class{s} == h);
 
 	auto ss2 = get_padding(signature_decode);

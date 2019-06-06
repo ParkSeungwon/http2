@@ -54,7 +54,7 @@ Encryption key: 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
 TEST_CASE("Diffie hellman key exchange test") {
 	struct DH : DHE {
 		DH() = default;
-		DH(mpz_class p, mpz_class g, mpz_class ya) : DiffieHellman(p, g, ya) {}
+		DH(mpz_class p, mpz_class g, mpz_class ya) : DHE(p, g, ya) {}
 		auto get_K() {return K;}//for test drag protected member out
 	};
 	DH A;
