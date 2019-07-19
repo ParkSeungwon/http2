@@ -23,3 +23,7 @@ TEST_CASE("full handshaking") {
 //	Log::get_instance()->set_log_filter("TDIWEF");
 }
 
+template<int B=0> struct A {};
+TEST_CASE("template") {
+	A a;
+}

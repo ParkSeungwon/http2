@@ -60,25 +60,32 @@ void HTTPS::connected(int client_fd)
 		} else 								LOGI << "client hello" << endl;
 	case SERVER_HELLO:
 		s = t.server_hello(); 				LOGI << "server hello" << endl;
-		s += t.server_certificate(); 		LOGI << "server certificate" << endl;
-		if(t.support_dhe())
-			s += t.server_key_exchange(), 	LOGI << "server key exchange" << endl;
-		s += t.server_hello_done(); 		LOGI << "server hello done" << endl;
+		s += t.is_tls12() ? //if tls13, encode starts here
+			t.server_certificate() : t.encode(t.server_certificate(), HANDSHAKE);
+											LOGI << "server certificate" << endl;
+		if(t.is_tls12()) {
+			s += t.server_key_exchange();	LOGI << "server key exchange" << endl;
+			s += t.server_hello_done();		LOGI << "server hello done" << endl;
+		} else s += t.finished();//finished is already encoded
 		send(move(s), client_fd);
 	case CLIENT_KEY_EXCHANGE:
-		if(s = t.client_key_exchange(recv(client_fd)); s != "") {
-			send(move(s)); 					LOGE<<"client key exchange failed"<<endl;
-			break;
-		} else 								LOGI << "client key exchange" << endl;
-		t.change_cipher_spec(recv(client_fd)); 	LOGI << "change cipher spec" << endl;
+		if(t.is_tls12()) {
+			if(s = t.client_key_exchange(recv(client_fd)); s != "") {
+				send(move(s));				LOGE<<"client key exchange failed"<<endl;
+				break;
+			} else 							LOGI << "client key exchange" << endl;
+			t.change_cipher_spec(recv(client_fd));LOGI << "change cipher spec" << endl;
+		}
 		if(s = t.finished(recv(client_fd)); s != "") {
 			send(move(s)); 					LOGE << "decrypt error" << endl;
 			break;
 		} else 								LOGI << "client finished" << endl;
 	case CHANGE_CIPHER_SPEC:
-		s = t.change_cipher_spec(); 		LOGI << "change cipher spec" << endl;
-		s += t.finished(); 					LOGI << "server finished" << endl;
-		send(move(s), client_fd);
+		if(t.is_tls12()) {
+			s = t.change_cipher_spec(); 	LOGI << "change cipher spec" << endl;
+			s += t.finished(); 				LOGI << "server finished" << endl;
+			send(move(s), client_fd);
+		}
 	case APPLICATION_DATA:
 		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
 		thread th{[&]() {
@@ -90,8 +97,8 @@ void HTTPS::connected(int client_fd)
 					t.alert();
 					send(t.encode(t.alert(1, 0).substr(5), ALERT), client_fd);
 					break;
-				} else cl.send(t.decode());
-				send(t.encode(cl.recv()), client_fd);
+				} else cl.send(t.decode());//to inner server
+				send(t.encode(cl.recv()), client_fd);//to browser
 				last_transmission = chrono::system_clock::now();
 			}
 		}};

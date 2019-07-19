@@ -211,16 +211,26 @@ For example, the label "slithy toves" would be processed by hashing
 the following bytes:
 73 6C 69 74 68 79 20 74 6F 76 65 73
 ******************************/
+struct IHKDF {
+	virtual void no_salt() = 0;
+	virtual void salt(uint8_t *p, int sz) = 0;
+	virtual std::vector<uint8_t> extract(uint8_t *p, int sz) = 0;
+	virtual std::vector<uint8_t> derive_secret(std::string label, std::string msg) = 0;
+};
 
-template<class H> class HKDF : public HMAC<H>
+template<class H> class HKDF : public HMAC<H>, public IHKDF
 {
 public:
 	void no_salt() {
 		uint8_t zeros[H::output_size] = {0,};
 		HMAC<H>::key(zeros, H::output_size);
 	}
-	template<class It> auto extract(const It ikm_begin, const It ikm_end) {
-		return HMAC<H>::hash(ikm_begin, ikm_end);
+	void salt(uint8_t *p, int sz) {
+		HMAC<H>::key(p, p + sz);
+	}
+	std::vector<uint8_t> extract(uint8_t *p, int sz) {
+		auto a = HMAC<H>::hash(p, p + sz);
+		return std::vector<uint8_t>{a.begin(), a.end()};
 	}
 	std::vector<uint8_t> derive_secret(std::string label, std::string msg) {
 		auto a = HMAC<H>::hash(msg.begin(), msg.end());
@@ -250,5 +260,4 @@ private:
 		s[1] = (s.size() - 2) % 0x100;
 		return expand(s, L);
 	}
-
 };

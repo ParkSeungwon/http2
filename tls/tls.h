@@ -5,7 +5,7 @@
 #include"crypt.h"
 #include"block_cipher.h"
 #include"hash.h"
-#define DH_KEY_SZ 128
+#define DH_KEY_SZ 256
 #define KEY_SZ 72
 /*********************
                TLS Handshake
@@ -55,7 +55,7 @@ template<bool SV = true> class TLS
 {//just deals with memory structure -> decoupled from underlying file-descriptor
 public:
 	TLS(unsigned char* buffer = nullptr);
-	bool support_dhe();
+	bool support_dhe(), is_tls12();
 	std::pair<int, int> get_content_type(const std::string &s = "");//"" -> manual set
 	void set_buf(void* p);
 	void session_id(std::array<unsigned char, 32> id);
@@ -77,12 +77,16 @@ public:
 protected:
 	const void *rec_received_;
 	uint8_t selected_cipher_suite[2];
+	bool tls12_ = false;
 	std::unique_ptr<CipherMode> cipher_{nullptr};
 	std::unique_ptr<MAC> mac_[2] = {nullptr, nullptr};
 	std::unique_ptr<DHE> dhe_{nullptr};
 	std::unique_ptr<ECDHE> ecdhe_{nullptr};
+	std::unique_ptr<IHKDF> hkdf_{nullptr};
+	size_t hash_code_;
 	std::array<unsigned char, 32> session_id_, server_random_, client_random_;
-	std::vector<unsigned char> master_secret_;
+	std::vector<unsigned char> master_secret_, psk_;
+	std::map<std::string, std::vector<uint8_t>> psk_key_schedule_;
 	std::string accumulated_handshakes_;
 	static std::string certificate_;
 	int id_length_;
@@ -94,7 +98,9 @@ private:
 
 	void generate_signature(unsigned char* p_length, unsigned char* p);
 	std::array<unsigned char, KEY_SZ> derive_keys(mpz_class premaster_secret);
-	std::string accumulate(const std::string &s);
+	std::map<std::string, std::vector<uint8_t>>
+		psk_key_schedule(std::vector<uint8_t> dh_shared_secret, std::string psk = "");
+	std::string accumulate(std::string s);
 	void accumulate();
 	void allocate_cipher(uint8_t cipher_suite_first_byte, uint8_t second_byte);
 	template<class D, class A, template<int> class C, int B, 

@@ -71,6 +71,10 @@ template<bool SV> bool TLS<SV>::support_dhe()
 {
 	return static_cast<bool>(dhe_);
 }
+template<bool SV> bool TLS<SV>::is_tls12()
+{
+	return tls12_;
+}
 template<bool SV>
 pair<int, int> TLS<SV>::get_content_type(const string &s)
 {
@@ -330,14 +334,14 @@ This is the most complex subprotocol within TLS. The specification focuses prima
 struct Hello_header {
 	uint8_t version[2] = {0x03, 0x03};//length is from here
 	uint8_t random[32];
-	uint8_t session_id_length = 0;
-//	uint8_t session_id[32];
+	uint8_t session_id_length = 32;
+	uint8_t session_id[32];
 };
 template<bool SV> void TLS<SV>::set_buf(void* p)
 {
 	rec_received_ = p;
 }
-template<bool SV> string TLS<SV>::accumulate(const string &s)
+template<bool SV> string TLS<SV>::accumulate(string s)
 {
 	accumulated_handshakes_ += s.substr(sizeof(TLS_header));
 	return s;
@@ -360,6 +364,8 @@ void TLS<SV>::set_cipher() {//Auth is not implemented yet
 	cipher_ = std::make_unique<M<C<B>>>();
 	mac_[0] = std::make_unique<HMAC<H>>();
 	mac_[1] = std::make_unique<HMAC<H>>();
+	hkdf_ = make_unique<HKDF<H>>();
+	hash_code_ = typeid(H).hash_code();
 	LOGI << "using " << typeid(D).name() << typeid(A).name() << typeid(C<B>).name()
 		<< B << typeid(M<C<B>>).name() << typeid(H).name() << endl;
 }
@@ -398,7 +404,7 @@ template<bool SV> void TLS<SV>::allocate_cipher(uint8_t a, uint8_t b)
 	}
 }
 template<bool SV> bool TLS<SV>::process_extension(uint8_t *p)
-{
+{//only used in server
 	struct Ext {
 		uint8_t type[2];
 		uint8_t length[2];
@@ -413,9 +419,18 @@ template<bool SV> bool TLS<SV>::process_extension(uint8_t *p)
 		q = (Ext*)p;
 		int ll = int_2byte(q->list_length);
 		switch(int_2byte(q->type)) {
-		case 10: //curve x25519
-			for(int i=0; i<ll; i+=2) 
-				if(q->data[i] == 0 && q->data[i+1] == 0x1d) check[0] = true;
+		case 10: //ffdh2048, curve x25519
+			for(int i=0; i<ll; i+=2) {
+				if(q->data[i] == 1 && q->data[i+1] == 0) {
+					dhe_ = make_unique<DHE>();
+					break;
+				}
+				if(q->data[i] == 0 && q->data[i+1] == 0x1d) {
+					ecdhe_ = make_unique<ECDHE>();
+					break;
+				}
+			}
+			if(dhe_ || ecdhe_) check[0] = true;
 			break;
 		case 11: //format no compress
 			if(!q->list_length[1]) check[1] = true;
@@ -426,14 +441,25 @@ template<bool SV> bool TLS<SV>::process_extension(uint8_t *p)
 			for(int i=0; i<ll; i+=2) 
 				if(q->data[i] == 6 && q->data[i+1] == 1) check[2] = true;
 		case 51: //key
+			int to_find;
+			if(ecdhe_) to_find = 0x1d;
+			else to_find = 0x100;
 			for(int i=0; i<ll;) {
-				if(q->data[i] == 0 && q->data[i+1] == 0x1d) {
-					ecdhe_->set_Q(bnd2mpz(q->data + i + 4, q->data + i + 36));
+				if(int_2byte(q->data + i) == to_find) {//x25519, ffdh2048
+					if(ecdhe_) ecdhe_->set_Q(bnd2mpz(q->data + i + 4,
+								q->data + i + 4 + int_2byte(q->data + 2)));
+					else dhe_->set_yb(bnd2mpz(q->data + i + 4,
+								q->data + i + 4 + int_2byte(q->data + 2)));
 					check[3] = true;
 					break;
-				} else i += int_2byte(&q->data[2]) + 4;
+				} else i += int_2byte(q->data + 2) + 4;//advance 
 			}
 			break;
+		case 41://psk
+			{
+				uint8_t psk[32] = {0,};
+				break;
+			}
 		default: break;
 		}
 		p += int_2byte(q->length) + 4;
@@ -456,7 +482,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 			0x00,0x9F,//TLS_DHE_RSA_WITH_AES_256_GCM_SHA384                        
 			0xCC,0xA8,//TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256    
 			0xCC,0xAA//TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 
-//			0x00,0x33,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
+/*			0x00,0x33,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA                           
 //			0x00,0x39,//TLS_DHE_RSA_WITH_AES_256_CBC_SHA                           
 //			0x00,0x67,//TLS_DHE_RSA_WITH_AES_128_CBC_SHA256                        
 //			0x00,0x6B,//TLS_DHE_RSA_WITH_AES_256_CBC_SHA256                        
@@ -476,7 +502,7 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 //			0xC0,0x8A,//TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256                 
 //			0xC0,0x8B,//TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384                 
 //			0xC0,0x12,//TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA        
-//			0x00,0x2F//TLS_RSA_AES_128_SHA
+//			0x00,0x2F//TLS_RSA_AES_128_SHA */
 		};
 		uint8_t compression_length = 1;
 		uint8_t compression_method = 0;//none
@@ -508,12 +534,14 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		uint8_t supported_version_list_length = 4;
 		uint8_t supported_versions[4] = {3, 4, 3, 3};//TLS 1.3, TLS 1.2
 
-		uint8_t psk[2] = {0, 0x2d};
-		uint8_t psk_length[2] = {0, 2};
-		uint8_t psk_mode_length = 1;
+		uint8_t psk_mode[2] = {0, 0x2d};
+		uint8_t psk_mode_length[2] = {0, 2};
+		uint8_t psk_mode_llength = 1;
 		uint8_t psk_with_ecdhe = 1;
 	} r;
+
 	if constexpr(!SV) {//if client
+		set_buf(&r);
 		r.h2.handshake_type = 1;
 		r.h1.set_length(sizeof(H) - sizeof(TLS_header));
 		r.h2.set_length(sizeof(H) - sizeof(TLS_header) - sizeof(Hello_header));
@@ -523,11 +551,9 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 		ecdhe_ = make_unique<ECDHE>();
 		mpz2bnd(dhe_->ya, r.ffdhe_key, r.ffdhe_key + 256);
 		mpz2bnd(ecdhe_->Q, r.key, r.key + 32);
-		return accumulate(struct2str(r));
 	} else {//server
 		if(s != "") set_buf(s.data());
 		if(get_content_type() != pair{HANDSHAKE, CLIENT_HELLO}) return alert(2, 10);
-		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(client_random_.data(), p->h3.random, 32);//unix time + 28 random
 		int len = int_2byte(p->cipher_suite_length);
@@ -539,14 +565,26 @@ template<bool SV> string TLS<SV>::client_hello(string&& s)
 				break;
 			}
 		}
-		if(ecdhe_) {//if ecdhe is selected -> check extension
-			uint8_t *up = p->cipher_suite;//v ext
-			up += 2 + int_2byte(p->cipher_suite_length);
-			if(!process_extension(up)) return alert(2, 40);//ecdhe handshake failed
-			use_key(derive_keys((ecdhe_->K)));
-		}
-		return "";
+
+		uint8_t *up = p->cipher_suite;//v ext
+		up += 2 + int_2byte(p->cipher_suite_length);
+		if(!process_extension(up)) tls12_ = true;
+			//return alert(2, 40);//ecdhe handshake failed
+		else use_key(derive_keys(ecdhe_ ? ecdhe_->K : dhe_->K));
 	}
+	accumulate();
+
+	uint8_t p[32] = {0,};
+	hkdf_->no_salt();
+	psk_key_schedule_["early secret"] = hkdf_->extract(p, 32);
+	psk_key_schedule_["binder key"] = hkdf_->derive_secret("ext binderres binder", "");
+	psk_key_schedule_["c e traffic"] = hkdf_->derive_secret("c e traffic",
+			accumulated_handshakes_);
+	psk_key_schedule_["e exp master"] = hkdf_->derive_secret( "e exp master",
+			accumulated_handshakes_);
+	
+	if constexpr(SV) return struct2str(r);
+	else return "";
 }
 /*****************
 ClientHello: This message typically begins a TLS handshake negotiation. It is sent with a list of client-supported cipher suites, for the server to pick the best suiting one (preferably the strongest), a list of compression methods, and a list of extensions. It gives also the possibility to the client of restarting a previous session, through the inclusion of a SessionId field.
@@ -611,9 +649,19 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		Hello_header h3;
 		uint8_t cipher_suite[2] = {0x00, 0x2f};
 		uint8_t compression = 0;
-		//uint8_t extension_length[2] = {0, 0};
+		uint8_t extension_length[2] = {0, 0};
+
+		uint8_t supported_version[2] = {0, 0x2b};
+		uint8_t supported_version_length[2] = {0, 4};
+		uint8_t support[4] = {3, 4, 3, 3};
+
+		uint8_t key_share[2] = {0, 0x33};
+		uint8_t key_share_length[2] = {};
+		uint8_t type[2];
+		uint8_t key_value[];
 	} r;
 	if constexpr(SV) { 
+		set_buf(&r);
 		r.cipher_suite[0] = selected_cipher_suite[0];
 		r.cipher_suite[1] = selected_cipher_suite[1];
 		r.h1.length[1] = sizeof(Hello_header) + sizeof(Handshake_header) + 3;
@@ -622,18 +670,38 @@ template<bool SV> string TLS<SV>::server_hello(string &&s)
 		mpz2bnd(random_prime(32), server_random_.begin(), server_random_.end());
 		memcpy(r.h3.random, server_random_.data(), 32);
 //		memcpy(r.h3.session_id, session_id_.data(), 32);
-		return accumulate(struct2str(r));
 	} else {
 		if(s != "") set_buf(s.data());
 		if(get_content_type() != pair{HANDSHAKE, SERVER_HELLO}) 
 			return alert(2, 10);
-		accumulate();
 		H *p = (H*)rec_received_;
 		memcpy(server_random_.data(), p->h3.random, 32);
-//		memcpy(session_id_.data(), p->h3.session_id, 32);
+		memcpy(session_id_.data(), p->h3.session_id, 32);
 		allocate_cipher(p->cipher_suite[0], p->cipher_suite[1]);
-		return "";
 	}
+	accumulate();
+	if(!is_tls12()) {
+		auto v = psk_key_schedule_["early secret"];
+		hkdf_->salt(&v[0], v.size());
+		v = psk_key_schedule_["derived"] = hkdf_->derive_secret("derived", "");
+		hkdf_->salt(&v[0], v.size());
+		uint8_t key[256];
+		if(dhe_) mpz2bnd(dhe_->K, key, key + 256);
+		else mpz2bnd(ecdhe_->K, key, key + 32);
+		v=psk_key_schedule_["handshake secret"]=hkdf_->extract(key, dhe_ ? 256 : 32);
+		hkdf_->salt(&v[0], v.size());
+		psk_key_schedule_["c hs traffic"] = hkdf_->derive_secret("c hs traffic",
+				accumulated_handshakes_);
+		psk_key_schedule_["s hs traffic"] = hkdf_->derive_secret("s hs traffic", 
+				accumulated_handshakes_);
+
+		v = psk_key_schedule_["derived"] = hkdf_->derive_secret("derived", "");
+		hkdf_->salt(&v[0], v.size());
+		for(int i=0; i<256; i++) key[i] = 0;
+		v = psk_key_schedule_["master secret"] = hkdf_->extract(key, dhe_ ? 256 : 32);
+	}
+	if(SV) return struct2str(r);
+	else return "";
 }
 /**************
 (00,33)DHE-RSA-AES128-SHA : 128 Bit Key exchange: DH, encryption: AES, MAC: SHA1.
@@ -781,8 +849,8 @@ template<bool SV> string TLS<SV>::dhe_server_key_exchange(string&& s)
 		uint8_t signature_hash = 6, //SHA512
 				signature_sign = 1, //rsa
 				signature_length[2] = {1, 0}, sign[256];
-		/*enum { none(0), md5(1), sha1(2), sha224(3), sha256(4), sha384(5), sha512(6), (255) } HashAlgorithm;
-		  enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;*/
+//enum { none(0), md5(1), sha1(2), sha224(3), sha256(4), sha384(5), sha512(6), (255) } HashAlgorithm;
+// enum { anonymous(0), rsa(1), dsa(2), ecdsa(3), (255) } SignatureAlgorithm;
 	} r;
 
 	if constexpr(SV) {
@@ -906,8 +974,8 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 	struct H {
 		TLS_header h1;
 		Handshake_header h2;
-		uint8_t key_sz[2] = {0, DH_KEY_SZ};
-		uint8_t pub_key[DH_KEY_SZ];
+		uint8_t key_sz[2] = {1, 0};
+		uint8_t pub_key[];
 	} r;
 
 	mpz_class premaster_secret;
@@ -916,25 +984,22 @@ template<bool SV> string TLS<SV>::client_key_exchange(string&& s)//16
 		if(get_content_type() != pair{HANDSHAKE, CLIENT_KEY_EXCHANGE}) 
 			return alert(2, 10);
 		accumulate();
-		H* p = (H*)rec_received_;;
+		H* p = (H*)rec_received_;
 		assert(p->h2.handshake_type == 16);
-		if(dhe_) 
-			premaster_secret = dhe_->set_yb(bnd2mpz(p->pub_key, p->pub_key + DH_KEY_SZ));
-		else premaster_secret = rsa_.sign(bnd2mpz(p->pub_key, p->pub_key + int_2byte(p->key_sz)));
+		if(dhe_) premaster_secret = 
+			dhe_->set_yb(bnd2mpz(p->pub_key, p->pub_key + int_2byte(p->key_sz)));
+		else premaster_secret =
+			ecdhe_->set_Q(bnd2mpz(p->pub_key, p->pub_key + int_2byte(p->key_sz)));
 		auto a = use_key(derive_keys(premaster_secret));
 		return "";
 	} else {
 		r.h2.handshake_type = 16;
-		r.h1.set_length(sizeof(Handshake_header) + DH_KEY_SZ + 2);
-		r.h2.set_length(DH_KEY_SZ + 2);
-		if(dhe_) mpz2bnd(dhe_->yb, r.pub_key, r.pub_key + DH_KEY_SZ);
-		else {
-			premaster_secret = random_prime(48);
-			auto z = rsa_.encode(premaster_secret);
-			mpz2bnd(z, r.pub_key, r.pub_key + DH_KEY_SZ);
-			use_key(derive_keys(premaster_secret));
-		}
-		return accumulate(struct2str(r)); 
+		string pub_key{dhe_ ? DH_KEY_SZ : 32};//init with size bug
+		if(dhe_) mpz2bnd(dhe_->yb, pub_key.begin(), pub_key.end());
+		else mpz2bnd(ecdhe_->Q, pub_key.begin(), pub_key.end());
+		r.h1.set_length(sizeof(Handshake_header) + 2 + pub_key.size());
+		r.h2.set_length(2 + pub_key.size());
+		return accumulate(struct2str(r)) + pub_key; 
 	}
 }
 /*****************************
@@ -1076,7 +1141,20 @@ template<bool SV> string TLS<SV>::finished(string &&s)
 	
 	string msg = struct2str(hh) + string{v.begin(), v.end()};
 	accumulated_handshakes_ += msg;
-	
+
+	if(!is_tls12()) {
+		v = psk_key_schedule_["master secret"];//reuse v
+		hkdf_->salt(&v[0], v.size());
+		psk_key_schedule_["c ap traffic"] = 
+			hkdf_->derive_secret("c ap traffic", accumulated_handshakes_);
+		psk_key_schedule_["s ap traffic"] = 
+			hkdf_->derive_secret("s ap traffic", accumulated_handshakes_);
+		psk_key_schedule_["exp master"] = 
+			hkdf_->derive_secret("exp master", accumulated_handshakes_);
+		psk_key_schedule_["res master"] = 
+			hkdf_->derive_secret("res master", accumulated_handshakes_);
+	}
+
 	if(SV == finish_msg_count_) return encode(move(msg), 0x16);
 	if(decode(move(s)) != msg) return alert(2, 51);
 	else return "";

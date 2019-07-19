@@ -1,0 +1,663 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+A	tst/misc.cc	4;"	s	file:
+A	tst/tls.cc	26;"	s	file:
+AES	tls/block_cipher.h	12;"	s
+ALERT	tls/tls.h	114;"	v
+APPLICATION	tls/ber.h	37;"	e	enum:ber::Class
+APPLICATION_DATA	tls/tls.h	116;"	v
+AsyncQueue	framework/asyncqueue.cc	48;"	f	class:AsyncQueue
+AsyncQueue	framework/asyncqueue.cc	56;"	f	class:AsyncQueue
+AsyncQueue	framework/asyncqueue.h	24;"	c	inherits:WaitQueue
+BIT_STRING	tls/ber.h	6;"	e	enum:ber::Tag
+BMP_STRING	tls/ber.h	33;"	e	enum:ber::Tag
+BOOLEAN	tls/ber.h	4;"	e	enum:ber::Tag
+BUF_SIZE	framework/tcpip.h	5;"	d
+BootStrapSite	framework/bootstrap.cc	5;"	f	class:BootStrapSite
+BootStrapSite	framework/bootstrap.h	7;"	c	inherits:WebSite
+CATCH_CONFIG_MAIN	tst/catch.cpp	1;"	d	file:
+CBC	tls/block_cipher.h	76;"	c	inherits:CipherMode
+CERTIFICATE	tls/tls.h	121;"	v
+CERTIFICATE_REQUEST	tls/tls.h	123;"	v
+CERTIFICATE_VERIFY	tls/tls.h	125;"	v
+CHACHA	tls/block_cipher.h	180;"	c	inherits:CipherMode,ChaCha
+CHANGE_CIPHER_SPEC	tls/tls.h	113;"	v
+CHARACTER_STRING	tls/ber.h	32;"	e	enum:ber::Tag
+CLIENT_HELLO	tls/tls.h	119;"	v
+CLIENT_KEY_EXCHANGE	tls/tls.h	126;"	v
+CMDoption	options/option.cc	6;"	f	class:CMDoption
+CMDoption	options/option.h	8;"	c
+CONSTRUCTED	tls/ber.h	41;"	e	enum:ber::PC
+CONTEXT_SPECIFIC	tls/ber.h	37;"	e	enum:ber::Class
+Camellia	tls/block_cipher.h	35;"	s
+ChaCha	tls/chacha.h	6;"	c
+Channel	framework/middle.cc	33;"	f	class:Channel
+Channel	framework/middle.h	14;"	c	inherits:WaitQueue,Client,std::chrono::system_clock::time_point
+ChatServer	src/chatserver.h	31;"	c
+CipherMode	tls/block_cipher.h	66;"	s
+Class	tls/ber.h	36;"	g	namespace:ber
+Client	framework/server.cc	57;"	f	class:Client
+Client	framework/server.h	33;"	c	inherits:Http
+Column	database/mysqldata.h	40;"	s	class:SqlQuery
+DEBUG	options/log.h	30;"	e	enum:Log::LogLevel
+DES3	tls/block_cipher.h	55;"	s
+DHE	tls/crypt.h	43;"	c
+DHE	tls/diffie.cc	14;"	f	class:DHE
+DHE	tls/diffie.cc	5;"	f	class:DHE
+DH_KEY_SZ	tls/tls.h	8;"	d
+DnDD	src/dndd.cc	8;"	f	class:DnDD
+DnDD	src/dndd.h	4;"	c	inherits:BootStrapSite
+ECDHE	tls/crypt.h	68;"	c
+ECDHE	tls/ecdh.cc	19;"	f	class:ECDHE
+EMBEDDED_PDV	tls/ber.h	14;"	e	enum:ber::Tag
+ENUMERATED	tls/ber.h	13;"	e	enum:ber::Tag
+EOC	tls/ber.h	3;"	e	enum:ber::Tag
+ERROR	options/log.h	30;"	e	enum:Log::LogLevel
+EXTERNAL	tls/ber.h	11;"	e	enum:ber::Tag
+FATAL	options/log.h	30;"	e	enum:Log::LogLevel
+FINISHED	tls/tls.h	127;"	v
+FileExpansion	options/option.h	26;"	c
+GCM	tls/block_cipher.h	120;"	c	inherits:CipherMode
+GENERALIZED_TIME	tls/ber.h	27;"	e	enum:ber::Tag
+GENERAL_STRING	tls/ber.h	30;"	e	enum:ber::Tag
+GRAPHIC_STRING	tls/ber.h	28;"	e	enum:ber::Tag
+HANDSHAKE	tls/tls.h	115;"	v
+HELLO_REQUEST	tls/tls.h	118;"	v
+HKDF	tls/hash.h	221;"	c	inherits:HMAC,IHKDF
+HMAC	tls/hash.h	89;"	c	inherits:MAC
+HMAC	tls/hash.h	92;"	f	class:HMAC
+HTTPS	tls/https.cc	10;"	f	class:HTTPS
+HTTPS	tls/https.h	7;"	c	inherits:Server
+Handshake_header	tls/tls.cc	288;"	s	file:
+Hello_header	tls/tls.cc	334;"	s	file:
+Http	framework/server.cc	38;"	f	class:Http
+Http	framework/server.h	15;"	c	inherits:Vrecv
+IA5_STRING	tls/ber.h	25;"	e	enum:ber::Tag
+IHKDF	tls/hash.h	214;"	s
+INFO	options/log.h	30;"	e	enum:Log::LogLevel
+INTEGER	tls/ber.h	5;"	e	enum:ber::Tag
+K	tls/crypt.h	51;"	m	class:DHE
+K	tls/crypt.h	63;"	m	class:RSA
+K	tls/crypt.h	74;"	m	class:ECDHE
+KEY_SZ	tls/tls.h	9;"	d
+LOG	options/log.h	6;"	d
+LOGD	options/log.h	8;"	d
+LOGE	options/log.h	11;"	d
+LOGF	options/log.h	12;"	d
+LOGI	options/log.h	9;"	d
+LOGT	options/log.h	7;"	d
+LOGW	options/log.h	10;"	d
+Log	options/log.cc	15;"	f	class:Log
+Log	options/log.h	14;"	c
+LogLevel	options/log.h	30;"	g	class:Log
+MAC	tls/hash.h	84;"	s
+Middle	framework/middle.cc	10;"	f	class:Middle
+Middle	framework/middle.h	26;"	c	inherits:Server
+My_site	site_src/doc3.cpp	11;"	f	class:My_site
+My_site	site_src/doc3.cpp	8;"	c	file:	inherits:WebSite
+My_site	site_src/doc4.cpp	6;"	c	file:	inherits:WebSite
+My_site	site_src/doc4.cpp	9;"	f	class:My_site
+Mysqlquery	database/mysqlquery.h	7;"	c
+N	tls/crypt.h	74;"	m	class:ECDHE
+NULL_TYPE	tls/ber.h	8;"	e	enum:ber::Tag
+NUMERIC_STRING	tls/ber.h	21;"	e	enum:ber::Tag
+OBJECT_DESCRIPTOR	tls/ber.h	10;"	e	enum:ber::Tag
+OBJECT_IDENTIFIER	tls/ber.h	9;"	e	enum:ber::Tag
+OCTET_STRING	tls/ber.h	7;"	e	enum:ber::Tag
+P	tls/crypt.h	74;"	m	class:ECDHE
+PC	tls/ber.h	40;"	g	namespace:ber
+PRF	tls/hash.h	153;"	c
+PRIMITIVE	tls/ber.h	41;"	e	enum:ber::PC
+PRINTABLE_STRING	tls/ber.h	22;"	e	enum:ber::Tag
+PRIVATE	tls/ber.h	37;"	e	enum:ber::Class
+PYBIND11_MODULE	pybind/pybind.cc	11;"	f
+Packet	framework/middle.h	8;"	s
+PyAES	pybind/wrapper.h	11;"	s
+PyClient	pybind/wrapper.cc	117;"	f	class:PyClient
+PyClient	pybind/wrapper.h	71;"	s	inherits:Client
+PyDiffie	pybind/wrapper.cc	69;"	f	class:PyDiffie
+PyDiffie	pybind/wrapper.cc	72;"	f	class:PyDiffie
+PyDiffie	pybind/wrapper.h	56;"	s	inherits:DHE
+PyHMAC	pybind/wrapper.h	40;"	s	inherits:HMAC
+PyHTTPSCLient	pybind/wrapper.cc	137;"	f	class:PyHTTPSCLient
+PyHTTPSCLient	pybind/wrapper.h	82;"	c	inherits:Client
+PyPRF	pybind/wrapper.h	50;"	s	inherits:PRF
+PyRSA	pybind/wrapper.cc	104;"	f	class:PyRSA
+PyRSA	pybind/wrapper.cc	106;"	f	class:PyRSA
+PyRSA	pybind/wrapper.h	64;"	s	inherits:RSA
+PySHA1	pybind/wrapper.h	22;"	s	inherits:SHA1
+PySHA256	pybind/wrapper.h	28;"	s	inherits:SHA256
+PySHA512	pybind/wrapper.h	34;"	s	inherits:SHA512
+PySQL	pybind/wrapper.h	106;"	s	inherits:SqlQuery
+PyTLS	pybind/wrapper.cc	162;"	f	class:PyTLS
+PyTLS	pybind/wrapper.h	92;"	s	inherits:TLS
+PyTLSClient	pybind/wrapper.cc	129;"	f	class:PyTLSClient
+PyTLSClient	pybind/wrapper.h	77;"	s	inherits:PyClient
+Q	tls/crypt.h	74;"	m	class:ECDHE
+REAL	tls/ber.h	12;"	e	enum:ber::Tag
+RELATIVE_OID	tls/ber.h	16;"	e	enum:ber::Tag
+RESERVED1	tls/ber.h	17;"	e	enum:ber::Tag
+RESERVED2	tls/ber.h	18;"	e	enum:ber::Tag
+RSA	tls/crypt.h	57;"	c
+RSA	tls/rsa.cc	14;"	f	class:RSA
+RSA	tls/rsa.cc	4;"	f	class:RSA
+SEQUENCE	tls/ber.h	19;"	e	enum:ber::Tag
+SERVER_DONE	tls/tls.h	124;"	v
+SERVER_HELLO	tls/tls.h	120;"	v
+SERVER_KEY_EXCHANGE	tls/tls.h	122;"	v
+SET	tls/ber.h	20;"	e	enum:ber::Tag
+SHA1	tls/hash.h	13;"	f	class:SHA1
+SHA1	tls/hash.h	8;"	c
+SHA256	tls/hash.h	27;"	c
+SHA256	tls/hash.h	32;"	f	class:SHA256
+SHA384	tls/hash.h	46;"	c
+SHA384	tls/hash.h	51;"	f	class:SHA384
+SHA512	tls/hash.h	65;"	c
+SHA512	tls/hash.h	70;"	f	class:SHA512
+Server	framework/server.cc	71;"	f	class:Server
+Server	framework/server.h	41;"	c	inherits:Http
+Server2	src/chatserver.h	3;"	c	inherits:Server
+Site	site_src/my_site.cc	8;"	f	class:Site
+Site	site_src/my_site.h	4;"	c	inherits:WebSite
+SqlQuery	database/mysqldata.cc	10;"	f	class:SqlQuery
+SqlQuery	database/mysqldata.h	8;"	c	inherits:Mysqlquery,Json::Value
+T61_STRING	tls/ber.h	23;"	e	enum:ber::Tag
+TLS	tls/tls.cc	65;"	f	class:TLS
+TLS	tls/tls.h	54;"	c
+TLS_client	tls/tls-cl.cpp	10;"	c	file:	inherits:Client
+TLS_client	tls/tls-cl.cpp	13;"	f	class:TLS_client
+TLS_header	tls/tls.cc	243;"	s	file:
+TRACE	options/log.h	30;"	e	enum:Log::LogLevel
+Tag	tls/ber.h	2;"	g	namespace:ber
+Tcpip	framework/tcpip.cc	10;"	f	class:Tcpip
+Tcpip	framework/tcpip.h	7;"	c
+TlsLayer	framework/server.cc	49;"	f	class:TlsLayer
+TlsLayer	framework/server.h	24;"	c	inherits:Vrecv
+Type	tls/ber.h	44;"	s	namespace:ber
+UNIVERSAL	tls/ber.h	37;"	e	enum:ber::Class
+UNIVERSAL_STRING	tls/ber.h	31;"	e	enum:ber::Tag
+UTCTIME	tls/ber.h	26;"	e	enum:ber::Tag
+UTF8STRING	tls/ber.h	15;"	e	enum:ber::Tag
+VIDEOTEX_STRING	tls/ber.h	24;"	e	enum:ber::Tag
+VISIBLE_STRING	tls/ber.h	29;"	e	enum:ber::Tag
+Vrecv	framework/server.cc	13;"	f	class:Vrecv
+Vrecv	framework/server.h	5;"	c	inherits:Tcpip
+WARNING	options/log.h	30;"	e	enum:Log::LogLevel
+WaitQueue	framework/asyncqueue.cc	12;"	f	class:WaitQueue
+WaitQueue	framework/asyncqueue.cc	19;"	f	class:WaitQueue
+WaitQueue	framework/asyncqueue.h	8;"	c
+WebSite	framework/website.cc	13;"	f	class:WebSite
+WebSite	framework/website.h	6;"	c
+accumulate	tls/tls.cc	344;"	f	class:TLS
+accumulate	tls/tls.cc	349;"	f	class:TLS
+accumulated_handshakes_	tls/tls.h	90;"	m	class:TLS
+aes	pybind/wrapper.h	13;"	m	struct:PyAES
+alert	pybind/wrapper.cc	172;"	f	class:PyTLS
+alert	tls/tls.cc	1188;"	f	class:TLS
+alert	tls/tls.cc	1201;"	f	class:TLS
+allocate_cipher	tls/tls.cc	372;"	f	class:TLS
+allow	src/dndd.h	21;"	m	class:DnDD
+allowlevel	src/dnddsub.cc	16;"	f	class:DnDD
+append	framework/website.cc	30;"	f	class:WebSite
+args	options/option.cc	11;"	f	class:CMDoption
+b2c	tls/base64.cc	5;"	f	file:
+base64_decode	tls/base64.cc	36;"	f
+base64_encode	tls/base64.cc	21;"	f
+begin	options/option.h	33;"	f	class:FileExpansion
+ber	tls/ber.h	1;"	n
+block_size	tls/hash.h	11;"	m	class:SHA1
+block_size	tls/hash.h	30;"	m	class:SHA256
+block_size	tls/hash.h	49;"	m	class:SHA384
+block_size	tls/hash.h	68;"	m	class:SHA512
+bnd2mpz	tls/crypt.h	25;"	f
+book	src/dndd.h	19;"	m	class:DnDD
+buffer	framework/tcpip.h	20;"	m	class:Tcpip
+c	tst/crypt.cc	12;"	v
+c2b	tls/base64.cc	13;"	f	file:
+carousel	framework/bootstrap.cc	8;"	f	class:BootStrapSite
+cc2z	tst/dhekey_exchange.cc	38;"	f
+cert	tst/dhekey_exchange.cc	14;"	v
+certificate	framework/cert.h	1;"	v
+certificate_	tls/tls.cc	60;"	m	class:TLS	file:
+certificate_	tls/tls.h	91;"	m	class:TLS
+change_cipher_spec	tls/tls.cc	961;"	f	class:TLS
+cipher_	tls/block_cipher.h	116;"	m	class:CBC
+cipher_	tls/block_cipher.h	172;"	m	class:GCM
+client_addr	framework/tcpip.h	19;"	m	class:Tcpip	typeref:struct:Tcpip::
+client_fd	framework/tcpip.h	18;"	m	class:Tcpip
+client_hello	tls/tls.cc	471;"	f	class:TLS
+client_key_exchange	tls/tls.cc	972;"	f	class:TLS
+client_random	tst/dhekey_exchange.cc	13;"	v
+client_random_	tls/tls.h	87;"	m	class:TLS
+close	src/dndd.cc	49;"	f	class:DnDD
+cls	tls/ber.h	46;"	m	struct:ber::Type
+column	pybind/wrapper.cc	224;"	f	class:PySQL
+columns	database/mysqldata.h	46;"	m	class:SqlQuery
+comment	src/dndd.cc	97;"	f	class:DnDD
+con	database/mysqlquery.h	11;"	m	class:Mysqlquery
+conn	tls/https.cc	21;"	f	class:HTTPS
+connect	database/mysqlquery.cc	31;"	f	class:Mysqlquery
+connect	database/mysqlquery.cc	51;"	f	class:Mysqlquery
+connect	pybind/wrapper.cc	219;"	f	class:PySQL
+connected	tls/https.cc	52;"	f	class:HTTPS
+consume	framework/asyncqueue.cc	26;"	f	class:WaitQueue
+consumer	framework/asyncqueue.h	17;"	m	class:WaitQueue
+consumer	framework/middle.cc	38;"	f	class:Channel
+content	framework/middle.h	11;"	m	struct:Packet
+content_	framework/website.h	16;"	m	class:WebSite
+content_type	tls/tls.cc	244;"	m	struct:TLS_header	file:
+cv	framework/asyncqueue.h	20;"	m	class:WaitQueue
+d	tls/crypt.h	65;"	m	class:RSA
+data	tst/dhekey_exchange.cc	20;"	v
+datum	tst/ecdhe.cc	21;"	v
+db	src/dndd.h	19;"	m	class:DnDD
+debug	framework/middle.h	45;"	m	class:Middle
+debug_	tls/https.h	15;"	m	class:HTTPS
+dec_ctx_	tls/block_cipher.h	171;"	m	class:GCM
+dec_ctx_	tls/block_cipher.h	32;"	m	struct:AES
+dec_ctx_	tls/block_cipher.h	52;"	m	struct:Camellia
+dec_ctx_	tls/block_cipher.h	63;"	m	struct:DES3
+dec_ctx_	tls/chacha.h	34;"	m	class:ChaCha
+dec_func_	tls/block_cipher.h	26;"	m	struct:AES
+dec_func_	tls/block_cipher.h	48;"	m	struct:Camellia
+dec_func_	tls/block_cipher.h	61;"	m	struct:DES3
+dec_iv	pybind/wrapper.cc	46;"	f	class:PyAES
+dec_iv	tls/block_cipher.h	134;"	f	class:GCM
+dec_iv	tls/block_cipher.h	192;"	f	class:CHACHA
+dec_iv	tls/block_cipher.h	82;"	f	class:CBC
+dec_iv_	tls/block_cipher.h	117;"	m	class:CBC
+dec_key	pybind/wrapper.cc	33;"	f	class:PyAES
+dec_key	tls/block_cipher.h	127;"	f	class:GCM
+dec_key	tls/block_cipher.h	186;"	f	class:CHACHA
+dec_key	tls/block_cipher.h	88;"	f	class:CBC
+dec_key	tls/chacha.cc	8;"	f	class:ChaCha
+dec_key_	tls/block_cipher.h	170;"	m	class:GCM
+dec_nonce	tls/chacha.cc	16;"	f	class:ChaCha
+dec_seq_num_	tls/tls.h	93;"	m	class:TLS
+dec_sequence_num_	tls/block_cipher.h	173;"	m	class:GCM
+dec_sequence_num_	tls/chacha.h	35;"	m	class:ChaCha
+decode	pybind/wrapper.cc	113;"	f	class:PyRSA
+decode	tls/rsa.cc	25;"	f	class:RSA
+decode	tls/tls.cc	1026;"	f	class:TLS
+decoded	tst/ecdhe.cc	21;"	v
+decrypt	pybind/wrapper.cc	56;"	f	class:PyAES
+decrypt	tls/block_cipher.h	100;"	f	class:CBC
+decrypt	tls/block_cipher.h	112;"	f	class:CBC
+decrypt	tls/block_cipher.h	150;"	f	class:GCM
+decrypt	tls/block_cipher.h	166;"	f	class:GCM
+decrypt	tls/block_cipher.h	198;"	f	class:CHACHA
+decrypt	tls/chacha.h	23;"	f	class:ChaCha
+der2json	tls/ber.cc	87;"	f
+derive_keys	tls/tls.cc	117;"	f	class:TLS
+derive_secret	tls/hash.h	235;"	f	class:HKDF
+dertojson	pybind/wrapper.cc	11;"	f
+deserialize	database/util.cc	14;"	f
+dhe_server_key_exchange	tls/tls.cc	841;"	f	class:TLS
+digest	tst/ecdhe.cc	21;"	v
+driver	database/mysqlquery.h	10;"	m	class:Mysqlquery
+e	tls/crypt.h	63;"	m	class:RSA
+ecdhe_server_key_exchange	tls/tls.cc	807;"	f	class:TLS
+edit	src/dndd.cc	110;"	f	class:DnDD
+enc_ctx_	tls/block_cipher.h	171;"	m	class:GCM
+enc_ctx_	tls/block_cipher.h	32;"	m	struct:AES
+enc_ctx_	tls/block_cipher.h	52;"	m	struct:Camellia
+enc_ctx_	tls/block_cipher.h	63;"	m	struct:DES3
+enc_ctx_	tls/chacha.h	34;"	m	class:ChaCha
+enc_func_	tls/block_cipher.h	25;"	m	struct:AES
+enc_func_	tls/block_cipher.h	47;"	m	struct:Camellia
+enc_func_	tls/block_cipher.h	62;"	m	struct:DES3
+enc_iv	pybind/wrapper.cc	40;"	f	class:PyAES
+enc_iv	tls/block_cipher.h	131;"	f	class:GCM
+enc_iv	tls/block_cipher.h	189;"	f	class:CHACHA
+enc_iv	tls/block_cipher.h	79;"	f	class:CBC
+enc_iv_	tls/block_cipher.h	117;"	m	class:CBC
+enc_key	pybind/wrapper.cc	27;"	f	class:PyAES
+enc_key	tls/block_cipher.h	123;"	f	class:GCM
+enc_key	tls/block_cipher.h	183;"	f	class:CHACHA
+enc_key	tls/block_cipher.h	85;"	f	class:CBC
+enc_key	tls/chacha.cc	4;"	f	class:ChaCha
+enc_key_	tls/block_cipher.h	170;"	m	class:GCM
+enc_nonce	tls/chacha.cc	12;"	f	class:ChaCha
+enc_seq_num_	tls/tls.h	93;"	m	class:TLS
+enc_sequence_num_	tls/block_cipher.h	173;"	m	class:GCM
+enc_sequence_num_	tls/chacha.h	35;"	m	class:ChaCha
+encode	pybind/wrapper.cc	109;"	f	class:PyRSA
+encode	pybind/wrapper.cc	165;"	f	class:PyTLS
+encode	tls/rsa.cc	21;"	f	class:RSA
+encode	tls/tls.cc	1077;"	f	class:TLS
+encoded	tst/ecdhe.cc	21;"	v
+encrypt	database/mysqldata.cc	64;"	f	class:SqlQuery
+encrypt	pybind/wrapper.cc	52;"	f	class:PyAES
+encrypt	tls/block_cipher.h	109;"	f	class:CBC
+encrypt	tls/block_cipher.h	137;"	f	class:GCM
+encrypt	tls/block_cipher.h	163;"	f	class:GCM
+encrypt	tls/block_cipher.h	195;"	f	class:CHACHA
+encrypt	tls/block_cipher.h	91;"	f	class:CBC
+encrypt	tls/chacha.h	13;"	f	class:ChaCha
+end	options/option.h	34;"	f	class:FileExpansion
+end_string	framework/server.h	50;"	m	class:Server
+expand	tls/hash.h	239;"	f	class:HKDF
+expand_key	tls/latex.cpp	42;"	f
+expand_label	tls/hash.h	257;"	f	class:HKDF
+extract	tls/hash.h	231;"	f	class:HKDF
+f	tst/t.cc	136;"	f
+fd	framework/middle.h	10;"	m	struct:Packet
+field	src/dnddsub.cc	34;"	f	class:DnDD
+fileNhtml_	framework/website.h	19;"	m	class:WebSite
+finish_msg_count_	tls/tls.h	97;"	m	class:TLS
+finished	tls/tls.cc	1127;"	f	class:TLS
+follow	src/dndd.cc	69;"	f	class:DnDD
+free	framework/middle.cc	79;"	f	class:Middle
+func	tst/t.cc	103;"	f
+g	tls/crypt.h	50;"	m	class:DHE
+g	tst/dhekey_exchange.cc	16;"	v
+garbage_collection	framework/middle.cc	67;"	f	class:Middle
+generate_signature	tls/tls.cc	86;"	f	class:TLS
+get	options/option.h	13;"	f	class:CMDoption
+get_K	pybind/wrapper.cc	91;"	f	class:PyDiffie
+get_addr	framework/server.cc	65;"	f	class:Client
+get_certificate_core	tls/pem.cc	10;"	f
+get_content_type	tls/tls.cc	79;"	f	class:TLS
+get_full_length	framework/server.cc	33;"	f	class:Vrecv
+get_full_length	framework/server.cc	41;"	f	class:Http
+get_full_length	framework/server.cc	52;"	f	class:TlsLayer
+get_full_length	pybind/wrapper.cc	132;"	f	class:PyTLSClient
+get_full_length	pybind/wrapper.cc	150;"	f	class:PyHTTPSCLient
+get_full_length	tls/https.cc	16;"	f	class:HTTPS
+get_full_length	tls/tls-cl.cpp	32;"	f	class:TLS_client	file:
+get_g	pybind/wrapper.cc	87;"	f	class:PyDiffie
+get_instance	options/log.cc	9;"	f	class:Log
+get_keys	tls/pem.cc	57;"	f
+get_length	tls/tls.cc	248;"	f	struct:TLS_header
+get_length	tls/tls.cc	296;"	f	struct:Handshake_header
+get_n_byte	tls/hash.h	169;"	f	class:PRF
+get_p	pybind/wrapper.cc	83;"	f	class:PyDiffie
+get_padding	tst/dhekey_exchange.cc	44;"	f
+get_pubkeys	tls/pem.cc	45;"	f
+get_pubkeys	tls/pem.cc	50;"	f
+get_ya	pybind/wrapper.cc	95;"	f	class:PyDiffie
+get_yb	pybind/wrapper.cc	99;"	f	class:PyDiffie
+getdir	database/ls.cc	6;"	f
+google	src/dndd.cc	32;"	f	class:DnDD
+group	src/dndd.h	19;"	m	class:DnDD
+group_by	database/mysqldata.cc	99;"	f	class:SqlQuery
+group_desc	src/dndd.h	19;"	m	class:DnDD
+handshake_type	tls/tls.cc	289;"	m	struct:Handshake_header	file:
+hash	pybind/wrapper.h	24;"	f	struct:PySHA1
+hash	pybind/wrapper.h	30;"	f	struct:PySHA256
+hash	pybind/wrapper.h	36;"	f	struct:PySHA512
+hash	pybind/wrapper.h	45;"	f	struct:PyHMAC
+hash	tls/hash.h	108;"	f	class:HMAC
+hash	tls/hash.h	122;"	f	class:HMAC
+hash	tls/hash.h	17;"	f	class:SHA1
+hash	tls/hash.h	36;"	f	class:SHA256
+hash	tls/hash.h	55;"	f	class:SHA384
+hash	tls/hash.h	74;"	f	class:SHA512
+hash_code_	tls/tls.h	86;"	m	class:TLS
+header_	framework/website.h	20;"	m	class:WebSite
+hex	tst/dhekey_exchange.cc	21;"	f
+hexprint	tls/crypt.h	35;"	f
+hmac_	tls/hash.h	188;"	m	class:PRF
+i	tst/misc.cc	5;"	m	struct:A	file:
+i_key_pad_	tls/hash.h	128;"	m	class:HMAC
+id	framework/middle.h	10;"	m	struct:Packet
+id	site_src/my_site.h	12;"	m	class:Site
+id	src/dndd.h	19;"	m	class:DnDD
+idNchannel_	framework/middle.h	36;"	m	class:Middle
+id_	framework/middle.h	44;"	m	class:Middle
+id_length_	tls/tls.h	92;"	m	class:TLS
+increase_seq_num	tls/block_cipher.h	175;"	f	class:GCM
+increase_seq_num	tls/chacha.cc	20;"	f	class:ChaCha
+index	site_src/my_site.cc	21;"	f	class:Site
+index	src/dndd.cc	127;"	f	class:DnDD
+influx_	framework/middle.h	34;"	m	class:Middle
+init_certificate	tls/tls.cc	30;"	f	file:
+inport_	framework/middle.h	43;"	m	class:Middle
+inport_	tls/https.h	14;"	m	class:HTTPS
+insert	database/mysqldata.cc	13;"	f	class:SqlQuery
+insert	database/mysqldata.cc	34;"	f	class:SqlQuery
+insert	database/mysqldata.h	16;"	f	class:SqlQuery
+insert	database/mysqldata.h	21;"	f	class:SqlQuery
+insert	database/mysqldata.h	26;"	f	class:SqlQuery
+insert	pybind/wrapper.cc	214;"	f	class:PySQL
+insert_nth_row	database/mysqldata.cc	47;"	f	class:SqlQuery
+int_2byte	tls/tls.cc	22;"	f	file:
+is_int	database/mysqldata.cc	23;"	f	class:SqlQuery
+is_real	database/mysqldata.cc	28;"	f	class:SqlQuery
+is_tls12	tls/tls.cc	74;"	f	class:TLS
+iv	tst/ecdhe.cc	19;"	v
+k	tls/crypt.h	76;"	m	class:ECDHE
+key	pybind/wrapper.h	42;"	f	struct:PyHMAC
+key	tls/hash.h	119;"	f	class:HMAC
+key	tls/hash.h	94;"	f	class:HMAC
+key	tst/ecdhe.cc	18;"	v
+label	tls/hash.h	161;"	f	class:PRF
+label_	tls/hash.h	189;"	m	class:PRF
+length	tls/tls.cc	246;"	m	struct:TLS_header	file:
+length	tls/tls.cc	290;"	m	struct:Handshake_header	file:
+level	site_src/my_site.h	13;"	m	class:Site
+level	src/dndd.h	19;"	m	class:DnDD
+level2txt	src/page.cc	7;"	f	file:
+lnd2mpz	tls/ecdh.cc	12;"	f	file:
+log_file_	options/log.h	35;"	m	class:Log
+log_level	options/log.cc	29;"	f	class:Log
+log_level_	options/log.h	30;"	m	class:Log	typeref:enum:Log::LogLevel
+log_on_	options/log.h	38;"	m	class:Log
+logo	src/dndd.h	19;"	m	class:DnDD
+m	site_src/doc3.cpp	32;"	m	class:My_site	file:
+mac_	tls/tls.h	82;"	m	class:TLS
+main	database/mysqlchange.cpp	5;"	f
+main	framework/cl.cpp	9;"	f
+main	framework/middle.cpp	7;"	f
+main	site_src/doc1.cpp	6;"	f
+main	site_src/doc3.cpp	35;"	f
+main	site_src/doc4.cpp	17;"	f
+main	site_src/site.cpp	6;"	f
+main	src/dndd.cpp	6;"	f
+main	tls/https.cpp	8;"	f
+main	tls/latex.cpp	56;"	f
+main	tls/passavea.cpp	9;"	f
+main	tls/test.cpp	10;"	f
+main	tls/test2.cpp	9;"	f
+main	tls/test3.cpp	6;"	f
+main	tls/tls-cl.cpp	37;"	f
+manipulators	options/log.cc	18;"	f	class:Log
+master_secret_	tls/tls.h	88;"	m	class:TLS
+maxpage	src/dnddsub.cc	28;"	f	class:DnDD
+mn	src/dndd.cc	159;"	f	class:DnDD
+mpz2bnd	tls/crypt.h	21;"	f
+mpz2lnd	tls/ecdh.cc	5;"	f	file:
+mtx	framework/asyncqueue.h	19;"	m	class:WaitQueue
+mtx_	options/log.h	36;"	m	class:Log
+myQuery	database/mysqlquery.cc	10;"	f	class:Mysqlquery
+n	tls/crypt.h	76;"	m	class:ECDHE
+name	database/mysqldata.h	41;"	m	struct:SqlQuery::Column
+name	site_src/my_site.h	12;"	m	class:Site
+name	src/dndd.h	19;"	m	class:DnDD
+nameNvalue_	framework/website.h	15;"	m	class:WebSite
+ncf	tls/block_cipher.h	16;"	m	struct:AES
+ncf	tls/block_cipher.h	39;"	m	struct:Camellia
+new_book	src/dndd.cc	104;"	f	class:DnDD
+nextprime	tls/mpz.cc	16;"	f
+no_salt	tls/hash.h	224;"	f	class:HKDF
+nokeep_start	framework/server.cc	97;"	f	class:Server
+now	database/mysqldata.cc	57;"	f	class:SqlQuery
+nskf	tls/block_cipher.h	20;"	m	struct:AES
+nskf	tls/block_cipher.h	42;"	m	struct:Camellia
+o_key_pad_	tls/hash.h	128;"	m	class:HMAC
+operator ()	framework/website.cc	37;"	f	class:WebSite
+operator +	options/option.h	29;"	f	class:FileExpansion
+operator <<	options/log.h	20;"	f	class:Log
+options_	options/option.h	19;"	m	class:CMDoption
+out_	framework/middle.h	21;"	m	class:Channel
+outflux_	framework/middle.h	35;"	m	class:Middle
+output_size	tls/hash.h	12;"	m	class:SHA1
+output_size	tls/hash.h	31;"	m	class:SHA256
+output_size	tls/hash.h	50;"	m	class:SHA384
+output_size	tls/hash.h	69;"	m	class:SHA512
+p	tls/crypt.h	65;"	m	class:RSA
+p	tls/crypt.h	76;"	m	class:ECDHE
+p	tst/dhekey_exchange.cc	15;"	v
+p	tst/misc.cc	6;"	m	struct:A	file:
+page	src/dndd.h	19;"	m	class:DnDD
+param	database/util.cc	47;"	f
+parse_multi	framework/website.cc	93;"	f	class:WebSite
+parse_one	framework/website.cc	71;"	f	class:WebSite
+parse_post	framework/website.cc	100;"	f	class:WebSite
+pc	tls/ber.h	47;"	m	struct:ber::Type
+pem2json	tls/pem.cc	25;"	f
+pemtojson	pybind/wrapper.cc	19;"	f
+pg	src/page.cc	19;"	f	class:DnDD
+phi	tls/crypt.h	65;"	m	class:RSA
+plog_	options/log.h	41;"	m	class:Log
+powm	tls/mpz.cc	36;"	f
+print_help	options/option.cc	42;"	f	class:CMDoption
+process	framework/website.h	13;"	f	class:WebSite
+process	site_src/doc3.cpp	13;"	f	class:My_site
+process	site_src/doc4.cpp	11;"	f	class:My_site
+process	site_src/my_site.cc	13;"	f	class:Site
+process	src/dndd.cc	13;"	f	class:DnDD
+process_bitstring	tls/pem.cc	32;"	f
+process_extension	tls/tls.cc	406;"	f	class:TLS
+provide	framework/asyncqueue.cc	62;"	f	class:AsyncQueue
+provider	framework/asyncqueue.h	31;"	m	class:AsyncQueue
+psk_	tls/tls.h	88;"	m	class:TLS
+psk_key_schedule_	tls/tls.h	89;"	m	class:TLS
+psstm	database/util.cc	36;"	f
+push_back	framework/asyncqueue.cc	38;"	f	class:WaitQueue
+pyrecv	pybind/wrapper.cc	158;"	f	class:PyHTTPSCLient
+pysend	pybind/wrapper.cc	154;"	f	class:PyHTTPSCLient
+q	framework/asyncqueue.h	16;"	m	class:WaitQueue
+q	tls/crypt.h	65;"	m	class:RSA
+q	tls/crypt.h	76;"	m	class:ECDHE
+random	tls/tls.cc	336;"	m	struct:Hello_header	file:
+random_prime	tls/mpz.cc	23;"	f
+rcon	tls/latex.cpp	38;"	v
+read_constructed	tls/ber.cc	73;"	f	file:
+read_length	tls/ber.cc	17;"	f	file:
+read_type	tls/ber.cc	8;"	f	file:
+read_value	tls/ber.cc	31;"	f	file:
+rec_received_	tls/tls.h	78;"	m	class:TLS
+recv	framework/middle.cc	17;"	f	class:Middle
+recv	framework/server.cc	16;"	f	class:Vrecv
+recv	framework/tcpip.cc	36;"	f	class:Tcpip
+recv	pybind/wrapper.cc	123;"	f	class:PyClient
+requested_document_	framework/website.h	16;"	m	class:WebSite
+res	database/mysqlquery.h	15;"	m	class:Mysqlquery
+result	src/dndd.cc	62;"	f	class:DnDD
+rooms_	src/chatserver.h	37;"	m	class:ChatServer
+rsa_	tls/tls.h	96;"	m	class:TLS
+salt	tls/hash.h	228;"	f	class:HKDF
+sbox	tls/latex.cpp	4;"	v	file:
+schedule	tls/latex.cpp	41;"	v
+search	src/dndd.cc	139;"	f	class:DnDD
+secret	pybind/wrapper.cc	60;"	f	class:PyPRF
+secret	tls/hash.h	156;"	f	class:PRF
+secret_	tls/hash.h	189;"	m	class:PRF
+seed	pybind/wrapper.cc	64;"	f	class:PyPRF
+seed	tls/hash.h	165;"	f	class:PRF
+seed_	tls/hash.h	189;"	m	class:PRF
+select	database/mysqldata.cc	71;"	f	class:SqlQuery
+select	pybind/wrapper.cc	207;"	f	class:PySQL
+selected_cipher_suite	tls/tls.h	79;"	m	class:TLS
+send	framework/middle.cc	48;"	f	class:Middle
+send	framework/tcpip.cc	26;"	f	class:Tcpip
+send	pybind/wrapper.cc	119;"	f	class:PyClient
+serialize	database/util.cc	6;"	f
+server_addr	framework/tcpip.h	19;"	m	class:Tcpip	typeref:struct:Tcpip::sockaddr_in
+server_certificate	tls/tls.cc	730;"	f	class:TLS
+server_fd	framework/tcpip.h	17;"	m	class:Tcpip
+server_hello	tls/tls.cc	644;"	f	class:TLS
+server_hello_done	tls/tls.cc	926;"	f	class:TLS
+server_key_exchange	tls/tls.cc	836;"	f	class:TLS
+server_random	tst/dhekey_exchange.cc	12;"	v
+server_random_	tls/tls.h	87;"	m	class:TLS
+session_id	tls/tls.cc	338;"	m	struct:Hello_header	file:
+session_id_	tls/tls.h	87;"	m	class:TLS
+session_id_length	tls/tls.cc	337;"	m	struct:Hello_header	file:
+set_P	tls/ecdh.cc	33;"	f	class:ECDHE
+set_Q	tls/ecdh.cc	26;"	f	class:ECDHE
+set_buf	tls/tls.cc	340;"	f	class:TLS
+set_cipher	tls/tls.cc	358;"	f	class:TLS
+set_dec_key_	tls/block_cipher.h	28;"	m	struct:AES
+set_dec_key_	tls/block_cipher.h	50;"	m	struct:Camellia
+set_dec_key_	tls/block_cipher.h	60;"	m	struct:DES3
+set_enc_key_	tls/block_cipher.h	27;"	m	struct:AES
+set_enc_key_	tls/block_cipher.h	49;"	m	struct:Camellia
+set_enc_key_	tls/block_cipher.h	59;"	m	struct:DES3
+set_length	tls/tls.cc	247;"	f	struct:TLS_header
+set_length	tls/tls.cc	291;"	f	struct:Handshake_header
+set_log_filter	options/log.cc	51;"	f	class:Log
+set_log_level	options/log.cc	46;"	f	class:Log
+set_yb	pybind/wrapper.cc	77;"	f	class:PyDiffie
+set_yb	tls/diffie.cc	26;"	f	class:DHE
+sha_	tls/hash.h	127;"	m	class:HMAC
+sha_	tls/hash.h	24;"	m	class:SHA1
+sha_	tls/hash.h	43;"	m	class:SHA256
+sha_	tls/hash.h	62;"	m	class:SHA384
+sha_	tls/hash.h	81;"	m	class:SHA512
+show	tls/mpz.cc	10;"	f
+show	tls/mpz.cc	9;"	f	file:
+show_tables	database/mysqldata.cc	91;"	f	class:SqlQuery
+sign	tls/rsa.cc	29;"	f	class:RSA
+sign	tst/dhekey_exchange.cc	18;"	v
+signin	src/dndd.cc	193;"	f	class:DnDD
+signup	site_src/my_site.cc	40;"	f	class:Site
+size	database/mysqldata.h	42;"	m	struct:SqlQuery::Column
+sow	framework/middle.cc	55;"	f	class:Middle
+sq	site_src/my_site.h	10;"	m	class:Site
+sq	src/dndd.h	10;"	m	class:DnDD
+src	tst/ecdhe.cc	20;"	v
+start	framework/middle.cc	91;"	f	class:Middle
+start	framework/server.cc	83;"	f	class:Server
+start	src/chatserver.h	6;"	f	class:Server2
+start	tls/https.cc	35;"	f	class:HTTPS
+stmt	database/mysqlquery.h	12;"	m	class:Mysqlquery
+str2mpz	tls/pem.cc	18;"	f
+struct2str	tls/tls.cc	26;"	f	file:
+support_dhe	tls/tls.cc	70;"	f	class:TLS
+swap	framework/website.cc	23;"	f	class:WebSite
+t	pybind/wrapper.h	89;"	m	class:PyHTTPSCLient
+t	tls/tls-cl.cpp	27;"	m	class:TLS_client	file:
+table	src/dndd.h	19;"	m	class:DnDD
+table_name	database/mysqldata.h	45;"	m	class:SqlQuery
+tables	src/dnddsub.cc	8;"	f	class:DnDD
+tag	tls/ber.h	45;"	m	struct:ber::Type
+th_	framework/middle.h	46;"	m	class:Middle
+thi	framework/asyncqueue.h	33;"	m	class:AsyncQueue
+tho	framework/asyncqueue.h	18;"	m	class:WaitQueue
+time	options/log.cc	35;"	f	class:Log
+time_out	framework/server.h	51;"	m	class:Server
+time_out_	framework/middle.h	44;"	m	class:Middle
+tls12_	tls/tls.h	80;"	m	class:TLS
+tmp	src/dndd.h	20;"	m	class:DnDD
+to_byte	tls/tls.cc	16;"	f	file:
+to_vector_func	pybind/wrapper.h	96;"	f	struct:PyTLS
+tr	tst/dhekey_exchange.cc	26;"	f
+trailing_string_	framework/server.h	11;"	m	class:Vrecv
+type	database/mysqldata.h	43;"	m	struct:SqlQuery::Column
+type_change	tls/ber.cc	41;"	f	file:
+upload	site_src/my_site.cc	33;"	f	class:Site
+use_key	tls/tls.cc	171;"	f	class:TLS
+use_mutex_	options/log.h	37;"	m	class:Log
+v	options/option.h	36;"	m	class:FileExpansion
+values_	database/mysqldata.h	51;"	m	class:SqlQuery
+version	tls/tls.cc	245;"	m	struct:TLS_header	file:
+version	tls/tls.cc	335;"	m	struct:Hello_header	file:
+vote	src/dndd.cc	84;"	f	class:DnDD
+xa	tls/crypt.h	54;"	m	class:DHE
+xb	tls/crypt.h	54;"	m	class:DHE
+ya	tls/crypt.h	51;"	m	class:DHE
+ya	tst/dhekey_exchange.cc	17;"	v
+yb	tls/crypt.h	51;"	m	class:DHE
+yb	tst/dhekey_exchange.cc	19;"	v
+zK	tls/tls.cc	15;"	v	file:
+zd	tls/tls.cc	15;"	v	file:
+ze	tls/tls.cc	15;"	v	file:
+~Middle	framework/middle.cc	86;"	f	class:Middle
+~Mysqlquery	database/mysqlquery.cc	59;"	f	class:Mysqlquery
+~Tcpip	framework/tcpip.cc	20;"	f	class:Tcpip
