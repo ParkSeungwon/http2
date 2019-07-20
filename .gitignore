@@ -43,3 +43,7 @@ test
 *.app
 *.vim
 .vscode/
+find
+.
+-size
++3M
