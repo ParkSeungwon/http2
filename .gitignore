@@ -42,9 +42,4 @@ test
 *.out
 *.app
 *.vim
-.vscode/
-find
-.
--size
-+3M
 codequery.db
