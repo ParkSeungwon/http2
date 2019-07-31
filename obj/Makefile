@@ -9,10 +9,13 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../tls_server_test.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lgmpxx -lgmp -lwolfssl -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
+
+../tls_server_test.x : tls_server_test.tls.x $(tls) $(framework) $(options)
+	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lwolfssl -lpthread -lstdc++fs
 
 ../https.x : https.tls.x $(tls) $(framework) $(options)
 	$(CC) -o $@ $^ -ljsoncpp -lgmpxx -lgmp -lwolfssl -lpthread -lstdc++fs
