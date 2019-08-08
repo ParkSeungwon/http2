@@ -70,8 +70,22 @@ void DnDD::pg()
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", "<small>" + table + '.' + book + '.' + page + ".</small>" + sq[0]["title"].asString());
 
-	if(page == "0") iframe_content_ = level2txt(allow);
-	else {
+	if(page == "0") {
+		iframe_content_ = level2txt(allow);
+		sq.select("(select tt.num, tt.page, email, title, contents, date, edit from "
+				+ table + " tt inner join "
+				+ " (select num, page, max(edit) as maxedit from " + table
+				+ " where title <> '코멘트임.' and num = " + book 
+				+ " group by num, page) tmp on tt.num = tmp.num and "
+				+ " tt.page = tmp.page and edit = tmp.maxedit) tmp2"
+				, "where title <> '코멘트임.' order by page");
+		string s = "<br>";
+		for(int i=1; i<sq.size(); i++)  
+			s += "<a target=blank href='page.html?table=" + table + "&book="
+				+ book + "&page=" + to_string(i) + "'>" + to_string(i) + ". " 
+				+ sq[i]["title"].asString() + "</a><br>";
+		iframe_content_.insert(iframe_content_.find("</body>"), s);
+	} else {
 		auto v = base64_decode(sq[0]["contents"].asString());
 		iframe_content_ = string{v.begin(), v.end()};
 	}

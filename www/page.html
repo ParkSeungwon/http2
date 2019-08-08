@@ -14,24 +14,13 @@
 	 setTimeout(()=> {
 	$('iframe').height($('iframe').contents().height());
 	 }, 1000);
-//    var newheight;
-//    var newwidth;
-//
-//    if(document.getElementById){
-//        newheight = document.getElementById("iframe").contentWindow.document .body.scrollHeight;
-//        newwidth = document.getElementById("iframe").contentWindow.document .body.scrollWidth;
-//    }
-//
-//    document.getElementById("iframe").height = 50 + (newheight) + "px";
-//    document.getElementById("iframe").width = (newwidth) + "px";
-//} 
-//
-//function follow() {
-//	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').prop('checked')},
-//			function(data, status) {
-//				alert(data);
-//			}
-//		)
+ }
+function follow() {
+	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').prop('checked')},
+		function(data, status) {
+			alert(data);
+		}
+	)
 }
 function conf() {
 	if(confirm("Closing this discussion.\nYou will not be able to write or vote any more.\n Are you sure?")) {
