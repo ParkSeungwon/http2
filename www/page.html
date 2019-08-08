@@ -11,24 +11,27 @@
   </script>
   <script>
  function resizeIframe() {
-    var newheight;
-    var newwidth;
-
-    if(document.getElementById){
-        newheight = document.getElementById("iframe").contentWindow.document .body.scrollHeight;
-        newwidth = document.getElementById("iframe").contentWindow.document .body.scrollWidth;
-    }
-
-    document.getElementById("iframe").height = 50 + (newheight) + "px";
-    document.getElementById("iframe").width = (newwidth) + "px";
-} 
-
-function follow() {
-	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').prop('checked')},
-			function(data, status) {
-				alert(data);
-			}
-		)
+	 setTimeout(()=> {
+	$('iframe').height($('iframe').contents().height());
+	 }, 1000);
+//    var newheight;
+//    var newwidth;
+//
+//    if(document.getElementById){
+//        newheight = document.getElementById("iframe").contentWindow.document .body.scrollHeight;
+//        newwidth = document.getElementById("iframe").contentWindow.document .body.scrollWidth;
+//    }
+//
+//    document.getElementById("iframe").height = 50 + (newheight) + "px";
+//    document.getElementById("iframe").width = (newwidth) + "px";
+//} 
+//
+//function follow() {
+//	$.post("follow", {follow : $('#usrname').val(), secret : $('#secret').prop('checked')},
+//			function(data, status) {
+//				alert(data);
+//			}
+//		)
 }
 function conf() {
 	if(confirm("Closing this discussion.\nYou will not be able to write or vote any more.\n Are you sure?")) {
@@ -45,16 +48,18 @@ function vote() {
 		});
 }
   </script>
+<style>
+iframe {
+	resize:auto;
+}
+</style>
  </head>
  
  <body>
 	 <div class="container">
 		 <div class="row">
-			 <h2 style="display:inline">TITLE</h2>
+			 <h1 style="display:inline">TITLE</h2>
 			 <h5 style="float:right;display:inline">WHO</h5>
-		 </div>
-		 <div class="row">
-			 <iframe width=100%  height=450px  id="iframe" src='data:text/html;charset=utf-8;base64,MAINTEXT'></iframe>
 		 </div>
 		 <div class="row">
 			 <a href="main.html" class="btn btn-primary">
@@ -75,6 +80,11 @@ function vote() {
 			 <button type="button" class="btn btn-info" onclick="$('#myModal').modal()">follow</button>
 			 <button class="btn btn-danger" onclick="conf()">close</button>
 		 </div>
+		
+		 <div class="row">
+			 <iframe onload='resizeIframe()' width=100%  id="iframe" src='iframe-content.html'></iframe>
+		 </div>
+
 		 <div class="row">
 			 <br>
 			 <div class="panel panel-default">

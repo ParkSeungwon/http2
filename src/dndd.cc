@@ -27,6 +27,7 @@ void DnDD::process()
 	else if(requested_document_ == "search") content_ = search(nameNvalue_["search"]);
 	else if(requested_document_ == "close") content_ = close();
 	else if(requested_document_ == "googleapi") google();
+	else if(requested_document_ == "iframe-content.html") content_ = iframe_content_;
 }
 
 void DnDD::google() 

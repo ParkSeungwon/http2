@@ -16,6 +16,7 @@ static string level2txt(array<int, 5> allow)
 }
 
 string base64_encode(vector<uint8_t> v);
+vector<uint8_t> base64_decode(string s);
 void DnDD::pg()
 {
 	if(nameNvalue_["add"] != "") {//from add
@@ -69,10 +70,11 @@ void DnDD::pg()
 	swap("FOLLOW", sq[0]["email"].asString());
 	swap("TITLE", "<small>" + table + '.' + book + '.' + page + ".</small>" + sq[0]["title"].asString());
 
-	if(page == "0") {
-		string str = level2txt(allow);
-		swap("MAINTEXT", base64_encode(vector<uint8_t>{str.begin(), str.end()}));
-	} else swap("MAINTEXT", sq[0]["contents"].asString());
+	if(page == "0") iframe_content_ = level2txt(allow);
+	else {
+		auto v = base64_decode(sq[0]["contents"].asString());
+		iframe_content_ = string{v.begin(), v.end()};
+	}
 
 	tmp = sq[0];//5 date
 	string date = sq[0]["date"].asString();
