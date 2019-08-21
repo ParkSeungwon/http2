@@ -404,7 +404,7 @@ template<bool SV> void TLS<SV>::allocate_cipher(uint8_t a, uint8_t b)
 	}
 }
 template<bool SV> bool TLS<SV>::process_extension(uint8_t *p)
-{//only used in server
+{//only used in server, return true if tls1.3 agreed
 	struct Ext {
 		uint8_t type[2];
 		uint8_t length[2];

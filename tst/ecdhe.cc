@@ -2,6 +2,7 @@
 #include<catch.hpp>
 #include<nettle/aes.h>
 #include<nettle/gcm.h>
+#include<nettle/curve25519.h>
 #include"tls/crypt.h"
 #include"tls/block_cipher.h"
 #include"tls/chacha.h"
@@ -15,6 +16,53 @@ TEST_CASE("ecdhe") {
 	B.set_Q(A.Q);
 	REQUIRE(A.K == B.K);
 }
+
+TEST_CASE("x25519 nettle mul_g mul key exchange") {
+ 	mpz_class a{"0x77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"},
+			  b{"0x5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb"},
+			  pa{"0x8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a"},
+			  pb{"0xde9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f"},
+			  k{"0x4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742"};
+	uint8_t A[32], B[32], PA[32], PB[32], KA[32], KB[32];
+	mpz2bnd(a, A, A+32); 				mpz2bnd(b, B, B+32);
+	curve25519_mul_g(PA, A); 			curve25519_mul_g(PB, B);
+	REQUIRE(pa == bnd2mpz(PA, PA+32)); 	REQUIRE(pb == bnd2mpz(PB, PB+32));
+	curve25519_mul(KA, A, PB); 			curve25519_mul(KB, B, PA);
+	REQUIRE(k == bnd2mpz(KA, KA+32)); 	REQUIRE(k == bnd2mpz(KB, KB+32));
+//Alice's private key, a:
+//     77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a
+//Alice's public key, X25519(a, 9):
+//     8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a
+//Bob's private key, b:
+//     5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb
+//Bob's public key, X25519(b, 9):
+//     de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f
+//Their shared secret, K:
+//     4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742
+}
+
+TEST_CASE("nettle curve 25519 multiply") {
+	mpz_class k, p, kp;
+	SECTION("first test") {
+	k = mpz_class{"0xa546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4"};
+	p = mpz_class{"0xe6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c"};
+	kp =mpz_class{"0xc3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552"};
+	}
+	SECTION("second test") {
+	k = mpz_class{"0x4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d"};
+	p = mpz_class{"0xe5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493"};
+	kp =mpz_class{"0x95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957"};
+	}
+	uint8_t K[32], P[32], KP[32], R[32];
+	mpz2bnd(k, K, K+32);
+	mpz2bnd(p, P, P+32);
+	mpz2bnd(kp, KP, KP+32);
+	curve25519_mul(R, K, P);
+	REQUIRE(equal(KP, KP+32, R));
+	kp = k * p;
+	REQUIRE(kp = bnd2mpz(KP, KP+32));
+}
+
 unsigned char key[] = "123456789012345678901234567890123456";
 unsigned char iv[] = "1234567890123456";
 unsigned char src[64] = "12345678901234567890123456789012";
@@ -53,12 +101,9 @@ TEST_CASE("aes cbc new") {
 
 TEST_CASE("CBC AES") {
 	CBC<AES<256>> ca;
-	ca.enc_key(key);
-	ca.dec_key(key);
-	ca.enc_iv(iv);
-	ca.dec_iv(iv);
-	auto v = ca.encrypt(src, src + 32);
-	auto v2 = ca.decrypt(v.begin(), v.end());
+	ca.enc_key(key);						ca.dec_key(key);
+	ca.enc_iv(iv);							ca.dec_iv(iv);
+	auto v = ca.encrypt(src, src + 32); 	auto v2 = ca.decrypt(v.begin(), v.end());
 	REQUIRE(equal(src, src + 32, v2.begin()));
 }
 TEST_CASE("camellia") {
