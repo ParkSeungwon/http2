@@ -60,7 +60,7 @@ TEST_CASE("nettle curve 25519 multiply") {
 	curve25519_mul(R, K, P);
 	REQUIRE(equal(KP, KP+32, R));
 	kp = k * p;
-	REQUIRE(kp = bnd2mpz(KP, KP+32));
+	REQUIRE(kp == bnd2mpz(KP, KP+32));
 }
 
 unsigned char key[] = "123456789012345678901234567890123456";

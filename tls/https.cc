@@ -52,61 +52,27 @@ void HTTPS::start()
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	string s; TLS t;//TLS is decoupled from file descriptor
-	switch(CLIENT_HELLO) {
-	case CLIENT_HELLO:
-		if(s = t.client_hello(recv(client_fd)); s != "") {//error -> alert return
-			send(move(s));					LOGE << "handshake failed" << endl;
-			break;
-		} else 								LOGI << "client hello" << endl;
-	case SERVER_HELLO:
-		s = t.server_hello(); 				LOGI << "server hello" << endl;
-		s += t.is_tls12() ? //if tls13, encode starts here
-			t.server_certificate() : t.encode(t.server_certificate(), HANDSHAKE);
-											LOGI << "server certificate" << endl;
-		if(t.is_tls12()) {
-			s += t.server_key_exchange();	LOGI << "server key exchange" << endl;
-			s += t.server_hello_done();		LOGI << "server hello done" << endl;
-		} else s += t.finished();//finished is already encoded
-		send(move(s), client_fd);
-	case CLIENT_KEY_EXCHANGE:
-		if(t.is_tls12()) {
-			if(s = t.client_key_exchange(recv(client_fd)); s != "") {
-				send(move(s));				LOGE<<"client key exchange failed"<<endl;
+	t.handshake(bind(&HTTPS::recv, this, client_fd),
+				bind(&HTTPS::send, this, placeholders::_1, client_fd));
+	chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
+	thread th{[&]() {
+		Client cl{"localhost", inport_};
+		while(1) {
+			string s = recv(client_fd);
+			t.set_buf(s.data());
+			if(t.get_content_type().first == ALERT) {
+				t.alert();
+				send(t.encode(t.alert(1, 0).substr(5), ALERT), client_fd);
 				break;
-			} else 							LOGI << "client key exchange" << endl;
-			t.change_cipher_spec(recv(client_fd));LOGI << "change cipher spec" << endl;
+			} else cl.send(t.decode());//to inner server
+			send(t.encode(cl.recv()), client_fd);//to browser
+			last_transmission = chrono::system_clock::now();
 		}
-		if(s = t.finished(recv(client_fd)); s != "") {
-			send(move(s)); 					LOGE << "decrypt error" << endl;
-			break;
-		} else 								LOGI << "client finished" << endl;
-	case CHANGE_CIPHER_SPEC:
-		if(t.is_tls12()) {
-			s = t.change_cipher_spec(); 	LOGI << "change cipher spec" << endl;
-			s += t.finished(); 				LOGI << "server finished" << endl;
-			send(move(s), client_fd);
-		}
-	case APPLICATION_DATA:
-		chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
-		thread th{[&]() {
-			Client cl{"localhost", inport_};
-			while(1) {
-				string s = recv(client_fd);
-				t.set_buf(s.data());
-				if(t.get_content_type().first == ALERT) {
-					t.alert();
-					send(t.encode(t.alert(1, 0).substr(5), ALERT), client_fd);
-					break;
-				} else cl.send(t.decode());//to inner server
-				send(t.encode(cl.recv()), client_fd);//to browser
-				last_transmission = chrono::system_clock::now();
-			}
-		}};
-		th.detach();
-		LOGI << "timeout " << time_out << 's' << endl;
-		while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
-			this_thread::sleep_for(30s);//data communication until garbage collection 
-	}
+	}};
+	th.detach();
+	LOGI << "timeout " << time_out << 's' << endl;
+	while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
+		this_thread::sleep_for(30s);//data communication until garbage collection 
 	close(client_fd); 		LOGI << "closing connection " << client_fd << endl;
 }
 

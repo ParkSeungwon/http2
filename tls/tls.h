@@ -2,6 +2,7 @@
 #include<type_traits>
 #include<valarray>
 #include<memory>
+#include<functional>
 #include"crypt.h"
 #include"block_cipher.h"
 #include"hash.h"
@@ -63,6 +64,8 @@ public:
 	std::string decode(std::string &&s = "");//if not rvalue use set_buf
 	std::string encode(std::string &&s = "", int type = 0x17);//for finished 0x16
 
+	void handshake(std::function<std::string(void)> read_func,
+			std::function<void(std::string)> write_func);
 	std::string client_hello(std::string &&s = "");//s != "" -> buffer is set to s
 	std::string server_hello(std::string &&s = "");//s == "" -> manual buffer set
 	std::string server_certificate(std::string &&s = "");
