@@ -2,30 +2,49 @@
 #include"crypt.h"
 using namespace std;
 
-//static void mpz2lnd(mpz_class z, uint8_t *p)
-//{
-//	uint8_t tmp[32];
-//	mpz2bnd(z, tmp, tmp + 32);
-//	for(int i=0; i<32; i++) p[i] = tmp[31-i];
-//}
-//
-//static mpz_class lnd2mpz(uint8_t *p)
-//{
-//	uint8_t tmp[32];
-//	for(int i=0; i<32; i++) tmp[i] = p[31-i];
-//	return bnd2mpz(tmp, tmp + 32);
-//}
+static void mpz2lnd(mpz_class z, uint8_t *p)
+{
+	uint8_t tmp[32];
+	mpz2bnd(z, tmp, tmp + 32);
+	for(int i=0; i<32; i++) p[i] = tmp[31-i];
+}
+
+static mpz_class lnd2mpz(uint8_t *p)
+{
+	uint8_t tmp[32];
+	for(int i=0; i<32; i++) tmp[i] = p[31-i];
+	return bnd2mpz(tmp, tmp + 32);
+}
+
+void x25519_mul_g(uint8_t *result, uint8_t *k) 
+{
+	uint8_t tmp[32];
+	memcpy(tmp, k, 32);
+	reverse(tmp, tmp+32);
+	curve25519_mul_g(result, tmp);
+	reverse(result, reverse+32);
+}
+void x25519_mul(uint8_t *result, uint8_t *k, uint8_t *p)
+{
+	uint8_t kk[32], pp[32];
+	memcpy(kk, k, 32);
+	memcpy(pp, p, 32);
+	reverse(kk, kk+32);
+	reverse(pp, pp+32);
+	curve25519_mul(result, kk, pp);
+	reverse(result, result+32);
+}
 
 ECDHE::ECDHE() : N{random_prime(32)}
 {//N is hidden
-	mpz2bnd(N, n, n + 32);
-	curve25519_mul_g(q, n);
+	mpz2bnd(N, n, n+32);
+	x25519_mul_g(q, n);
 	Q = bnd2mpz(q, q+32);
 }
 
 mpz_class ECDHE::set_Q(mpz_class Q)
 {
-	mpz2bnd(Q, q, q + 32);
+	mpz2bnd(Q, q, q+32);
 	curve25519_mul(k, n, q);
 	return K = bnd2mpz(k, k+32);
 }
