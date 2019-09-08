@@ -8,6 +8,7 @@
 #include"tls/chacha.h"
 #include"options/log.h"
 #include"tls/hash.h"
+#include"tls/x25519.h"
 using namespace std;
 
 TEST_CASE("ecdhe") {
@@ -17,7 +18,7 @@ TEST_CASE("ecdhe") {
 	REQUIRE(A.K == B.K);
 }
 
-TEST_CASE("x25519 nettle mul_g mul key exchange") {
+TEST_CASE("x25519 nettle mul_g mul key exchange") {//this test vector is fake
  	mpz_class a{"0x77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"},
 			  b{"0x5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb"},
 			  pa{"0x8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a"},
@@ -25,12 +26,30 @@ TEST_CASE("x25519 nettle mul_g mul key exchange") {
 			  k{"0x4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742"};
 	uint8_t A[32], B[32], PA[32], PB[32], KA[32], KB[32];
 	mpz2bnd(a, A, A+32); 				mpz2bnd(b, B, B+32);
-	reverse(A, A+32);					reverse(B, B+32);
-	curve25519_mul_g(PA, A); 			curve25519_mul_g(PB, B);
-	reverse(PA, PA+32);					reverse(PB, PB+32);
-	REQUIRE(pa == bnd2mpz(PA, PA+32)); 	REQUIRE(pb == bnd2mpz(PB, PB+32));
-	curve25519_mul(KA, A, PB); 			curve25519_mul(KB, B, PA);
-	REQUIRE(k == bnd2mpz(KA, KA+32)); 	REQUIRE(k == bnd2mpz(KB, KB+32));
+	SECTION("using nettle curve25519 little endian") {
+		reverse(A, A+32);					reverse(B, B+32);
+		curve25519_mul_g(PA, A); 			curve25519_mul_g(PB, B);
+		reverse(PA, PA+32);					reverse(PB, PB+32);
+		REQUIRE(pa != bnd2mpz(PA, PA+32)); 	REQUIRE(pb != bnd2mpz(PB, PB+32));
+		curve25519_mul(KA, A, PB); 			curve25519_mul(KB, B, PA);
+		REQUIRE(k != bnd2mpz(KA, KA+32)); 	REQUIRE(k != bnd2mpz(KB, KB+32));
+	}
+	SECTION("using nettle curve25519 big endian") {
+		curve25519_mul_g(PA, A); 			curve25519_mul_g(PB, B);
+		REQUIRE(pa == bnd2mpz(PA, PA+32)); 	REQUIRE(pb == bnd2mpz(PB, PB+32));
+		curve25519_mul(KA, A, PB); 			curve25519_mul(KB, B, PA);
+		REQUIRE(k == bnd2mpz(KA, KA+32)); 	REQUIRE(k == bnd2mpz(KB, KB+32));
+	}
+	SECTION("using X25519 my class") {
+		REQUIRE(a * X25519{} == pa);
+		REQUIRE(b * X25519{} == pb);
+		REQUIRE(b * X25519{pa} == k);
+		REQUIRE(a * X25519{pb} == k);
+	}
+
+	SECTION("3") {
+		REQUIRE(k == X25519{k});
+	}
 //Alice's private key, a:
 //     77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a
 //Alice's public key, X25519(a, 9):
@@ -55,17 +74,7 @@ TEST_CASE("nettle curve 25519 multiply") {
 	p = mpz_class{"0xe5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493"};
 	kp =mpz_class{"0x95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957"};
 	}
-	uint8_t K[32], P[32], KP[32], R[32];
-	mpz2bnd(k, K, K+32);
-	reverse(K, K+32);
-	mpz2bnd(p, P, P+32);
-	reverse(P, P+32);
-	mpz2bnd(kp, KP, KP+32);
-	reverse(KP, KP+32);
-	curve25519_mul(R, K, P);
-	REQUIRE(equal(KP, KP+32, R));
-	kp = k * p;
-//	REQUIRE(kp == lnd2mpz(KP, KP+32));
+	REQUIRE(k * X25519{p} == kp);
 }
 
 unsigned char key[] = "123456789012345678901234567890123456";

@@ -65,13 +65,3 @@ protected:
 	mpz_class p, q, d, phi;
 };
 
-class ECDHE
-{//curve25519 nettle library
-public:
-	ECDHE();
-//	void set_P(mpz_class P);
-	mpz_class set_Q(mpz_class Q);
-	mpz_class Q, N, K;
-private:
-	uint8_t q[32], n[32], k[32];//little endian
-};

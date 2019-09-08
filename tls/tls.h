@@ -6,6 +6,7 @@
 #include"crypt.h"
 #include"block_cipher.h"
 #include"hash.h"
+#include"x25519.h"
 #define DH_KEY_SZ 256
 #define KEY_SZ 72
 /*********************
@@ -66,6 +67,8 @@ public:
 
 	void handshake(std::function<std::string(void)> read_func,
 			std::function<void(std::string)> write_func);
+	void handshake(std::function<void(void)> read_func,
+			std::function<void(void)> write_func);
 	std::string client_hello(std::string &&s = "");//s != "" -> buffer is set to s
 	std::string server_hello(std::string &&s = "");//s == "" -> manual buffer set
 	std::string server_certificate(std::string &&s = "");

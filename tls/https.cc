@@ -51,7 +51,7 @@ void HTTPS::start()
 
 void HTTPS::connected(int client_fd)
 {//will be used in parallel
-	string s; TLS t;//TLS is decoupled from file descriptor
+	TLS t;//TLS is decoupled from file descriptor
 	t.handshake(bind(&HTTPS::recv, this, client_fd),
 				bind(&HTTPS::send, this, placeholders::_1, client_fd));
 	chrono::system_clock::time_point last_transmission =chrono::system_clock::now();

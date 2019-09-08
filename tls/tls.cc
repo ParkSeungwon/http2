@@ -1257,15 +1257,15 @@ TLS<SV>::handshake(function<string(void)> read_f, function<void(string)> write_f
 			if(s = client_hello(read_f()); s != "") {//error -> alert return
 				write_f(s);					LOGE << "handshake failed" << endl;
 				break;
-			} else 								LOGI << "client hello" << endl;
+			} else 							LOGI << "client hello" << endl;
 		case SERVER_HELLO:
-			s = server_hello(); 				LOGI << "server hello" << endl;
+			s = server_hello(); 			LOGI << "server hello" << endl;
 			s += is_tls12() ? //if tls13, encode starts here
 				server_certificate() : encode(server_certificate(), HANDSHAKE);
-												LOGI << "server certificate" << endl;
+											LOGI << "server certificate" << endl;
 			if(is_tls12()) {
 				s += server_key_exchange();	LOGI << "server key exchange" << endl;
-				s += server_hello_done();		LOGI << "server hello done" << endl;
+				s += server_hello_done();	LOGI << "server hello done" << endl;
 			} else s += finished();//finished is already encoded
 			write_f(s);
 		case CLIENT_KEY_EXCHANGE:
@@ -1273,17 +1273,17 @@ TLS<SV>::handshake(function<string(void)> read_f, function<void(string)> write_f
 				if(s = client_key_exchange(read_f()); s != "") {
 					write_f(s);				LOGE<<"client key exchange failed"<<endl;
 					break;
-				} else 							LOGI << "client key exchange" << endl;
+				} else 						LOGI << "client key exchange" << endl;
 				change_cipher_spec(read_f());LOGI << "change cipher spec" << endl;
 			}
 			if(s = finished(read_f()); s != "") {
-				write_f(s); 					LOGE << "decrypt error" << endl;
+				write_f(s); 				LOGE << "decrypt error" << endl;
 				break;
-			} else 								LOGI << "client finished" << endl;
+			} else 							LOGI << "client finished" << endl;
 		case CHANGE_CIPHER_SPEC:
 			if(is_tls12()) {
 				s = change_cipher_spec(); 	LOGI << "change cipher spec" << endl;
-				s += finished(); 				LOGI << "server finished" << endl;
+				s += finished(); 			LOGI << "server finished" << endl;
 				write_f(s);
 			}
 		}
@@ -1295,23 +1295,23 @@ TLS<SV>::handshake(function<string(void)> read_f, function<void(string)> write_f
 			if(s = server_hello(read_f()); s != "") {//error -> alert return
 				write_f(s);					LOGE << "handshake failed" << endl;
 				break;
-			} else 								LOGI << "server hello" << endl;
+			} else 							LOGI << "server hello" << endl;
 			if(is_tls12()) server_certificate(read_f());
 			else server_certificate(decode(read_f()));
 			if(is_tls12()) {
 				server_key_exchange(read_f());	LOGI << "server key exchange" << endl;
-				server_hello_done(read_f());	LOGI << "server hello done" << endl;
+				server_hello_done(read_f());LOGI << "server hello done" << endl;
 			} else finished(read_f());//finished is already encoded
 		case CLIENT_KEY_EXCHANGE:
 			if(is_tls12()) {
 				write_f(client_key_exchange());	LOGE<<"client key exchange failed"<<endl;
 				write_f(change_cipher_spec());	LOGI << "change cipher spec" << endl;
 			}
-			write_f(finished());				LOGI << "client finished" << endl;
+			write_f(finished());			LOGI << "client finished" << endl;
 		case CHANGE_CIPHER_SPEC:
 			if(is_tls12()) {
-				change_cipher_spec(read_f()); 		LOGI << "change cipher spec" << endl;
-				finished(read_f()); 				LOGI << "server finished" << endl;
+				change_cipher_spec(read_f());LOGI << "change cipher spec" << endl;
+				finished(read_f()); 		LOGI << "server finished" << endl;
 			}
 		}
 

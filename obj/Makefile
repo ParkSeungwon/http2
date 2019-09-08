@@ -9,7 +9,7 @@ database = $(wildcard *.database.o)
 options = $(wildcard *.options.o)
 pybind = $(wildcard *.pybind.o)
 
-EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../doc1.x ../doc3.x ../doc4.x ../passafe.x #../test2.x ../latex.x ../sql.x ../test3.x
+EXE = ../https.x ../dndd.x ../middle.x ../site.x ../tls-cl.x ../doc1.x ../doc3.x ../doc4.x ../passafe.x ../x25519.x#../test2.x ../latex.x ../sql.x ../test3.x
 LIBS = -lpthread -lmysqlcppconn -ljsoncpp -lhogweed -lnettle -lgmpxx -lgmp -lstdc++fs 
 
 all : $(EXE) ../catch.x ../tls_crypt.so
@@ -57,6 +57,9 @@ all : $(EXE) ../catch.x ../tls_crypt.so
 	$(CC) -o $@ $^ $(LIBS)
 
 ../doc4.x : doc4.site_src.x $(framework) $(tls) $(options)
+	$(CC) -o $@ $^ $(LIBS)
+
+../x25519.x : x25519.tls.x $(tls) $(options) $(framework)
 	$(CC) -o $@ $^ $(LIBS)
 #    $@ |현재 목표 파일의 이름
 #    $* | 확장자를 제외한 현재 목표 파일의 이름
