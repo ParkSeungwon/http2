@@ -159,8 +159,6 @@ string PyHTTPSCLient::pyrecv()
 {
 	return t.decode(recv());
 }
-PyTLS::PyTLS() : TLS{nullptr}
-{ }
 
 std::vector<unsigned char> PyTLS::encode(std::vector<unsigned char> s)
 {

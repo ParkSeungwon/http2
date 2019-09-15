@@ -7,8 +7,8 @@
 #include"options/log.h"
 using namespace std;
 
-HTTPS::HTTPS(int outport, int inport, int t, int queue, string end)
-	: Server{outport, t, queue, end}, inport_{inport}
+HTTPS::HTTPS(int outport, int inport, int timeout, int queue, string end)
+	: Server{outport, timeout, queue, end}, inport_{inport}
 {//hI = this; 
 	LOGI << "opening inner port " << inport << endl;
 } 
@@ -39,10 +39,9 @@ void HTTPS::start()
 	cout << "starting middle server, enter '?' to see commands." << endl;
 	while(cin >> s) {
 		if(s == "end") break;
-		else if(s == "help" || s == "?") {
-			cout << "end, timeout [sec]" << endl
-				<< "current timeout " << time_out << endl;
-		} else if(s == "timeout") {
+		else if(s == "help" || s == "?")
+			cout << "end, timeout [sec]" << endl << "current timeout " << time_out << endl;
+		else if(s == "timeout") {
 			cin >> time_out;
 			cout << "time out set " << time_out << endl;
 		}
@@ -53,26 +52,18 @@ void HTTPS::connected(int client_fd)
 {//will be used in parallel
 	TLS t;//TLS is decoupled from file descriptor
 	t.handshake(bind(&HTTPS::recv, this, client_fd),
-				bind(&HTTPS::send, this, placeholders::_1, client_fd));
-	chrono::system_clock::time_point last_transmission =chrono::system_clock::now();
-	thread th{[&]() {
-		Client cl{"localhost", inport_};
-		while(1) {
-			string s = recv(client_fd);
-			t.set_buf(s.data());
-			if(t.get_content_type().first == ALERT) {
-				t.alert();
-				send(t.encode(t.alert(1, 0).substr(5), ALERT), client_fd);
-				break;
-			} else cl.send(t.decode());//to inner server
-			send(t.encode(cl.recv()), client_fd);//to browser
-			last_transmission = chrono::system_clock::now();
-		}
-	}};
-	th.detach();
-	LOGI << "timeout " << time_out << 's' << endl;
-	while(last_transmission > chrono::system_clock::now() - time_out * 1s + 45s)
-		this_thread::sleep_for(30s);//data communication until garbage collection 
+			bind(&HTTPS::send, this, placeholders::_1, client_fd));
+	Client cl{"localhost", inport_};
+	while(1) {
+		string s = recv(client_fd);
+		if(s == "error") break;
+		if(t.get_content_type(s).first == ALERT) {
+			t.alert(move(s));
+			send(t.encode(t.alert(1, 0).substr(5), ALERT), client_fd);
+			break;
+		} else cl.send(t.decode(move(s)));//to inner server
+		send(t.encode(cl.recv()), client_fd);//to browser
+	}
 	close(client_fd); 		LOGI << "closing connection " << client_fd << endl;
 }
 

@@ -85,6 +85,10 @@ void Server::start(function<string(string)> f)
 	int cl_size = sizeof(client_addr);
 	while(1) {
 		client_fd = accept(server_fd, (sockaddr*)&client_addr, (socklen_t*)&cl_size);
+		struct timeval tv;
+		tv.tv_sec = time_out;
+		tv.tv_usec = 0;
+		setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
 		if(client_fd == -1) cout << "accept() error" << endl;
 		else if(!fork()) {//string size 0 : error -> s.size() : verify 
 			for(string s; (s = recv()) != end_string && s.size(); send(f(s)));//recv server fail 시 에러

@@ -91,7 +91,6 @@ protected:
 };
 struct PyTLS : TLS<false>
 {
-	PyTLS();
 	template<std::string (TLS<false>::*FP)(std::string&&)>
 	std::vector<unsigned char> to_vector_func(std::vector<unsigned char> s) {
 		std::vector<unsigned char> v; std::string t;
