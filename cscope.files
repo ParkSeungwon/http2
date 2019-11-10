@@ -48,7 +48,6 @@ tls/chacha.cc
 tls/chacha.h
 tls/crypt.h
 tls/diffie.cc
-tls/ecdh.cc
 tls/hash.h
 tls/https.cc
 tls/https.cpp
@@ -64,6 +63,9 @@ tls/test3.cpp
 tls/tls-cl.cpp
 tls/tls.cc
 tls/tls.h
+tls/x25519.cc
+tls/x25519.cpp
+tls/x25519.h
 tst/catch.cpp
 tst/crypt.cc
 tst/dhekey_exchange.cc
