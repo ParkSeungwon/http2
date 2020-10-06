@@ -1,7 +1,7 @@
 4
 chicago.jpg
 토론과 민주적인 의사 결정
-main.html?db=dndd2
+main.html?db=dndd
 la.jpg
 인터넷 쇼핑몰
 http://localhost:8080/In
